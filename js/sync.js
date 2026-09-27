@@ -29,7 +29,7 @@ function mergeState(r){if(!r||!r.users)return false;let changed=false;const del=
  Object.keys(S.users).forEach(id=>{if(del[id]>=(S.users[id].updatedAt||0)){delete S.users[id];changed=true}});
  S.deleted=del;
  if(!S.users[S.activeUser]){S.activeUser=S.users[r.activeUser]?r.activeUser:(Object.keys(S.users)[0]||null);changed=true}
- Object.values(S.users).forEach(u=>{u.cycle=u.cycle||{start:weekStart(),len:4,seen:-1,applied:0,nextBoost:1};u.checkins=u.checkins||[];u.checkinEvery=u.checkinEvery||14});
+ Object.values(S.users).forEach(u=>{if(migrateUser(u))changed=true});
  return changed}
 function schedulePush(){if(!sb||!sbUser)return;clearTimeout(pushT);sync.state='pending';updSyncDot();pushT=setTimeout(push,1500)}
 async function push(){if(!sb||!sbUser)return;clearTimeout(pushT);sync.state='syncing';updSyncDot();
@@ -64,6 +64,6 @@ async function doAuth(f,mode){if(!sb)return;const fd=new FormData(f),email=Strin
  f.querySelectorAll('button').forEach(b=>b.disabled=false)}
 async function logout(){if(!sb)return;const wipe=confirm('¿Borrar también los datos guardados en este dispositivo? Pulsa Cancelar para conservarlos.');
  await sb.auth.signOut();sbUser=null;sync.state='out';
- if(wipe){S={version:1,activeUser:null,users:{},deleted:{}};saveLocal();view='onboard'}render();toast('Sesión cerrada')}
+ if(wipe){S={version:2,activeUser:null,users:{},deleted:{}};saveLocal();view='onboard'}render();toast('Sesión cerrada')}
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')pull()});
 setInterval(()=>{if(sbUser&&document.visibilityState==='visible')pull()},90000);

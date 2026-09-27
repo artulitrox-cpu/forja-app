@@ -18,7 +18,21 @@ function suggestDays(pr){let d={fat:4,hyp:4,maint:3}[pr.goal]||3;
  const b=bmi(pr);if(b&&b>=30&&pr.goal==='fat'&&pr.level!=='beg')d=Math.max(d,4);
  if((pr.age||0)>=60||(b&&b>=35))d=Math.min(d,3);
  return Math.min(5,Math.max(2,d))}
-const daysOf=pr=>(!pr.days||pr.days==='auto')?suggestDays(pr):+pr.days;
+/* ---- Disponibilidad semanal (0 = lunes … 6 = domingo) ---- */
+const DAY_SHORT=['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
+const DAY_LONG=['lunes','martes','miércoles','jueves','viernes','sábado','domingo'];
+const SESSION_MIN=[30,45,60,75,90];
+const AVAIL_DEFAULT={1:[0],2:[0,3],3:[0,2,4],4:[0,1,3,4],5:[0,1,2,4,5],6:[0,1,2,3,4,5],7:[0,1,2,3,4,5,6]};
+const MAX_SESSIONS=6;
+// Días habituales del perfil. Perfiles antiguos (sin avail) usan su número de días o la sugerencia.
+function availOf(pr){if(Array.isArray(pr.avail))return [...pr.avail].sort((a,b)=>a-b);
+ const n=(!pr.days||pr.days==='auto')?suggestDays(pr):+pr.days;return AVAIL_DEFAULT[Math.max(1,Math.min(7,n))]}
+// Sesiones por semana (tope 6: con 7 días marcados el domingo es descanso).
+const daysOf=pr=>Math.min(MAX_SESSIONS,availOf(pr).length);
+// Días de fuerza según objetivo y días disponibles (spec §3).
+function strengthDays(pr,n){n=Math.min(MAX_SESSIONS,n);if(n<=0)return 0;
+ let f={fat:Math.min(n,4),hyp:Math.min(n,5),maint:Math.min(n,3)}[pr.goal]??Math.min(n,3);
+ if(pr.level==='beg')f=Math.min(f,3);return Math.max(1,f)}
 function tdee(pr){const b=bmr(pr);if(!b)return null;const d=daysOf(pr);return Math.round(b*(d<=3?1.375:d<=5?1.55:1.725))}
 const GOAL_KCAL={fat:.8,hyp:1.1,maint:1};
 function kcalTarget(pr){const t=tdee(pr);return t?Math.round(t*((GOAL_KCAL[pr.goal]||1)+(pr.kcalAdj||0))/10)*10:null}
@@ -84,7 +98,7 @@ function pickEx(slot,pr,{off=0,cyc=0,exclude=[]}={}){
  let tier=scored.filter(x=>x.sc===top);
  if(tier.length<2&&shift>0)tier=scored.filter(x=>x.sc>=top-1);
  return tier[shift%tier.length].e}
-function genPlan(pr,{swaps={},cyc=0,split=null,nd=daysOf(pr)}={}){
+function genPlan(pr,{swaps={},cyc=0,split=null,nd=strengthDays(pr,daysOf(pr))}={}){
  const ppl=split?split==='ppl':pr.level!=='beg'&&nd>=4;
  const keys=ppl?['push','pull','legs']:['fbA','fbB','fbC'];
  const count={beg:4,int:5,adv:5}[pr.level]||4;
@@ -123,3 +137,57 @@ const WARM=480,WORK=45;
 /* Tiempo estimado: 8 min calentamiento + series×45 s + series×descanso */
 function estimate(u,day){let sets=0,rest=0;day.items.forEach(it=>{const p=presc(X(it.ex),u.profile);sets+=p.sets;rest+=p.sets*p.rest});return {sets,warm:WARM,work:sets*WORK,rest,total:WARM+sets*WORK+rest}}
 const estMin=(u,day)=>Math.round(estimate(u,day).total/60);
+
+/* ============ Semana: reparto de sesiones ============ */
+const DAY_MS=864e5;
+const weekday=ts=>(new Date(ts).getDay()+6)%7;
+function weekKey(ts){const d=new Date(ts);return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}
+// Días de entreno de una semana: la edición de esa semana (u.weeks) o, si no hay, los habituales.
+function weekDaysFor(u,ws){const w=u.weeks&&u.weeks[weekKey(ws)];
+ return [...new Set(Array.isArray(w)?w:availOf(u.profile))].filter(x=>x>=0&&x<=6).sort((a,b)=>a-b)}
+// f posiciones de n, lo más separadas posible.
+function spread(n,f){const out=new Set();for(let j=0;j<f;j++)out.add(Math.min(n-1,Math.max(0,Math.round((j+.5)*n/f-.5))));
+ for(let i=0;out.size<f&&i<n;i++)out.add(i);return out}
+// Reparto de la semana: [{wd, type:'strength'|'cardio'|'rest', done, name, tpl?, dayIdx?}].
+// La rotación de fuerza continúa desde u.next; las sesiones ya hechas esa semana se marcan por orden.
+function weekSchedule(u,ws=weekStart()){
+ const pr=u.profile,days=weekDaysFor(u,ws),rest7=days.length>MAX_SESSIONS,act=rest7?days.filter(d=>d!==6):days;
+ const n=act.length,F=strengthDays(pr,n),pos=spread(n,F);
+ const fallback=u.plan.split==='ppl'&&F<3;
+ const tpls=fallback?genPlan(pr,{swaps:u.swaps||{},cyc:u.cycle?wk(u).cyc:0,split:'fb',nd:Math.max(1,F)}).days:u.plan.days;
+ const end=ws+7*DAY_MS,hist=(u.history||[]).filter(h=>h.date>=ws&&h.date<end).sort((a,b)=>a.date-b.date);
+ const doneS=hist.filter(h=>h.kind!=='cardio'),doneC=hist.filter(h=>h.kind==='cardio');
+ const cardioMax=pr.goal==='hyp'?1:Infinity;
+ let si=0,ci=0;const out=[];
+ act.forEach((wd,i)=>{
+  if(pos.has(i)){const j=si++;
+   if(j<doneS.length){out.push({wd,type:'strength',done:true,name:doneS[j].day});return}
+   const k=j-doneS.length,idx=fallback?k%tpls.length:(u.next+k)%tpls.length,tpl=tpls[idx];
+   out.push({wd,type:'strength',done:false,name:tpl.name,tpl,dayIdx:fallback?null:idx})}
+  else if(ci<cardioMax){const j=ci++;out.push({wd,type:'cardio',done:j<doneC.length,name:'Cardio'})}
+  else out.push({wd,type:'rest',done:false,name:'Descanso'})});
+ if(rest7)out.push({wd:6,type:'rest',done:false,name:'Descanso'});
+ return out}
+
+/* ============ Migración de datos v1 → v2 ============ */
+// Primer ejercicio añadido en la v2: los anteriores forman el catálogo con el que se eligió el plan v1.
+const V2_FIRST_NEW='smith_bench';
+function oldPick(slot,equip,off){const cut=EX.findIndex(e=>e.id===V2_FIRST_NEW);
+ const list=EX.slice(0,cut<0?EX.length:cut).filter(e=>e.slot===slot&&ALLOW[equip].includes(e.eq));return list.length?list[off%list.length].id:null}
+// Idempotente. Conserva prog, history, cycle, checkins y next. Devuelve true si ha migrado.
+function migrateUser(u){if(u.v>=2)return false;const pr=u.profile;
+ if(pr.goal==='str')pr.goal='hyp';if(pr.goal==='end')pr.goal='maint';if(!pr.sex)pr.sex='m';
+ pr.avail=availOf(pr);pr.sessionMin=pr.sessionMin||60;delete pr.days;
+ u.weeks=u.weeks||{};u.cprog=u.cprog||{};u.swaps=u.swaps||{};u.injuries=u.injuries||[];u.history=u.history||[];u.prog=u.prog||{};
+ u.cycle=u.cycle||{start:weekStart(),len:4,seen:-1,applied:0,nextBoost:1};u.checkins=u.checkins||[];u.checkinEvery=u.checkinEvery||14;
+ // Los ejercicios del plan v1 que no coinciden con la elección automática antigua son cambios del usuario.
+ const old=u.plan,fresh=genPlan(pr);
+ if(old&&Array.isArray(old.days))old.days.forEach((d,i)=>{const nd=fresh.days[i];if(!nd)return;const round=Math.floor(i/3),used={};
+  (d.items||[]).forEach(it=>{const off=(used[it.slot]||0)+(old.split==='ppl'?round:0);used[it.slot]=(used[it.slot]||0)+1;
+   if(!X(it.ex)||it.ex===oldPick(it.slot,pr.equip||'gym',off))return;
+   const t=nd.items.find(x=>x.slot===it.slot&&!u.swaps[x.key]);if(t)u.swaps[t.key]=it.ex})});
+ u.v=2;regenPlan(u);
+ u.notice='Tu plan se ha actualizado con cardio, movilidad y tu límite de tiempo. Revísalo en Perfil.';
+ u.updatedAt=Date.now();return true}
+// Solo se guardan las 8 semanas editadas más recientes.
+function pruneWeeks(u){const ks=Object.keys(u.weeks||{}).sort().reverse();ks.slice(8).forEach(k=>delete u.weeks[k])}
