@@ -1,0 +1,8 @@
+{
+  "name": "forja-app",
+  "private": true,
+  "description": "Forja: app de entrenamiento (sin compilación). package.json solo para las pruebas.",
+  "scripts": {
+    "test": "node --test \"tests/**/*.test.js\""
+  }
+}

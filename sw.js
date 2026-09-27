@@ -1,8 +1,9 @@
 // Forja: service worker. Permite instalar la app y abrirla sin conexión.
 // La app (mismo origen) se pide primero a la red para recibir siempre la última versión;
 // las librerías y fuentes externas se sirven desde la caché. Supabase nunca se cachea.
-const CACHE = 'forja-v1';
-const CORE = ['./', 'index.html', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png', 'apple-touch-icon.png'];
+const CACHE = 'forja-v2';
+const CORE = ['./', 'index.html', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png', 'apple-touch-icon.png',
+  'js/catalog.js', 'js/figures.js', 'js/plan.js', 'js/sync.js'];
 const CDN = ['cdn.tailwindcss.com', 'cdn.jsdelivr.net', 'fonts.googleapis.com', 'fonts.gstatic.com'];
 
 self.addEventListener('install', e => {
