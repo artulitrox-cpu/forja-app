@@ -32,7 +32,7 @@ img,svg{max-width:100%}
 .brand b{color:var(--accent)}
 .avatar{width:36px;height:36px;border-radius:50%;background:var(--surface2);border:1px solid var(--line);display:grid;place-items:center;font-weight:700}
 .tabbar{position:fixed;left:0;right:0;bottom:0;z-index:30;background:var(--surface);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px)}
-.tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:9px 0 10px;color:var(--dim);font-size:12px;font-weight:600;background:none;border:0}
+.tab{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:2px;padding:9px 0 10px;color:var(--dim);font-size:11px;font-weight:600;background:none;border:0}
 .tab[aria-current="page"]{color:var(--accent)}
 .hero{font-family:"Barlow Condensed","Arial Narrow",sans-serif;font-weight:800;font-size:clamp(3.2rem,15vw,5rem);line-height:.88;letter-spacing:-.015em;margin:.35rem 0 0}
 .h1{font-family:"Barlow Condensed","Arial Narrow",sans-serif;font-weight:800;font-size:2.75rem;line-height:.95}
@@ -120,6 +120,23 @@ details[open] .chev{transform:rotate(180deg)}
 .wk-d{flex:1 0 auto;min-width:86px;border:1px solid var(--line);border-radius:14px;padding:10px;background:var(--surface)}
 .wk-d.is-next{border-color:var(--accent)}
 .wk-d.is-done{background:color-mix(in srgb,var(--easy) 14%,var(--surface));border-color:color-mix(in srgb,var(--easy) 50%,var(--line))}
+/* Lesiones */
+.bodywrap{background:var(--bg);border-radius:16px;padding:8px}
+.bodymap{width:100%;max-width:280px;height:auto;max-height:440px;display:block;margin:0 auto}
+.sil{fill:var(--surface2);stroke:var(--line);stroke-width:1.5}
+.mz{fill:color-mix(in srgb,var(--dim) 38%,var(--surface2));stroke:var(--bg);stroke-width:1;cursor:pointer;transition:fill .15s,opacity .2s}
+.mz:hover{fill:var(--dim)}
+.mz-off{opacity:.22;pointer-events:none}
+.mz-on{fill:color-mix(in srgb,var(--fg) 55%,var(--surface2))}
+.mz-mild{fill:var(--accent)}.mz-hurt{fill:var(--hard)}
+.chip-hurt{border-color:var(--hard);color:var(--hard)}
+.pain{display:grid;grid-template-columns:repeat(10,1fr);gap:4px}
+.pain label{position:relative}.pain input{position:absolute;opacity:0;pointer-events:none}
+.pain span{display:flex;justify-content:center;align-items:center;min-height:42px;border-radius:10px;background:var(--surface2);border:1px solid var(--line);font-weight:700;cursor:pointer}
+.pain input:checked+span{background:var(--hard);color:#230605;border-color:var(--hard)}
+.pain input:focus-visible+span{outline:3px solid var(--accent);outline-offset:2px}
+.check{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border-radius:12px;background:var(--surface2);border:1px solid var(--line);cursor:pointer}
+.check input{width:20px;height:20px;margin-top:2px;accent-color:var(--hard);flex:none}
 /* Sesión por bloques */
 .steps{display:flex;gap:6px}
 .step{flex:1;min-height:40px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--dim);font-weight:700;font-size:.85rem;font-family:inherit;padding:0 4px}
@@ -144,6 +161,8 @@ details[open] .chev{transform:rotate(180deg)}
 <script src="js/catalog.js"></script>
 <script src="js/figures.js"></script>
 <script src="js/plan.js"></script>
+<script src="js/injuries.js"></script>
+<script src="js/bodymap.js"></script>
 <script src="js/sync.js"></script>
 <script src="js/timer.js"></script>
 <script>
@@ -174,6 +193,7 @@ const ICON={
  chev:'<path d="m6 9 6 6 6-6"/>',
  play:'<path d="M7 4v16l13-8z"/>',
  body:'<rect x="3" y="4" width="18" height="16" rx="4"/><path d="M8 10a5 5 0 0 1 8 0M12 10l2-2"/>',
+ cross:'<path d="M9 3h6v6h6v6h-6v6H9v-6H3V9h6z"/>',
  bell:'<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10 21a2 2 0 0 0 4 0"/>'
 };
 const ic=(n,s=22)=>`<svg viewBox="0 0 24 24" width="${s}" height="${s}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICON[n]}</svg>`;
@@ -246,10 +266,10 @@ function vOnboard(){
  </main>`;
 }
 function header(){const u=U();return `<header class="appbar"><div class="max-w-xl mx-auto px-4 h-14 flex items-center justify-between"><div class="flex items-center gap-2"><div class="brand">For<b>ja</b></div><span id="syncdot" class="dot" role="img" aria-label="${SYNC_TXT[sync.state]}" title="${SYNC_TXT[sync.state]}" style="background:${SYNC_COL[sync.state]}"></span></div><button class="btn-ghost" data-a="tab" data-v="profile" style="padding-left:4px"><span class="avatar" style="width:32px;height:32px">${esc(u.profile.name[0].toUpperCase())}</span>Mi perfil</button></div></header>`}
-function nav(){const t=[['home','today','Hoy'],['plan','plan','Plan'],['body','body','Cuerpo'],['history','hist','Progreso'],['profile','user','Perfil']];
+function nav(){const t=[['home','today','Hoy'],['plan','plan','Plan'],['body','body','Cuerpo'],['injuries','cross','Lesiones'],['history','hist','Progreso'],['profile','user','Perfil']];
  return `<nav class="tabbar" aria-label="Secciones"><div class="max-w-xl mx-auto flex">${t.map(([v,i,l])=>`<button class="tab" data-a="tab" data-v="${v}" ${view===v?'aria-current="page"':''}>${ic(i)}<span>${l}</span></button>`).join('')}</div></nav>`}
 function exRow(u,it,di,i){const ex=X(it.ex),p=it.p||presc(ex,u.profile),g=prog(u,ex,p);
- return `<div class="row"><button class="row-main" data-a="info" data-ex="${ex.id}" data-d="${di}" data-i="${i}" aria-label="Ver técnica de ${esc(ex.n)}">${mini(ex)}<span class="min-w-0 flex-1"><span class="block font-semibold leading-tight">${esc(ex.n)}</span><span class="block text-sm text-dim mt-0.5">${presTxt(p,ex)}, RPE ${String(p.rpe).replace('.',',')}</span><span class="block text-sm ${g.w||ex.eq==='body'?'text-fg':'text-accent'}">${loadTxt(ex,g,u.profile)}</span></span></button>${di==null?'':`<button class="btn-ghost" data-a="swap" data-d="${di}" data-i="${i}" aria-label="Cambiar ${esc(ex.n)}">${ic('swap',18)}<span>Cambiar</span></button>`}</div>`}
+ return `<div class="row"><button class="row-main" data-a="info" data-ex="${ex.id}" data-d="${di}" data-i="${i}" aria-label="Ver técnica de ${esc(ex.n)}">${mini(ex)}<span class="min-w-0 flex-1"><span class="block font-semibold leading-tight">${esc(ex.n)}</span><span class="block text-sm text-dim mt-0.5">${presTxt(p,ex)}, RPE ${String(p.rpe).replace('.',',')}</span><span class="block text-sm ${g.w||ex.eq==='body'?'text-fg':'text-accent'}">${loadTxt(ex,g,u.profile)}</span>${it.sub?`<span class="block text-xs mt-0.5" style="color:var(--accent)">En lugar de ${esc(X(it.sub.from).n)} por molestia en ${esc(it.sub.mus)}</span>`:''}${it.warn?`<span class="block text-xs mt-0.5" style="color:var(--accent)">Molestia leve en ${esc(it.warn)}: ve con cuidado</span>`:''}</span></button>${di==null?'':`<button class="btn-ghost" data-a="swap" data-d="${di}" data-i="${i}" aria-label="Cambiar ${esc(ex.n)}">${ic('swap',18)}<span>Cambiar</span></button>`}</div>`}
 function weekStrip(u){const s=weekSchedule(u),td=weekday(Date.now());
  if(!s.length)return '<p class="text-dim">Sin días marcados esta semana. Puedes editarla en Plan.</p>';
  return `<div class="wk">${s.map(e=>`<div class="wk-d ${e.done?'is-done':''} ${e.wd===td&&!e.done&&e.type!=='rest'?'is-next':''}"><div class="text-sm text-dim">${DAY_SHORT[e.wd]}</div><div class="font-semibold leading-tight mt-1">${esc(entryTitle(e))}</div><div class="text-xs mt-1 ${e.done?'text-easy':'text-dim'}">${e.done?'Hecho':e.type==='rest'?'—':e.wd<td?'Pendiente':e.wd===td?'Hoy':'Previsto'}</div></div>`).join('')}</div>`}
@@ -301,11 +321,12 @@ function vHome(){const u=U(),a=u.active;
  const blocks=`<section class="mt-8"><h2 class="h2">Bloques de hoy</h2><p class="text-sm text-dim mt-1">Toca un ejercicio para ver la técnica.</p><div class="mt-3 flex flex-col gap-2">
   ${blockRow('Movilidad',`${ss.mob.length} ejercicios · ~${Math.round(ss.est.mob/60)} min`,'body')}
   ${ss.items.map(it=>exRow(u,it,di,e.tpl?e.tpl.items.indexOf(e.tpl.items.find(x=>x.key===it.key)):null)).join('')}
+  ${ss.omitted.map(o=>`<div class="row" style="opacity:.75"><span class="row-main"><span class="mini grid place-items-center" style="color:var(--hard)">${ic('cross',24)}</span><span class="min-w-0 flex-1"><span class="block font-semibold leading-tight line-through">${esc(X(o.ex).n)}</span><span class="block text-sm" style="color:var(--hard)">Ejercicio omitido por molestia muscular en ${esc(o.mus)}</span></span></span></div>`).join('')}
   ${ss.cond?condRow(ss.cond):''}
   ${blockRow('Estiramientos',`${ss.stretch.length} estiramientos · ~${Math.round(ss.est.stretch/60)} min`,'body')}</div></section>`;
  let body=`<h1 class="hero">${esc(ss.name)}</h1><p class="text-dim mt-2">${esc(ss.focus)}${ss.items.length?`. ${ss.items.length} ejercicios`:''}.</p>${estCard(u,ss)}${btn}</section>
   <section class="mt-8"><h2 class="h2">Esta semana</h2><div class="mt-3">${weekStrip(u)}</div></section>${blocks}`;
- return `${profileSummary(u)}${banners(u)}${installCard()}${cycleCard(u)}<section class="pt-6">${head}${body}`}
+ return `${profileSummary(u)}${banners(u)}${injBanners(u)}${installCard()}${cycleCard(u)}<section class="pt-6">${head}${body}`}
 function weekCard(u){const ws=weekStart(),k=weekKey(ws),days=weekDaysFor(u,ws),custom=!!(u.weeks&&u.weeks[k]),s=weekSchedule(u,ws);
  return `<section class="card p-5 mt-5"><div class="flex items-baseline justify-between gap-2"><h2 class="h2">Esta semana</h2><span class="chip ${custom?'chip-a':''}">${custom?'Editada':'Habitual'}</span></div>
   <p class="text-dim text-sm mt-2">Marca los días que irás al gimnasio esta semana. Tu semana habitual no cambia.</p>
@@ -440,7 +461,7 @@ function vStageStr(u,a){const it=a.items[a.cur],ex=X(it.ex),p=it.p,cur=it.sets.f
  return `<div class="segs mt-3">${segs}</div>
   <section class="card p-4 mt-4">
    <div class="flex gap-4 items-start"><button class="fig-lg" data-a="info" data-ex="${ex.id}" data-s="1" data-i="${a.cur}" aria-label="Ver técnica">${animSvg(ex)}</button>
-    <div class="min-w-0 flex-1">${a.deload?'<span class="chip mb-2" style="border-color:var(--normal);color:var(--normal)">Semana de descarga: pesos al 85 %</span>':''}<p class="text-sm text-dim">Ejercicio ${a.cur+1} de ${a.items.length}</p><h1 class="font-display text-3xl font-extrabold leading-none mt-1">${esc(ex.n)}</h1><p class="text-sm text-dim mt-1">${esc(ex.m.join(', '))}</p>
+    <div class="min-w-0 flex-1">${a.deload?'<span class="chip mb-2" style="border-color:var(--normal);color:var(--normal)">Semana de descarga: pesos al 85 %</span>':''}${it.sub?`<span class="chip mb-2" style="border-color:var(--accent);color:var(--accent)">Sustituye a ${esc(X(it.sub.from).n)} (molestia en ${esc(it.sub.mus)})</span>`:''}${it.warn?`<span class="chip mb-2" style="border-color:var(--accent);color:var(--accent)">Molestia leve en ${esc(it.warn)}</span>`:''}<p class="text-sm text-dim">Ejercicio ${a.cur+1} de ${a.items.length}</p><h1 class="font-display text-3xl font-extrabold leading-none mt-1">${esc(ex.n)}</h1><p class="text-sm text-dim mt-1">${esc(ex.m.join(', '))}</p>
      <button data-a="swap" data-s="1" data-i="${a.cur}" class="btn-ghost mt-3">${ic('swap',18)}Cambiar ejercicio</button></div></div>
    <div class="tip mt-4 text-sm"><b>${presTxt(p,ex)}</b> a RPE ${String(p.rpe).replace('.',',')}: ${rirTxt(p.rpe)}. Descanso ${p.rest} s.${!body&&!(u.prog[ex.id]&&u.prog[ex.id].w)?(startW(ex,u.profile)?' Peso sugerido según tu perfil: ajústalo si la primera serie no encaja con ese RPE.':' Primera vez: elige un peso con el que llegues al rango con ese margen.'):''}</div>
    <div class="flex flex-col gap-2 mt-4">${rows}</div>
@@ -470,10 +491,54 @@ function render(){
  if(!U()){view='onboard';app.innerHTML=vOnboard();return}
  if(view==='onboard'){app.innerHTML=vOnboard();return}
  if(view==='session'){if(!U().active)view='home';else{app.innerHTML=vSession();ensureAnim();updClock();return}}
- checkCycle(U());const body={home:vHome,plan:vPlan,body:vBody,history:vHistory,profile:vProfile}[view]||vHome;
+ checkCycle(U());const body={home:vHome,plan:vPlan,body:vBody,injuries:vInjuries,history:vHistory,profile:vProfile}[view]||vHome;
  app.innerHTML=header()+`<main class="max-w-xl mx-auto px-4 pb-32">${body()}</main>`+nav();
  ensureAnim();
+ if(injAnim&&view==='injuries'){const a=injAnim;injAnim=null;zoomBody(a.from,a.to)}
 }
+
+/* ============ Lesiones y Recuperación ============ */
+let injView='front',injRegion=null,injDraft=null,injAnim=null;
+const fmtDay=t=>new Date(t).toLocaleDateString('es-ES',{day:'numeric',month:'short'});
+function injCard(u,i){const L=INJ_LEVELS[i.level],d=daysSince(i.date),tot=Math.max(1,Math.round((i.reviewAt-i.date)/864e5)),pct=Math.min(100,d/tot*100),aff=affectedBy(u,i.muscle,i.level).length,col=i.level==='mild'?'var(--accent)':'var(--hard)';
+ return `<article class="card p-4" style="border-color:${col}"><div class="flex items-start gap-3"><span class="dot mt-2 flex-none" style="background:${col}"></span><span class="flex-1 min-w-0"><b class="block text-lg leading-tight">${esc(i.muscle)}</b><span class="block text-sm mt-0.5">${esc(L.label)}</span><span class="block text-sm text-dim">${esc(L.range)} · hace ${d} ${d===1?'día':'días'} · dolor ${i.pain}/10</span></span></div>
+  <div class="h-2 rounded-full mt-3" style="background:var(--line)" role="img" aria-label="Recuperación estimada: ${Math.round(pct)} %"><div class="h-2 rounded-full" style="width:${pct}%;background:${col}"></div></div>
+  <p class="text-sm text-dim mt-2">${aff} ${aff===1?'ejercicio adaptado':'ejercicios adaptados'} en tu plan.${i.level==='refer'?' Te recomendamos que lo valore un profesional.':''}</p>
+  <div class="flex flex-wrap gap-2 mt-3"><button class="btn-ghost" data-a="injresolve" data-id="${i.id}" style="border-color:var(--easy)">Estoy recuperado</button><button class="btn-ghost" data-a="injreeval" data-m="${esc(i.muscle)}">Volver a evaluar</button><button class="btn-text btn-danger" data-a="injdel" data-id="${i.id}">Eliminar</button></div></article>`}
+function vInjuries(){const u=U(),act=activeInjuries(u),past=(u.injuries||[]).filter(i=>!i.active),map=injuryMap(u),reg=injRegion&&REGIONS.find(r=>r.id===injRegion);
+ const list=reg?reg.mus.map(m=>`<button class="chip ${map[m]?'chip-hurt':''}" data-a="injmuscle" data-m="${esc(m)}">${esc(m)}</button>`):REGIONS.map(r=>`<button class="chip ${r.mus.some(m=>map[m])?'chip-hurt':''}" data-a="injregion" data-v="${r.id}">${r.n}</button>`);
+ return `<section class="pt-6"><h1 class="h1">Lesiones y Recuperación</h1><p class="text-dim mt-2">Marca dónde te molesta y adaptamos tu rutina mientras te recuperas.</p></section>
+ ${act.length?`<section class="mt-5 flex flex-col gap-3"><h2 class="h2">Molestias activas</h2>${act.map(i=>injCard(u,i)).join('')}</section>`:''}
+ <section class="card p-4 mt-5"><div class="flex items-center justify-between gap-2 flex-wrap"><h2 class="h2">${reg?esc(reg.n):'¿Dónde te molesta?'}</h2>
+  <div class="flex gap-1" role="group" aria-label="Vista">${[['front','Frente'],['back','Espalda']].map(([v,l])=>`<button class="btn-ghost ${injView===v?'chip-a':''}" style="min-height:36px" data-a="injview" data-v="${v}" aria-pressed="${injView===v}">${l}</button>`).join('')}</div></div>
+  <p class="text-sm text-dim mt-2">${reg?'Toca el músculo afectado o elígelo en la lista.':'Toca una zona para acercarte.'}</p>
+  <div class="bodywrap mt-3">${bodySvg(injView,injRegion,map,injAnim?injAnim.from:null)}</div>
+  ${reg?'<button class="btn-ghost w-full mt-3" data-a="injback">Volver al cuerpo entero</button>':''}
+  <div class="flex flex-wrap gap-2 mt-3" role="group" aria-label="${reg?'Músculos':'Zonas'}">${list.join('')}</div>
+  <p class="hint">Rojo: lesión activa. Amarillo: sobrecarga leve.</p></section>
+ ${past.length?`<details class="card mt-5"><summary class="p-4 flex items-center gap-3"><span class="flex-1 h2">Historial</span><span class="text-sm text-dim">${past.length}</span><span class="chev text-dim">${ic('chev')}</span></summary><div class="px-4 pb-4 flex flex-col gap-3">${past.map(i=>`<div class="flex items-center gap-3"><span class="flex-1 min-w-0"><b class="block">${esc(i.muscle)}</b><span class="text-sm text-dim">${esc(INJ_LEVELS[i.level].label)} · ${fmtDay(i.date)}${i.resolvedAt?` → alta el ${fmtDay(i.resolvedAt)}`:''}</span></span><button class="btn-text btn-danger" data-a="injdel" data-id="${i.id}" aria-label="Eliminar registro de ${esc(i.muscle)}">${ic('close',16)}</button></div>`).join('')}</div></details>`:''}
+ <p class="hint mt-5">Estimación orientativa basada en tus respuestas, no un diagnóstico médico. Si el dolor es intenso, empeora o no mejora, consulta a un fisioterapeuta o médico.</p>`}
+function openTriage(m,pre){const prev=pre||activeInjuries(U()).find(i=>i.muscle===m)||{};
+ modal(`<h2 class="font-display text-3xl font-extrabold leading-none">${esc(m)}</h2><p class="text-dim mt-1">${esc((regionOf(m)||{}).n||'')} · Responde según cómo estás hoy.</p>
+ <form data-inj="${esc(m)}" class="flex flex-col gap-5 mt-5">
+  <div><span class="lbl">Dolor (1 = muy leve, 10 = insoportable)</span><div class="pain" role="radiogroup">${Array.from({length:10},(_,i)=>`<label><input type="radio" name="pain" value="${i+1}" ${(prev.pain||3)===i+1?'checked':''}><span>${i+1}</span></label>`).join('')}</div></div>
+  ${TRIAGE_Q.map(([k,l,opts])=>`<div><span class="lbl">${l}</span>${seg(k,Object.fromEntries(opts.map((o,i)=>[i,o])),prev[k]??0)}</div>`).join('')}
+  <div><span class="lbl">Señales de alarma</span><div class="flex flex-col gap-2">${RED_FLAGS.map(([k,l])=>`<label class="check"><input type="checkbox" name="flags" value="${k}" ${(prev.flags||[]).includes(k)?'checked':''}><span>${l}</span></label>`).join('')}</div></div>
+  <button class="btn-primary w-full" type="submit">Ver estimación</button></form>`,'Evaluar molestia')}
+function showTriage(){const d=injDraft,t=triage(d),aff=affectedBy(U(),d.muscle,t.level),refer=t.level==='refer';
+ modal(`<p class="text-dim">${esc(d.muscle)} · estimación orientativa</p><h2 class="font-display text-3xl font-extrabold leading-none mt-1" style="color:${t.level==='mild'?'var(--accent)':'var(--hard)'}">${esc(t.label)}</h2>
+ <div class="card p-4 mt-4" style="background:var(--bg)"><b>${refer?'Qué hacer':'Recuperación sugerida'}</b><p class="mt-1">${refer?'Acude a un fisioterapeuta o médico antes de volver a entrenar esta zona. Mientras tanto, la app la bloquea.':esc(t.range)+'.'}</p></div>
+ <h3 class="h2 text-xl mt-5">Qué cambia en tu rutina</h3><p class="text-sm mt-1">${esc(t.block)}</p>
+ ${aff.length?`<div class="flex flex-wrap gap-2 mt-2">${aff.map(x=>`<span class="chip">${esc(x.n)}</span>`).join('')}</div><p class="hint">Se sustituyen por alternativas seguras o se omiten con aviso.</p>`:'<p class="hint">Ningún ejercicio de tu plan actual usa este músculo.</p>'}
+ ${refer?'':`<h3 class="h2 text-xl mt-5">Consejos</h3><ul class="mt-2 flex flex-col gap-2 text-sm">${['Descanso relativo: evita lo que provoca dolor, pero sigue moviéndote.','Movimiento suave y sin dolor para mantener la movilidad.','Vuelve a cargar la zona poco a poco cuando el dolor baje.'].map(x=>`<li class="flex gap-2"><span class="dot d-easy mt-2 flex-none"></span><span>${x}</span></li>`).join('')}</ul>`}
+ <p class="hint mt-4">No es un diagnóstico médico. Si el dolor empeora o no mejora, consulta a un profesional.</p>
+ <button class="btn-primary w-full mt-5" data-a="injsave">Guardar lesión</button><button class="btn-text w-full mt-1 justify-center" data-a="injedit">Cambiar respuestas</button>`,'Resultado de la evaluación')}
+function injBanners(u){if(typeof activeInjuries!=='function')return '';const act=activeInjuries(u);if(!act.length)return '';let h='';
+ const due=act.find(i=>Date.now()>=i.reviewAt);
+ if(due)h+=`<section class="card p-4 mt-3 flex gap-3 items-start" style="border-color:var(--easy)" role="status"><span style="color:var(--easy)">${ic('cross')}</span><span class="flex-1"><b class="block">¿Cómo va tu molestia en ${esc(due.muscle)}?</b><span class="block text-sm mt-1">Ya ha pasado el tiempo estimado de recuperación.</span><span class="flex flex-wrap gap-2 mt-3"><button class="btn-ghost" data-a="injresolve" data-id="${due.id}" style="border-color:var(--easy)">Estoy recuperado</button><button class="btn-ghost" data-a="injreeval" data-m="${esc(due.muscle)}">Volver a evaluar</button><button class="btn-text" data-a="injsnooze" data-id="${due.id}">Mañana</button></span></span></section>`;
+ const aff=new Set();act.forEach(i=>affectedBy(u,i.muscle,i.level).forEach(x=>aff.add(x.id)));
+ h+=`<section class="card p-4 mt-3 flex gap-3 items-center" style="border-color:var(--hard)"><span style="color:var(--hard)">${ic('cross')}</span><span class="flex-1"><b class="block">${act.length===1?`Molestia activa en ${esc(act[0].muscle)}`:`Tienes ${act.length} molestias activas`}</b><span class="block text-sm text-dim">${aff.size} ${aff.size===1?'ejercicio adaptado':'ejercicios adaptados'} en tu plan.</span></span><button class="btn-ghost" data-a="tab" data-v="injuries">Ver</button></section>`;
+ return h}
 
 /* ============ Modales ============ */
 function modal(html,label){$('#layer').innerHTML=`<div class="layer" data-a="close-bg"><div class="sheet" role="dialog" aria-modal="true" aria-label="${esc(label||'Detalle')}"><div class="flex justify-end -mt-1 -mr-2"><button class="btn-text" data-a="close" aria-label="Cerrar">${ic('close')}</button></div>${html}</div></div>`;ensureAnim();const b=$('#layer .sheet button, #layer .sheet a');b&&b.focus()}
@@ -511,7 +576,7 @@ function mkItem(u,exId,p0){const ex=X(exId),p=p0||presc(ex,u.profile),g=prog(u,e
 function startSession(e){const u=U();if(!u.active){if(!e||(e.type!=='cardio'&&!e.tpl))return;
  const s=buildSession(u,e);
  u.active={kind:s.kind,dayIdx:s.dayIdx,name:s.name,focus:s.focus,start:Date.now(),stage:'mob',cur:0,
-  items:s.items.map(it=>mkItem(u,it.ex,it.p)),cond:s.cond?{...s.cond,done:false,rt:null}:null,
+  items:s.items.map(it=>({...mkItem(u,it.ex,it.p),sub:it.sub,warn:it.warn})),cond:s.cond?{...s.cond,done:false,rt:null}:null,
   mob:{list:s.mob.map(m=>m.id),done:false},stretch:{list:s.stretch.map(x=>x.id),done:false},deload:s.deload,est:s.est.total,notes:s.notes};save()}
  view='session';render();scrollTo(0,0)}
 // Nombre de la sesión activa (las sesiones de la v1 solo guardaban dayIdx).
@@ -588,6 +653,16 @@ const A={
  condrateopen:()=>openCondRate(),
  condrate:d=>{const a=U().active;a.cond.done=true;a.cond.rt=d.r;save();closeModal();goNextStage()},
  condswap:()=>{const u=U(),c=u.active.cond,pool=cardioPool(u.profile,{hiit:c.kind!=='liss'});if(pool.length<2)return;const i=pool.findIndex(m=>m.id===c.machine);c.machine=pool[(i+1)%pool.length].id;save();render();toast(`Cambiado a ${CARDIO_M[c.machine].n}`)},
+ injregion:d=>{if(!d.v)return;injRegion=d.v;injAnim={from:BODY_FULL,to:REGION_BOX[d.v]};render()},
+ injback:()=>{const from=REGION_BOX[injRegion]||BODY_FULL;zoomBody(from,BODY_FULL,()=>{injRegion=null;render()})},
+ injview:d=>{injView=d.v;render()},
+ injmuscle:d=>openTriage(d.m),
+ injreeval:d=>openTriage(d.m),
+ injedit:()=>openTriage(injDraft.muscle,injDraft),
+ injsave:()=>{const u=U(),inj=addInjury(u,injDraft);save();closeModal();render();toast(`Molestia en ${inj.muscle} guardada. Rutina adaptada.`)},
+ injresolve:d=>{const i=resolveInjury(U(),d.id);save();render();if(i)toast(`${i.muscle}: ejercicios reactivados.`)},
+ injdel:d=>{if(!confirm('¿Eliminar este registro de lesión?'))return;deleteInjury(U(),d.id);save();render()},
+ injsnooze:d=>{const i=(U().injuries||[]).find(x=>x.id===d.id);if(i)i.reviewAt=Date.now()+864e5;save();render()},
  sqpause:()=>seqPause(),sqadd:()=>seqAdd(15),sqskip:()=>seqNext(),sqexit:()=>seqStop(false),
  seenweek:()=>{const u=U();u.cycle.seen=wk(u).abs;save();render()},
  checkin:()=>openCheckin(),
@@ -607,6 +682,7 @@ const A={
 };
 document.addEventListener('click',e=>{const el=e.target.closest('[data-a]');if(!el)return;const fn=A[el.dataset.a];if(fn)fn(el.dataset,el,e)});
 document.addEventListener('submit',e=>{const ck=e.target.closest('form[data-ck]');if(ck){e.preventDefault();saveCheckin(ck);return}
+ const ij=e.target.closest('form[data-inj]');if(ij){e.preventDefault();const fd=new FormData(ij);injDraft={muscle:ij.dataset.inj,pain:+fd.get('pain')||1,mob:+fd.get('mob')||0,infl:+fd.get('infl')||0,rest:+fd.get('rest')||0,flags:fd.getAll('flags')};showTriage();return}
  const au=e.target.closest('form[data-auth]');if(au){e.preventDefault();doAuth(au,e.submitter&&e.submitter.value==='up'?'up':'in');return}
  const cf=e.target.closest('form[data-sbcfg]');if(cf){e.preventDefault();const url=String(new FormData(cf).get('url')||'').trim().replace(/\/+$/,'');if(!/^https:\/\//.test(url)){toast('La URL debe empezar por https://');return}try{localStorage.setItem('forja.sburl',url)}catch(err){}sbInit();render();toast('Conexión guardada. Crea tu cuenta o entra.');return}
 const f=e.target.closest('form[data-form]');if(!f)return;e.preventDefault();const pr=readProfile(f);

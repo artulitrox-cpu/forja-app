@@ -3,7 +3,7 @@
 // las librerías y fuentes externas se sirven desde la caché. Supabase nunca se cachea.
 const CACHE = 'forja-v2';
 const CORE = ['./', 'index.html', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png', 'apple-touch-icon.png',
-  'js/catalog.js', 'js/figures.js', 'js/plan.js', 'js/injuries.js', 'js/sync.js', 'js/timer.js'];
+  'js/catalog.js', 'js/figures.js', 'js/plan.js', 'js/injuries.js', 'js/bodymap.js', 'js/sync.js', 'js/timer.js'];
 const CDN = ['cdn.tailwindcss.com', 'cdn.jsdelivr.net', 'fonts.googleapis.com', 'fonts.gstatic.com'];
 
 self.addEventListener('install', e => {
