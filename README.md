@@ -27,3 +27,12 @@ La sincronización ocurre así:
 - Los datos se descargan al iniciar sesión, al volver a la pestaña y cada 90 s.
 - Si hay conflicto, gana la versión más reciente de cada perfil.
 - Sin conexión, la app sigue funcionando en local y sube los cambios al reconectar.
+
+## 4. Instalar en el teléfono
+
+Forja es una app web instalable (PWA): queda un icono en la pantalla de inicio y se abre a pantalla completa, incluso sin conexión.
+
+- **Android (Chrome o Samsung Internet):** abre la URL y pulsa *Instalar* en la tarjeta "Instala Forja". Si no aparece, usa el menú del navegador > *Añadir a pantalla de inicio* / *Instalar app*.
+- **iPhone (Safari):** botón *Compartir* > *Añadir a pantalla de inicio*.
+
+Archivos: `manifest.webmanifest` (nombre, colores, iconos), `sw.js` (caché para abrir sin conexión) e `icon-*.png`. Si cambias `sw.js`, sube el número de `CACHE` (`forja-v1` → `forja-v2`) para que los teléfonos descarguen la versión nueva.

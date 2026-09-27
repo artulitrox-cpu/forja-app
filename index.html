@@ -4,6 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#131A26">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <title>Forja: tu plan de gimnasio</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -450,6 +453,7 @@ function vOnboard(){
   <div class="brand">For<b>ja</b></div>
   <h1 class="hero mt-6">Entrena con un plan que aprende de ti.</h1>
   <p class="text-dim mt-4 text-lg">Cuéntanos tu punto de partida. Calculamos tu IMC y tu metabolismo basal, elegimos días, series y pesos iniciales, y los ajustamos después de cada sesión.</p>
+  ${installCard()}
   <div class="card p-5 mt-8">${profileForm(null,'new')}</div>
   ${sbUrl()?`<div class="card p-5 mt-6"><h2 class="h2">¿Ya usas Forja en otro dispositivo?</h2><p class="text-dim text-sm mt-2">Entra con tu cuenta para traer tus datos.</p><div class="mt-4">${syncCard(true)}</div></div>`:''}
   ${others?`<button data-a="tab" data-v="profile" class="btn-text mt-4">Volver a mi perfil</button>`:''}
@@ -484,7 +488,7 @@ function estCard(u,day){const e=estimate(u,day),pc=v=>(v/e.total*100).toFixed(1)
   <div class="flex h-3 rounded-full overflow-hidden mt-4" role="img" aria-label="Reparto del tiempo: calentamiento ${m(e.warm)} min, ejecución ${m(e.work)} min, descanso ${m(e.rest)} min"><span style="width:${pc(e.warm)};background:var(--dim)"></span><span style="width:${pc(e.work)};background:var(--accent)"></span><span style="width:${pc(e.rest)};background:var(--normal)"></span></div>
   <div class="grid grid-cols-3 gap-2 mt-3 text-sm"><div><span class="dot" style="background:var(--dim)"></span> Calentamiento<br><b>${m(e.warm)} min</b></div><div><span class="dot" style="background:var(--accent)"></span> Ejecución<br><b>${m(e.work)} min</b> <span class="text-dim">(${e.sets} × 45 s)</span></div><div><span class="dot" style="background:var(--normal)"></span> Descanso<br><b>${m(e.rest)} min</b></div></div></div>`}
 function vHome(){const u=U(),pl=u.plan,di=u.active?u.active.dayIdx:u.next%pl.days.length,day=pl.days[di];
- return `${profileSummary(u)}${banners(u)}${cycleCard(u)}<section class="pt-6">
+ return `${profileSummary(u)}${banners(u)}${installCard()}${cycleCard(u)}<section class="pt-6">
   <p class="text-dim text-lg">Hola, ${esc(u.profile.name)}. ${u.active?'Tienes una sesión a medias:':'Hoy toca'}</p>
   <h1 class="hero">${esc(day.name)}</h1>
   <p class="text-dim mt-2">${esc(day.focus)}. ${day.items.length} ejercicios.</p>
@@ -578,6 +582,7 @@ function vProfile(){const u=U(),ids=Object.keys(S.users);
  <section class="card p-5 mt-4"><h2 class="h2">Cómo ajustamos tu plan</h2><ul class="mt-3 flex flex-col gap-2">${adjNotes(u.profile).map(n=>`<li class="flex gap-2"><span class="dot d-ok mt-2 flex-none"></span><span>${esc(n)}</span></li>`).join('')}</ul></section>
  <section class="card p-5 mt-4">${profileForm(u.profile,'edit')}</section>
  <section class="card p-5 mt-6"><h2 class="h2">Cuenta y sincronización</h2><div class="mt-3">${syncCard()}</div></section>
+ ${installCard()}
  <section class="mt-6"><h2 class="h2">Usuarios en este dispositivo</h2><div class="card mt-3 divide-y divide-[var(--line)]">${ids.map(id=>{const x=S.users[id];return `<div class="flex items-center gap-3 px-4 py-3"><span class="avatar">${esc(x.profile.name[0].toUpperCase())}</span><span class="flex-1 min-w-0"><span class="block font-semibold truncate">${esc(x.profile.name)}</span><span class="block text-sm text-dim">${LEVELS[x.profile.level]}, ${x.history.length} sesiones</span></span>${id===S.activeUser?'<span class="chip chip-a">Activo</span>':`<button class="btn-ghost" data-a="switchuser" data-id="${id}">Usar</button>`}</div>`}).join('')}</div>
   <button data-a="adduser" class="btn-ghost w-full mt-3">Añadir usuario</button></section>
  <section class="mt-8 mb-4"><button data-a="deluser" class="btn-text btn-danger">Borrar a ${esc(u.profile.name)} y sus datos</button></section>`}
@@ -806,6 +811,13 @@ async function logout(){if(!sb)return;const wipe=confirm('¿Borrar también los 
  if(wipe){S={version:1,activeUser:null,users:{},deleted:{}};saveLocal();view='onboard'}render();toast('Sesión cerrada')}
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')pull()});
 setInterval(()=>{if(sbUser&&document.visibilityState==='visible')pull()},90000);
+/* ============ Instalar app (PWA) ============ */
+let installEvt=null;
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();installEvt=e;softRender()});
+window.addEventListener('appinstalled',()=>{installEvt=null;softRender();toast('Forja instalada. Ya la tienes en tu pantalla de inicio.')});
+function installCard(){return installEvt?`<section class="card p-5 mt-4 flex items-center gap-4"><img src="icon-192.png" alt="" width="48" height="48" style="border-radius:12px;flex:none"><div class="flex-1 min-w-0"><h2 class="h2">Instala Forja</h2><p class="text-sm text-dim">Ábrela desde tu pantalla de inicio, a pantalla completa.</p></div><button class="btn-ghost" data-a="install">Instalar</button></section>`:''}
+A.install=async()=>{if(!installEvt)return;const ev=installEvt;installEvt=null;ev.prompt();try{await ev.userChoice}catch(e){}render()};
+if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
 sbInit();
 render();
 </script>
