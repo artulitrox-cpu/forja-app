@@ -1,0 +1,22 @@
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell.exe",
+            "args": [
+              "-NoProfile",
+              "-ExecutionPolicy",
+              "Bypass",
+              "-File",
+              "C:\\Claude Code\\forja-app\\.claude\\hooks\\auto-backup.ps1"
+            ],
+            "timeout": 60
+          }
+        ]
+      }
+    ]
+  }
+}
