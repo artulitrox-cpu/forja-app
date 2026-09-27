@@ -137,7 +137,8 @@ function loadTxt(ex,g,pr){if(ex.eq==='body')return `objetivo ${g.r} ${unit(ex)}`
 const WARM=480,WORK=45;
 /* Tiempo estimado: 8 min calentamiento + series×45 s + series×descanso */
 function estimate(u,day){let sets=0,rest=0;day.items.forEach(it=>{const p=presc(X(it.ex),u.profile);sets+=p.sets;rest+=p.sets*p.rest});return {sets,warm:WARM,work:sets*WORK,rest,total:WARM+sets*WORK+rest}}
-const estMin=(u,day)=>Math.round(estimate(u,day).total/60);
+// Minutos de la parte de fuerza de una plantilla (sin movilidad, cardio ni estiramientos).
+const estMin=(u,day)=>{const e=estimate(u,day);return Math.round((e.work+e.rest)/60)};
 
 /* ============ Semana: reparto de sesiones ============ */
 const DAY_MS=864e5;

@@ -1,6 +1,27 @@
 # Forja: app de entrenamiento
 
-App web de un solo archivo (`index.html`). Guarda los datos en el navegador y, si inicias sesión, los sincroniza con Supabase para verlos en varios dispositivos.
+App web sin compilación (`index.html` + `js/*.js`). Guarda los datos en el navegador y, si inicias sesión, los sincroniza con Supabase para verlos en varios dispositivos.
+
+## Qué hace
+
+- **Plan semanal por objetivo:** reparte fuerza, cardio suave (LISS) y HIIT entre los días que puedes ir al gimnasio, dentro de tu tiempo máximo por sesión. Cada semana se puede editar en *Plan > Esta semana*.
+- **Sesión por bloques:** movilidad → fuerza → cardio/HIIT → estiramientos, con temporizador guiado a pantalla completa.
+- **Lesiones y Recuperación:** eliges el músculo sobre la figura, respondes un triaje rápido y la app sustituye u omite los ejercicios afectados hasta que te das de alta. Es una estimación orientativa, no un diagnóstico.
+
+## Código
+
+| Archivo | Contenido |
+|---|---|
+| `index.html` | estilos, vistas y eventos |
+| `js/catalog.js` | ejercicios, máquinas de cardio, HIIT, movilidad y estiramientos |
+| `js/plan.js` | generador del plan, reparto semanal, acondicionamiento, límite de tiempo, migración de datos |
+| `js/injuries.js` | triaje y bloqueo/sustitución por lesiones |
+| `js/bodymap.js` | figura anatómica SVG |
+| `js/timer.js` | temporizadores y pantalla encendida |
+| `js/sync.js` | Supabase |
+| `js/figures.js` | figuras animadas de la técnica |
+
+Pruebas: `npm test` (Node 20 o superior, sin dependencias). Para probar los temporizadores rápido, abre la app con `?fast=1`.
 
 ## 1. Supabase
 
