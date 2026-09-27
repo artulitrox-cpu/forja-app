@@ -180,3 +180,4 @@ SE('s_glute','Figura 4','Glúteos'.split(','),60,'Tumbado, cruza un tobillo sobr
 SE('s_hipflex','Zancada baja','Flexores de cadera,Cuádriceps'.split(','),60,'Rodilla trasera en el suelo, adelanta la cadera. 30 s por lado.');
 SE('s_add','Mariposa','Aductores'.split(','),30,'Sentado, junta las plantas de los pies y deja caer las rodillas.');
 SE('s_calf','Estiramiento de gemelos en pared','Gemelos,Sóleo'.split(','),60,'Manos en la pared y una pierna atrás con el talón apoyado. 30 s por lado.');
+const MOBM=Object.fromEntries(MOB.map(m=>[m.id,m])),STRM=Object.fromEntries(STRETCH.map(x=>[x.id,x]));
