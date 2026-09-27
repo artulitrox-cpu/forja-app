@@ -264,14 +264,19 @@ function stretchFor(mus,short=false){const set=new Set(mus.flatMap(expandMus)),c
 
 /* ============ Sesión completa y límite de tiempo (spec §4) ============ */
 // Construye la sesión de una entrada de la semana: bloques, estimación y recorte al tiempo máximo.
-function buildSession(u,e,{ws=weekStart()}={}){const pr=u.profile,wi=u.cycle?wk(u,ws):null,kind=e.type==='cardio'?'cardio':'strength',short=(pr.sessionMin||60)<=45;
+function buildSession(u,e,{ws=weekStart(),now=Date.now()}={}){const pr=u.profile,wi=u.cycle?wk(u,ws):null,kind=e.type==='cardio'?'cardio':'strength',short=(pr.sessionMin||60)<=45;
  // Lesiones activas (js/injuries.js): se sustituyen u omiten ejercicios, máquina de cardio, movilidad y estiramientos.
  const map=typeof injuryMap==='function'?injuryMap(u):{},inj=Object.keys(map).length>0;
  let raw=kind==='strength'?e.tpl.items:[],omitted=[],notes=[],cond=e.cond?{...e.cond}:null;
  if(inj){const r=safeItems(u,raw,map);raw=r.items;omitted=r.omitted;notes=r.notes;
   if(cond){const c=safeCond(u,cond,map);cond=c.cond;if(c.note)notes.push(c.note)}}
+ // Fatiga de piernas por deporte reciente (js/activities.js): con fatiga alta, el HIIT pasa a cardio suave.
+ const legAdj=typeof legAdjust==='function'?legAdjust(u,now):{pct:0};
+ if(legAdj.pct>=15&&cond&&cond.kind!=='liss'){const g=FINISH_MIN[pr.goal]?pr.goal:'maint';
+  cond={kind:'liss',slot:cond.slot,machine:cond.machine,min:lissMin(u,cond.slot==='day'?CARDIO_DAY_MIN[g]:FINISH_MIN[g])};
+  notes.push(`HIIT cambiado a cardio suave por fatiga de piernas (${legAdj.sport}).`)}
  const s={kind,name:kind==='cardio'?'Cardio':e.tpl.name,focus:kind==='cardio'?'':e.tpl.focus,dayIdx:e.dayIdx??null,deload:!!(wi&&wi.deload),
-  items:raw.map(it=>({slot:it.slot,ex:it.ex,key:it.key,sub:it.sub,warn:it.warn,p:presc(X(it.ex),pr,wi)})),cond,omitted,notes};
+  items:raw.map(it=>({slot:it.slot,ex:it.ex,key:it.key,sub:it.sub,warn:it.warn,p:presc(X(it.ex),pr,wi)})),cond,omitted,notes,legAdj};
  if(s.cond)s.focus=condLabel(s.cond);
  s.mob=mobFor(s.items.map(it=>it.slot),kind,short);
  const mus=new Set();s.items.forEach(it=>X(it.ex).m.forEach(m=>mus.add(m)));if(s.cond&&CARDIO_M[s.cond.machine])CARDIO_M[s.cond.machine].mus.forEach(m=>mus.add(m));

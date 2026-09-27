@@ -6,6 +6,8 @@ App web sin compilación (`index.html` + `js/*.js`). Guarda los datos en el nave
 
 - **Plan semanal por objetivo:** reparte fuerza, cardio suave (LISS) y HIIT entre los días que puedes ir al gimnasio, dentro de tu tiempo máximo por sesión. Cada semana se puede editar en *Plan > Esta semana*.
 - **Sesión por bloques:** movilidad → fuerza → cardio/HIIT → estiramientos, con temporizador guiado a pantalla completa.
+- **Actividades y deportes extra:** registra fútbol, futsal, running, ciclismo, pádel u otros (Hoy > *Registrar actividad*). Calcula calorías y fatiga de piernas, ajusta el objetivo calórico del día y, tras un partido intenso, baja la carga de piernas del gimnasio (15 % o 10 %) durante 24–48 h.
+- **Pulsómetro Bluetooth:** en *Mi perfil* (Chrome en Android o escritorio). Muestra las pulsaciones durante la sesión y guarda la media y la máxima.
 - **Lesiones y Recuperación:** eliges el músculo sobre la figura, respondes un triaje rápido y la app sustituye u omite los ejercicios afectados hasta que te das de alta. Es una estimación orientativa, no un diagnóstico.
 
 ## Código
@@ -16,6 +18,8 @@ App web sin compilación (`index.html` + `js/*.js`). Guarda los datos en el nave
 | `js/catalog.js` | ejercicios, máquinas de cardio, HIIT, movilidad y estiramientos |
 | `js/plan.js` | generador del plan, reparto semanal, acondicionamiento, límite de tiempo, migración de datos |
 | `js/injuries.js` | triaje y bloqueo/sustitución por lesiones |
+| `js/activities.js` | deportes extra: calorías, fatiga de piernas, balance calórico |
+| `js/hr.js` | pulsómetro Bluetooth (Web Bluetooth, perfil Heart Rate) |
 | `js/bodymap.js` | figura anatómica SVG |
 | `js/timer.js` | temporizadores y pantalla encendida |
 | `js/sync.js` | Supabase |

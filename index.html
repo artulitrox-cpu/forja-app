@@ -135,6 +135,7 @@ details[open] .chev{transform:rotate(180deg)}
 .pain span{display:flex;justify-content:center;align-items:center;min-height:42px;border-radius:10px;background:var(--surface2);border:1px solid var(--line);font-weight:700;cursor:pointer}
 .pain input:checked+span{background:var(--hard);color:#230605;border-color:var(--hard)}
 .pain input:focus-visible+span{outline:3px solid var(--accent);outline-offset:2px}
+.rpe input:checked+span{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
 .check{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border-radius:12px;background:var(--surface2);border:1px solid var(--line);cursor:pointer}
 .check input{width:20px;height:20px;margin-top:2px;accent-color:var(--hard);flex:none}
 /* Sesión por bloques */
@@ -162,9 +163,11 @@ details[open] .chev{transform:rotate(180deg)}
 <script src="js/figures.js"></script>
 <script src="js/plan.js"></script>
 <script src="js/injuries.js"></script>
+<script src="js/activities.js"></script>
 <script src="js/bodymap.js"></script>
 <script src="js/sync.js"></script>
 <script src="js/timer.js"></script>
+<script src="js/hr.js"></script>
 <script>
 
 
@@ -218,7 +221,7 @@ function updClock(){const u=U();if(!u||!u.active||!$('#cd'))return;const c=clock
  $('#eta').textContent=hhmm(Date.now()+c.remPlan*1000)}
 
 /* ============ Usuarios ============ */
-function createUser(pr){if(!pr.avail||!pr.avail.length)pr.avail=AVAIL_DEFAULT[suggestDays(pr)];const id='u'+Date.now().toString(36);S.users[id]={id,v:2,profile:pr,plan:genPlan(pr),swaps:{},weeks:{},cprog:{},injuries:[],prog:{},history:[],next:0,active:null,created:Date.now(),cycle:{start:weekStart(),len:4,seen:-1,applied:0,nextBoost:1},checkins:[],checkinEvery:14};S.activeUser=id;save();view='home';render();toast(`Plan creado para ${pr.name}`)}
+function createUser(pr){if(!pr.avail||!pr.avail.length)pr.avail=AVAIL_DEFAULT[suggestDays(pr)];const id='u'+Date.now().toString(36);S.users[id]={id,v:2,profile:pr,plan:genPlan(pr),swaps:{},weeks:{},cprog:{},injuries:[],activities:[],prog:{},history:[],next:0,active:null,created:Date.now(),cycle:{start:weekStart(),len:4,seen:-1,applied:0,nextBoost:1},checkins:[],checkinEvery:14};S.activeUser=id;save();view='home';render();toast(`Plan creado para ${pr.name}`)}
 function readProfile(f){const fd=new FormData(f),n=(k,a,b)=>{const v=parseFloat(String(fd.get(k)||'').replace(',','.'));return v>=a&&v<=b?v:null};
  return {name:(fd.get('name')||'').toString().trim().slice(0,40)||'Atleta',age:n('age',14,99)&&Math.round(n('age',14,99)),sex:fd.get('sex')||'m',height:n('height',120,230),weight:n('weight',30,300),level:fd.get('level')||'beg',goal:fd.get('goal')||'hyp',avail:fd.getAll('avail').map(Number).filter(x=>x>=0&&x<=6),sessionMin:+fd.get('sessionMin')||60,equip:fd.get('equip')||'gym'}}
 
@@ -279,7 +282,7 @@ function profileSummary(u){const pr=u.profile;
  const b=bmi(pr),cat=bmiCat(b),col=cat==='Normal'?'var(--easy)':cat==='Obesidad'?'var(--hard)':'var(--accent)';
  return `<section class="card p-4 mt-4"><div class="flex items-center gap-3"><span class="avatar" style="width:44px;height:44px;font-size:1.2rem">${esc(pr.name[0].toUpperCase())}</span><span class="flex-1 min-w-0"><span class="block font-semibold truncate">${esc(pr.name)}</span><span class="block text-sm text-dim">${pr.age} años, ${pr.height} cm, ${nf(pr.weight)} kg</span></span><button class="btn-ghost" data-a="tab" data-v="profile">Editar</button></div>
   <div class="grid grid-cols-3 gap-2 mt-3"><div class="stat"><b>${nf(Math.round(b*10)/10)}</b><span>IMC, <span style="color:${col};font-weight:700">${cat.toLowerCase()}</span></span></div><div class="stat"><b>${nf(bmr(pr))}</b><span>TMB kcal/día</span></div><div class="stat"><b>${daysOf(pr)}</b><span>sesiones/semana</span></div></div>
-  <div class="flex flex-wrap gap-2 mt-3"><span class="chip chip-a">${GOALS[pr.goal]}</span><span class="chip">${LEVELS[pr.level]}</span><span class="chip">${nf(kcalTarget(pr))} kcal/día</span>${pr.bf>0?`<span class="chip">${nf(pr.bf)} % grasa</span>`:''}${pr.smm>0?`<span class="chip">${nf(pr.smm)} kg músculo</span>`:''}</div></section>`}
+  <div class="flex flex-wrap gap-2 mt-3"><span class="chip chip-a">${GOALS[pr.goal]}</span><span class="chip">${LEVELS[pr.level]}</span>${(()=>{const d=dayKcal(u);return d.total?`<span class="chip">${d.sport?`Hoy ${nf(d.total)} kcal (+${nf(d.sport)} deporte)`:`${nf(d.total)} kcal/día`}</span>`:''})()}${pr.bf>0?`<span class="chip">${nf(pr.bf)} % grasa</span>`:''}${pr.smm>0?`<span class="chip">${nf(pr.smm)} kg músculo</span>`:''}</div></section>`}
 /* ---- Avisos del dashboard ---- */
 function daysSince(t){return Math.floor((Date.now()-t)/864e5)}
 function cycleStrip(u){const wi=wk(u);return `<div class="flex gap-1 mt-2">${Array.from({length:wi.len},(_,i)=>`<span class="flex-1 h-2 rounded-full" style="background:${i+1<wi.week?'var(--dim)':i+1===wi.week?(wi.deload?'var(--normal)':'var(--accent)'):'var(--line)'}"></span>`).join('')}</div>`}
@@ -326,7 +329,7 @@ function vHome(){const u=U(),a=u.active;
   ${blockRow('Estiramientos',`${ss.stretch.length} estiramientos · ~${Math.round(ss.est.stretch/60)} min`,'body')}</div></section>`;
  let body=`<h1 class="hero">${esc(ss.name)}</h1><p class="text-dim mt-2">${esc(ss.focus)}${ss.items.length?`. ${ss.items.length} ejercicios`:''}.</p>${estCard(u,ss)}${btn}</section>
   <section class="mt-8"><h2 class="h2">Esta semana</h2><div class="mt-3">${weekStrip(u)}</div></section>${blocks}`;
- return `${profileSummary(u)}${banners(u)}${injBanners(u)}${installCard()}${cycleCard(u)}<section class="pt-6">${head}${body}`}
+ return `${profileSummary(u)}${banners(u)}${injBanners(u)}${actCard(u,ss)}${installCard()}${cycleCard(u)}<section class="pt-6">${head}${body}`}
 function weekCard(u){const ws=weekStart(),k=weekKey(ws),days=weekDaysFor(u,ws),custom=!!(u.weeks&&u.weeks[k]),s=weekSchedule(u,ws);
  return `<section class="card p-5 mt-5"><div class="flex items-baseline justify-between gap-2"><h2 class="h2">Esta semana</h2><span class="chip ${custom?'chip-a':''}">${custom?'Editada':'Habitual'}</span></div>
   <p class="text-dim text-sm mt-2">Marca los días que irás al gimnasio esta semana. Tu semana habitual no cambia.</p>
@@ -404,7 +407,7 @@ function saveCheckin(f){const u=U(),pr=u.profile,fd=new FormData(f),c={date:new 
  const row=(l,a,b,dp)=>`<div class="flex justify-between py-2"><span>${l}</span><span>${a==null?'—':nf(Math.round(a*dp)/dp)} <span class="text-dim">a</span> <b>${b==null?'—':nf(Math.round(b*dp)/dp)}</b></span></div>`;
  modal(`<h2 class="font-display text-3xl font-extrabold leading-none">Check-in guardado</h2><div class="card p-4 mt-4 divide-y divide-[var(--line)]">${row('IMC',before.bmi,after.bmi,10)}${row('TMB (kcal/día)',before.bmr,after.bmr,1)}${row('Calorías objetivo',before.kcal,after.kcal,1)}</div>
  <h3 class="h2 text-xl mt-5">Ajustes automáticos</h3><ul class="mt-2 flex flex-col gap-2">${notes.map(n=>`<li class="flex gap-2"><span class="dot d-easy mt-2 flex-none"></span><span>${esc(n)}</span></li>`).join('')}</ul><p class="hint">TMB con ${bmrFormula(pr)}.</p><button class="btn-primary w-full mt-5" data-a="close">Listo</button>`,'Check-in guardado')}
-function vHistory(){const u=U(),H=u.history,ws=weekStart(),cMin=H.filter(h=>h.date>=ws).reduce((t,h)=>t+(h.cardioMin||0),0),cTgt=CARDIO_TARGET[u.profile.goal]||150;
+function vHistory(){const u=U(),H=u.history,ws=weekStart(),cMin=H.filter(h=>h.date>=ws).reduce((t,h)=>t+(h.cardioMin||0),0)+(u.activities||[]).filter(a=>a.date>=ws).reduce((t,a)=>t+a.min,0),cTgt=CARDIO_TARGET[u.profile.goal]||150;
  const week=H.filter(h=>h.date>=ws).length,vol=H.reduce((a,h)=>a+(h.vol||0),0);
  const last=H.slice(0,10).reverse(),mx=Math.max(1,...last.map(h=>h.sets||0));
  const W=320,bw=last.length?Math.min(28,W/last.length*.6):0;
@@ -412,15 +415,17 @@ function vHistory(){const u=U(),H=u.history,ws=weekStart(),cMin=H.filter(h=>h.da
  const loads=Object.entries(u.prog).map(([id,g])=>({ex:X(id),g})).filter(o=>o.ex&&(o.g.w||u.history.some(h=>h.items.some(i=>i.ex===o.ex.id))));
  return `<section class="pt-6"><h1 class="h1">Progreso</h1></section>
  <section class="grid grid-cols-3 gap-2 mt-4"><div class="stat"><b>${H.length}</b><span>sesiones</span></div><div class="stat"><b>${week}/${weekSchedule(u).filter(e=>e.type!=='rest').length}</b><span>esta semana</span></div><div class="stat"><b>${vol>=1000?fmtKg(Math.round(vol/100)/10)+' t':Math.round(vol)+' kg'}</b><span>volumen total</span></div></section>
- <section class="card p-4 mt-4"><div class="flex items-baseline justify-between"><h2 class="h2">Cardio esta semana</h2><span class="font-semibold">${cMin} / ${cTgt} min</span></div><div class="h-3 rounded-full mt-3" style="background:var(--line)"><div class="h-3 rounded-full" style="width:${Math.min(100,cMin/cTgt*100)}%;background:var(--normal)"></div></div><p class="hint">Objetivo semanal de tu plan (LISS, HIIT y días de cardio).</p></section>
+ <section class="card p-4 mt-4"><div class="flex items-baseline justify-between"><h2 class="h2">Cardio esta semana</h2><span class="font-semibold">${cMin} / ${cTgt} min</span></div><div class="h-3 rounded-full mt-3" style="background:var(--line)"><div class="h-3 rounded-full" style="width:${Math.min(100,cMin/cTgt*100)}%;background:var(--normal)"></div></div><p class="hint">Objetivo semanal de tu plan: LISS, HIIT, días de cardio y deportes registrados.</p></section>
+ ${vActivities(u)}
  ${H.length?`<section class="card p-4 mt-4"><h2 class="h2">Series por sesión</h2><div class="mt-3 scroll-x">${chart}</div></section>`:`<section class="card p-5 mt-4"><h2 class="h2">Aún no hay sesiones</h2><p class="text-dim mt-2">Completa tu primera sesión y aquí verás tu evolución.</p><button data-a="tab" data-v="home" class="btn-primary w-full mt-4">Ir a la sesión de hoy</button></section>`}
  ${loads.length?`<section class="mt-6"><h2 class="h2">Próxima carga</h2><div class="card mt-3 divide-y divide-[var(--line)]">${loads.map(o=>`<div class="flex items-center justify-between gap-3 px-4 py-3"><span class="font-semibold">${esc(o.ex.n)}</span><span class="text-dim whitespace-nowrap">${loadTxt(o.ex,o.g,u.profile)}</span></div>`).join('')}</div></section>`:''}
- ${H.length?`<section class="mt-6"><h2 class="h2">Historial</h2><div class="mt-3 flex flex-col gap-2">${H.map(h=>`<details class="card"><summary class="p-4 flex items-center gap-3"><span class="flex-1"><span class="block font-semibold">${esc(h.day)}</span><span class="block text-sm text-dim">${new Date(h.date).toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'short'})}, ${fmtDur(h.dur)}, ${h.sets} series</span></span><span class="chev text-dim">${ic('chev')}</span></summary><div class="px-4 pb-4 flex flex-col gap-3">${h.blocks&&h.blocks.cond?`<div><div class="font-semibold">${esc(condKindLbl(h.blocks.cond))}: ${esc((CARDIO_M[h.blocks.cond.machine]||{}).n||'')}</div><div class="text-sm mt-1 inline-flex items-center gap-1.5"><span class="dot d-${h.blocks.cond.rt}"></span>${h.blocks.cond.min} min</div></div>`:''}${h.items.map(it=>{const ex=X(it.ex);return ex?`<div><div class="font-semibold">${esc(ex.n)}</div><div class="flex flex-wrap gap-x-4 gap-y-1 mt-1 text-sm">${it.sets.map(s=>`<span class="inline-flex items-center gap-1.5"><span class="dot d-${s.rt}" title="${RT[s.rt]}"></span>${s.w?fmtKg(s.w)+' kg × ':''}${s.r} ${unit(ex)}</span>`).join('')}</div></div>`:''}).join('')}</div></details>`).join('')}</div></section>`:''}`}
+ ${H.length?`<section class="mt-6"><h2 class="h2">Historial</h2><div class="mt-3 flex flex-col gap-2">${H.map(h=>`<details class="card"><summary class="p-4 flex items-center gap-3"><span class="flex-1"><span class="block font-semibold">${esc(h.day)}</span><span class="block text-sm text-dim">${new Date(h.date).toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'short'})}, ${fmtDur(h.dur)}, ${h.sets} series${h.hr?`, ♥ ${h.hr.avg} ppm (máx. ${h.hr.max})`:''}</span></span><span class="chev text-dim">${ic('chev')}</span></summary><div class="px-4 pb-4 flex flex-col gap-3">${h.blocks&&h.blocks.cond?`<div><div class="font-semibold">${esc(condKindLbl(h.blocks.cond))}: ${esc((CARDIO_M[h.blocks.cond.machine]||{}).n||'')}</div><div class="text-sm mt-1 inline-flex items-center gap-1.5"><span class="dot d-${h.blocks.cond.rt}"></span>${h.blocks.cond.min} min</div></div>`:''}${h.items.map(it=>{const ex=X(it.ex);return ex?`<div><div class="font-semibold">${esc(ex.n)}</div><div class="flex flex-wrap gap-x-4 gap-y-1 mt-1 text-sm">${it.sets.map(s=>`<span class="inline-flex items-center gap-1.5"><span class="dot d-${s.rt}" title="${RT[s.rt]}"></span>${s.w?fmtKg(s.w)+' kg × ':''}${s.r} ${unit(ex)}</span>`).join('')}</div></div>`:''}).join('')}</div></details>`).join('')}</div></section>`:''}`}
 function vProfile(){const u=U(),ids=Object.keys(S.users);
  return `<section class="pt-6"><h1 class="h1">Mi perfil</h1><p class="text-dim mt-2">Cambiar estos datos regenera el plan. Tu historial y tus cargas se conservan.</p></section>
  <section class="card p-5 mt-4"><h2 class="h2">Cómo ajustamos tu plan</h2><ul class="mt-3 flex flex-col gap-2">${adjNotes(u.profile).map(n=>`<li class="flex gap-2"><span class="dot d-ok mt-2 flex-none"></span><span>${esc(n)}</span></li>`).join('')}</ul></section>
  <section class="card p-5 mt-4">${profileForm(u.profile,'edit')}</section>
  <section class="card p-5 mt-6"><h2 class="h2">Cuenta y sincronización</h2><div class="mt-3">${syncCard()}</div></section>
+ ${hrCard()}
  ${installCard()}
  <section class="mt-6"><h2 class="h2">Usuarios en este dispositivo</h2><div class="card mt-3 divide-y divide-[var(--line)]">${ids.map(id=>{const x=S.users[id];return `<div class="flex items-center gap-3 px-4 py-3"><span class="avatar">${esc(x.profile.name[0].toUpperCase())}</span><span class="flex-1 min-w-0"><span class="block font-semibold truncate">${esc(x.profile.name)}</span><span class="block text-sm text-dim">${LEVELS[x.profile.level]}, ${x.history.length} sesiones</span></span>${id===S.activeUser?'<span class="chip chip-a">Activo</span>':`<button class="btn-ghost" data-a="switchuser" data-id="${id}">Usar</button>`}</div>`}).join('')}</div>
   <button data-a="adduser" class="btn-ghost w-full mt-3">Añadir usuario</button></section>
@@ -437,7 +442,7 @@ function vSession(){const u=U(),a=u.active;normActive(a);const st=stagesOf(a);if
  const steps=st.length>1?`<div class="steps mt-3">${st.map(x=>`<button class="step ${x===a.stage?'cur':stageDone(a,x)?'done':''}" data-a="stage" data-v="${x}" ${x===a.stage?'aria-current="step"':''}>${x==='cond'&&a.cond.kind!=='liss'?'HIIT':STAGE_LBL[x]}</button>`).join('')}</div>`:'';
  const body=a.stage==='mob'?vStageList(a,'mob'):a.stage==='stretch'?vStageList(a,'stretch'):a.stage==='cond'?vStageCond(u,a):vStageStr(u,a);
  return `<main class="max-w-xl mx-auto px-4 pb-10">
-  <div class="flex items-center justify-between pt-3 gap-2"><button data-a="pause" class="btn-text">Salir</button><div class="text-center"><div class="font-display text-2xl font-bold leading-none">${esc(activeName(u,a))}</div><div class="text-sm text-dim mt-1 tabular-nums" id="elapsed">${fmtDur(Date.now()-a.start)}</div></div><button data-a="finish" class="btn-text" style="color:var(--accent)">Terminar</button></div>
+  <div class="flex items-center justify-between pt-3 gap-2"><button data-a="pause" class="btn-text">Salir</button><div class="text-center"><div class="font-display text-2xl font-bold leading-none">${esc(activeName(u,a))}</div><div class="text-sm text-dim mt-1 tabular-nums"><span id="elapsed">${fmtDur(Date.now()-a.start)}</span>${HR.state==='on'?` · <span id="hrb" style="color:var(--hard)">♥ ${HR.bpm||'--'} ppm</span>`:''}</div></div><button data-a="finish" class="btn-text" style="color:var(--accent)">Terminar</button></div>
   <section class="card p-3 mt-3">
    <div class="grid grid-cols-3 gap-2 text-center"><div><div id="cd" class="font-display text-3xl font-extrabold leading-none tabular-nums">--:--</div><div id="cd-l" class="text-xs text-dim mt-1">quedan (estimado)</div></div><div><div id="pct" class="font-display text-3xl font-extrabold leading-none tabular-nums">0 %</div><div class="text-xs text-dim mt-1">plan completado</div></div><div><div id="pace" class="font-display text-3xl font-extrabold leading-none tabular-nums">En hora</div><div id="pace-l" class="text-xs text-dim mt-1">ritmo</div></div></div>
    <div class="mt-3 text-xs text-dim flex justify-between"><span>Tiempo transcurrido</span><span>Fin previsto: <b id="eta" class="text-fg">--:--</b></span></div><div class="h-2 rounded-full mt-1" style="background:var(--line)"><div id="tbar" class="h-2 rounded-full" style="width:0;background:var(--dim)"></div></div>
@@ -461,7 +466,7 @@ function vStageStr(u,a){const it=a.items[a.cur],ex=X(it.ex),p=it.p,cur=it.sets.f
  return `<div class="segs mt-3">${segs}</div>
   <section class="card p-4 mt-4">
    <div class="flex gap-4 items-start"><button class="fig-lg" data-a="info" data-ex="${ex.id}" data-s="1" data-i="${a.cur}" aria-label="Ver técnica">${animSvg(ex)}</button>
-    <div class="min-w-0 flex-1">${a.deload?'<span class="chip mb-2" style="border-color:var(--normal);color:var(--normal)">Semana de descarga: pesos al 85 %</span>':''}${it.sub?`<span class="chip mb-2" style="border-color:var(--accent);color:var(--accent)">Sustituye a ${esc(X(it.sub.from).n)} (molestia en ${esc(it.sub.mus)})</span>`:''}${it.warn?`<span class="chip mb-2" style="border-color:var(--accent);color:var(--accent)">Molestia leve en ${esc(it.warn)}</span>`:''}<p class="text-sm text-dim">Ejercicio ${a.cur+1} de ${a.items.length}</p><h1 class="font-display text-3xl font-extrabold leading-none mt-1">${esc(ex.n)}</h1><p class="text-sm text-dim mt-1">${esc(ex.m.join(', '))}</p>
+    <div class="min-w-0 flex-1">${a.deload?'<span class="chip mb-2" style="border-color:var(--normal);color:var(--normal)">Semana de descarga: pesos al 85 %</span>':''}${it.sub?`<span class="chip mb-2" style="border-color:var(--accent);color:var(--accent)">Sustituye a ${esc(X(it.sub.from).n)} (molestia en ${esc(it.sub.mus)})</span>`:''}${it.warn?`<span class="chip mb-2" style="border-color:var(--accent);color:var(--accent)">Molestia leve en ${esc(it.warn)}</span>`:''}${it.leg?`<span class="chip mb-2" style="border-color:var(--hard);color:var(--hard)">Piernas −${it.leg} % por fatiga de ${esc(a.legAdj?a.legAdj.sport:'deporte')}</span>`:''}<p class="text-sm text-dim">Ejercicio ${a.cur+1} de ${a.items.length}</p><h1 class="font-display text-3xl font-extrabold leading-none mt-1">${esc(ex.n)}</h1><p class="text-sm text-dim mt-1">${esc(ex.m.join(', '))}</p>
      <button data-a="swap" data-s="1" data-i="${a.cur}" class="btn-ghost mt-3">${ic('swap',18)}Cambiar ejercicio</button></div></div>
    <div class="tip mt-4 text-sm"><b>${presTxt(p,ex)}</b> a RPE ${String(p.rpe).replace('.',',')}: ${rirTxt(p.rpe)}. Descanso ${p.rest} s.${!body&&!(u.prog[ex.id]&&u.prog[ex.id].w)?(startW(ex,u.profile)?' Peso sugerido según tu perfil: ajústalo si la primera serie no encaja con ese RPE.':' Primera vez: elige un peso con el que llegues al rango con ese margen.'):''}</div>
    <div class="flex flex-col gap-2 mt-4">${rows}</div>
@@ -540,6 +545,56 @@ function injBanners(u){if(typeof activeInjuries!=='function')return '';const act
  h+=`<section class="card p-4 mt-3 flex gap-3 items-center" style="border-color:var(--hard)"><span style="color:var(--hard)">${ic('cross')}</span><span class="flex-1"><b class="block">${act.length===1?`Molestia activa en ${esc(act[0].muscle)}`:`Tienes ${act.length} molestias activas`}</b><span class="block text-sm text-dim">${aff.size} ${aff.size===1?'ejercicio adaptado':'ejercicios adaptados'} en tu plan.</span></span><button class="btn-ghost" data-a="tab" data-v="injuries">Ver</button></section>`;
  return h}
 
+/* ============ Actividades y deportes extra ============ */
+const localInput=t=>new Date(t-new Date(t).getTimezoneOffset()*6e4).toISOString().slice(0,16);
+const FAT_COL={low:'var(--easy)',moderate:'var(--accent)',high:'var(--hard)'};
+function actLine(a){return `${esc(sportName(a))} · ${a.min} min · RPE ${a.rpe}${a.km?` · ${nf(a.km)} km`:''}`}
+function actRow(a,del){return `<div class="flex items-center gap-3 p-3 rounded-2xl" style="background:var(--surface2)"><span class="dot flex-none" style="background:${FAT_COL[a.level]}" title="Fatiga de piernas ${FATIGUE_LBL[a.level].toLowerCase()}"></span><span class="flex-1 min-w-0"><span class="block font-semibold truncate">${actLine(a)}</span><span class="block text-sm text-dim">${esc(sportType(a).n)} · ${new Date(a.date).toLocaleDateString('es-ES',{weekday:'short',day:'numeric',month:'short'})} ${hhmm(a.date)} · ${nf(a.kcal)} kcal · fatiga ${FATIGUE_LBL[a.level].toLowerCase()}</span></span>${del?`<button class="btn-text btn-danger" data-a="actdel" data-id="${a.id}" aria-label="Borrar actividad">${ic('close',16)}</button>`:''}</div>`}
+// Tarjeta de Hoy: actividad de las últimas 48 h y recomendación para el gimnasio.
+function actCard(u,ss){const rec=recentActivities(u),adj=legAdjust(u),legs=ss&&ss.items.some(it=>LOWER_SLOTS.has(it.slot));
+ let tip='';
+ if(adj.pct)tip=legs?`<div class="tip mt-3 text-sm" style="border-left-color:var(--hard)"><b>${esc(adj.text)}</b> Los pesos sugeridos de pierna ya van al ${100-adj.pct} %.${adj.pct>=15?' El HIIT de hoy pasa a cardio suave.':''} <button class="btn-text" style="min-height:32px;padding:0 4px" data-a="actskip">No aplicar hoy</button></div>`
+  :`<div class="tip mt-3 text-sm">Fatiga de piernas por ${esc(adj.sport)}. Hoy no hay pierna: buen día para recuperar.</div>`;
+ else if(adj.skipped)tip=`<p class="text-sm text-dim mt-3">Ajuste por fatiga desactivado hoy. <button class="btn-text" style="min-height:32px;padding:0 4px" data-a="actunskip">Volver a aplicarlo</button></p>`;
+ return `<section class="card p-4 mt-3"><div class="flex items-center gap-3"><span class="flex-1"><b class="block">Actividad reciente</b><span class="block text-sm text-dim">${rec.length?'Deporte de las últimas 48 h':'¿Hiciste deporte fuera del gimnasio?'}</span></span><button class="btn-ghost" data-a="actopen">Registrar actividad</button></div>
+  ${rec.length?`<div class="flex flex-col gap-2 mt-3">${rec.map(a=>actRow(a,false)).join('')}</div>`:''}${tip}</section>`}
+function openActivity(d){d=Object.assign({sport:'futsal',min:60,rpe:7,date:Date.now()},d||{});const sp=SPORTS[d.sport]||SPORTS.other,type=sportType(d).id;
+ modal(`<h2 class="font-display text-3xl font-extrabold leading-none">Registrar actividad</h2><p class="text-dim mt-2">Cuestionario después del deporte. Calculamos calorías y fatiga de piernas.</p>
+ <form data-act class="flex flex-col gap-5 mt-5">
+  <div><span class="lbl">Deporte</span>${seg('sport',Object.fromEntries(Object.entries(SPORTS).map(([k,v])=>[k,v.n])),d.sport)}</div>
+  ${d.sport==='other'?`<div><label class="lbl" for="act-name">¿Qué deporte?</label><input id="act-name" name="name" class="field" maxlength="40" value="${esc(d.name||'')}" placeholder="Ej.: baloncesto, natación"></div>`:''}
+  <div><span class="lbl">${d.sport==='football'||d.sport==='futsal'?'Posición / tipo de juego':'Tipo de sesión'}</span>${seg('type',Object.fromEntries(sp.types.map(t=>[t.id,t.n])),type)}</div>
+  <div class="grid grid-cols-2 gap-3"><div><label class="lbl" for="act-min">Duración</label><div class="relative"><input id="act-min" name="min" type="number" inputmode="numeric" min="5" max="600" class="field pr-14" value="${d.min}" required><span class="absolute right-4 top-1/2 -translate-y-1/2 text-dim text-sm">min</span></div></div>
+   ${sp.km?`<div><label class="lbl" for="act-km">Distancia</label><div class="relative"><input id="act-km" name="km" type="number" inputmode="decimal" min="0" max="500" step=".1" class="field pr-12" value="${d.km||''}" placeholder="opcional"><span class="absolute right-4 top-1/2 -translate-y-1/2 text-dim text-sm">km</span></div></div>`:''}</div>
+  <div><span class="lbl">Esfuerzo percibido (RPE)</span><div class="pain rpe" role="radiogroup">${Array.from({length:10},(_,i)=>`<label><input type="radio" name="rpe" value="${i+1}" ${+d.rpe===i+1?'checked':''}><span>${i+1}</span></label>`).join('')}</div><p class="hint">1 = muy suave · 5 = moderado · 8 = muy duro · 10 = máximo.</p></div>
+  <div><label class="lbl" for="act-when">Cuándo</label><input id="act-when" name="when" type="datetime-local" class="field" value="${localInput(d.date)}" max="${localInput(Date.now())}" required></div>
+  <button class="btn-primary w-full" type="submit">Guardar actividad</button></form>`,'Registrar actividad')}
+function readActivity(f){const fd=new FormData(f),when=new Date(String(fd.get('when')||'')).getTime();
+ return {sport:fd.get('sport')||'other',type:fd.get('type')||'',name:String(fd.get('name')||'').trim(),min:Math.max(5,Math.min(600,Math.round(+fd.get('min')||0))),rpe:+fd.get('rpe')||5,km:parseFloat(String(fd.get('km')||'').replace(',','.'))||undefined,date:isNaN(when)?Date.now():Math.min(Date.now(),when)}}
+function showActivityResult(a){const u=U(),adj=legAdjust(u),d=dayKcal(u);
+ modal(`<p class="text-dim">${actLine(a)}</p><h2 class="font-display text-3xl font-extrabold leading-none mt-1">Actividad guardada</h2>
+ <div class="grid grid-cols-2 gap-2 mt-5"><div class="stat"><b>${nf(a.kcal)}</b><span>kcal estimadas</span></div><div class="stat"><b style="color:${FAT_COL[a.level]}">${FATIGUE_LBL[a.level]}</b><span>fatiga de piernas (${a.fatigue}/100)</span></div></div>
+ ${d.total&&dayKey(a.date)===dayKey(Date.now())?`<p class="mt-4">Tu objetivo de hoy sube a <b>${nf(d.total)} kcal</b> (+${nf(d.sport)} por deporte).</p>`:''}
+ <h3 class="h2 text-xl mt-5">En el gimnasio</h3><p class="mt-2">${adj.pct?esc(adj.text):'No hace falta ajustar la carga de piernas.'}</p>
+ ${u.profile.weight>0?'':'<p class="hint">Sin peso en tu perfil: calculado con 70 kg.</p>'}
+ <p class="hint">Calorías con MET orientativos del Compendium of Physical Activities, ajustados por tu esfuerzo.</p>
+ <button class="btn-primary w-full mt-5" data-a="close">Listo</button>`,'Actividad guardada')}
+function vActivities(u){const A_=u.activities||[],ws=weekStart(),wk_=A_.filter(a=>a.date>=ws),min=wk_.reduce((t,a)=>t+a.min,0),kc=wk_.reduce((t,a)=>t+a.kcal,0);
+ return `<section class="mt-6"><div class="flex items-center justify-between gap-2"><h2 class="h2">Registro de Actividades y Deportes Extra</h2></div>
+  <div class="grid grid-cols-2 gap-2 mt-3"><div class="stat"><b>${min}</b><span>min de deporte esta semana</span></div><div class="stat"><b>${nf(kc)}</b><span>kcal esta semana</span></div></div>
+  <button class="btn-ghost w-full mt-3" data-a="actopen">Registrar actividad</button>
+  ${A_.length?`<div class="flex flex-col gap-2 mt-3">${A_.slice(0,50).map(a=>actRow(a,true)).join('')}</div>`:'<p class="text-dim text-sm mt-3">Aún no has registrado deportes fuera del gimnasio.</p>'}</section>`}
+/* ---- Pulsómetro Bluetooth ---- */
+function hrCard(){const on=HR.state==='on';
+ return `<section class="card p-5 mt-6"><h2 class="h2">Pulsómetro Bluetooth</h2>
+  <p class="text-sm text-dim mt-2">Conecta una banda de pecho o un reloj que emita frecuencia cardíaca por Bluetooth. Durante la sesión verás tus pulsaciones y se guardarán la media y la máxima.</p>
+  <div class="flex items-center gap-3 mt-4"><span class="font-display text-4xl font-extrabold leading-none tabular-nums" id="hrv" style="color:${on?'var(--hard)':'var(--dim)'}">${on&&HR.bpm?HR.bpm:'--'}</span><span class="text-sm text-dim">ppm<br><span id="hrs">${{off:'Desconectado',connecting:'Conectando…',on:'Conectado'+(HR.device&&HR.device.name?': '+esc(HR.device.name):''),error:'Error'}[HR.state]}</span></span></div>
+  ${HR.err?`<p class="text-sm mt-2" style="color:var(--hard)">${esc(HR.err)}</p>`:''}
+  ${hrSupported()?(on?'<button class="btn-ghost w-full mt-4" data-a="hrdisconnect">Desconectar</button>':`<button class="btn-ghost w-full mt-4" data-a="hrconnect" ${HR.state==='connecting'?'disabled':''}>Conectar pulsómetro Bluetooth</button>`)
+   :'<p class="hint">Tu navegador no admite Web Bluetooth (por ejemplo, Safari en iPhone). Funciona en Chrome para Android y en Chrome o Edge de escritorio.</p>'}</section>`}
+onHr(()=>{const v=$('#hrv'),b=$('#hrb');if(v)v.textContent=HR.state==='on'&&HR.bpm?HR.bpm:'--';if(b)b.textContent=HR.bpm?`♥ ${HR.bpm} ppm`:'♥ --';
+ if(view==='profile'&&(!v||HR.state!=='on'))softRender()});
+
 /* ============ Modales ============ */
 function modal(html,label){$('#layer').innerHTML=`<div class="layer" data-a="close-bg"><div class="sheet" role="dialog" aria-modal="true" aria-label="${esc(label||'Detalle')}"><div class="flex justify-end -mt-1 -mr-2"><button class="btn-text" data-a="close" aria-label="Cerrar">${ic('close')}</button></div>${html}</div></div>`;ensureAnim();const b=$('#layer .sheet button, #layer .sheet a');b&&b.focus()}
 function closeModal(){$('#layer').innerHTML=''}
@@ -576,7 +631,7 @@ function mkItem(u,exId,p0){const ex=X(exId),p=p0||presc(ex,u.profile),g=prog(u,e
 function startSession(e){const u=U();if(!u.active){if(!e||(e.type!=='cardio'&&!e.tpl))return;
  const s=buildSession(u,e);
  u.active={kind:s.kind,dayIdx:s.dayIdx,name:s.name,focus:s.focus,start:Date.now(),stage:'mob',cur:0,
-  items:s.items.map(it=>({...mkItem(u,it.ex,it.p),sub:it.sub,warn:it.warn})),cond:s.cond?{...s.cond,done:false,rt:null}:null,
+  items:s.items.map(it=>{const m=mkItem(u,it.ex,it.p),ex=X(it.ex);if(s.legAdj&&s.legAdj.pct&&LOWER_SLOTS.has(ex.slot))m.sets.forEach(x=>{x.w=legScaledWeight(ex,x.w,s.legAdj)});return {...m,sub:it.sub,warn:it.warn,leg:s.legAdj&&s.legAdj.pct&&LOWER_SLOTS.has(ex.slot)?s.legAdj.pct:0}}),legAdj:s.legAdj&&s.legAdj.pct?s.legAdj:null,cond:s.cond?{...s.cond,done:false,rt:null}:null,
   mob:{list:s.mob.map(m=>m.id),done:false},stretch:{list:s.stretch.map(x=>x.id),done:false},deload:s.deload,est:s.est.total,notes:s.notes};save()}
  view='session';render();scrollTo(0,0)}
 // Nombre de la sesión activa (las sesiones de la v1 solo guardaban dayIdx).
@@ -610,7 +665,7 @@ function finish(){const u=U(),a=u.active;normActive(a);seqStop(false);
   h.items.push({ex:it.ex,sets:done.map(({w,r,rt})=>({w,r,rt}))});changes.push({ex,...(a.deload?{note:'Sin cambios (descarga)',avg:0,next:loadTxt(ex,prog(u,ex,it.p),u.profile)}:progress(u,ex,it,done))})});
  const c=a.cond&&a.cond.done?a.cond:null,cNote=c?(a.deload?'Sin cambios (descarga)':condProgress(u,c,c.rt||'ok')):'';
  h.blocks={mob:!!a.mob.done,stretch:!!a.stretch.done,cond:c?{kind:c.kind,machine:c.machine,min:c.min,rt:c.rt||'ok'}:null};h.cardioMin=c?c.min:0;
- h.vol=vol;h.sets=sets;h.est=a.est||itemsEst(a);u.history.unshift(h);
+ h.vol=vol;h.sets=sets;h.est=a.est||itemsEst(a);const hr=typeof hrStats==='function'?hrStats(a.start):null;if(hr)h.hr=hr;u.history.unshift(h);
  if(h.kind==='strength'&&a.dayIdx!=null&&setsDone)u.next=(a.dayIdx+1)%u.plan.days.length;
  u.active=null;save();endTimer(false);view='home';render();scrollTo(0,0);
  const cm=c?CARDIO_M[c.machine]:null;
@@ -663,6 +718,12 @@ const A={
  injresolve:d=>{const i=resolveInjury(U(),d.id);save();render();if(i)toast(`${i.muscle}: ejercicios reactivados.`)},
  injdel:d=>{if(!confirm('¿Eliminar este registro de lesión?'))return;deleteInjury(U(),d.id);save();render()},
  injsnooze:d=>{const i=(U().injuries||[]).find(x=>x.id===d.id);if(i)i.reviewAt=Date.now()+864e5;save();render()},
+ actopen:()=>openActivity(),
+ actdel:d=>{if(!confirm('¿Borrar esta actividad?'))return;deleteActivity(U(),d.id);save();render()},
+ actskip:()=>{U().fatigueSkip=dayKey(Date.now());save();render();toast('Ajuste por fatiga desactivado hoy.')},
+ actunskip:()=>{delete U().fatigueSkip;save();render()},
+ hrconnect:async()=>{const ok=await hrConnect();render();if(ok)toast('Pulsómetro conectado')},
+ hrdisconnect:async()=>{await hrDisconnect();render()},
  sqpause:()=>seqPause(),sqadd:()=>seqAdd(15),sqskip:()=>seqNext(),sqexit:()=>seqStop(false),
  seenweek:()=>{const u=U();u.cycle.seen=wk(u).abs;save();render()},
  checkin:()=>openCheckin(),
@@ -682,6 +743,7 @@ const A={
 };
 document.addEventListener('click',e=>{const el=e.target.closest('[data-a]');if(!el)return;const fn=A[el.dataset.a];if(fn)fn(el.dataset,el,e)});
 document.addEventListener('submit',e=>{const ck=e.target.closest('form[data-ck]');if(ck){e.preventDefault();saveCheckin(ck);return}
+ const af=e.target.closest('form[data-act]');if(af){e.preventDefault();const u=U(),a=addActivity(u,readActivity(af));save();closeModal();render();showActivityResult(a);return}
  const ij=e.target.closest('form[data-inj]');if(ij){e.preventDefault();const fd=new FormData(ij);injDraft={muscle:ij.dataset.inj,pain:+fd.get('pain')||1,mob:+fd.get('mob')||0,infl:+fd.get('infl')||0,rest:+fd.get('rest')||0,flags:fd.getAll('flags')};showTriage();return}
  const au=e.target.closest('form[data-auth]');if(au){e.preventDefault();doAuth(au,e.submitter&&e.submitter.value==='up'?'up':'in');return}
  const cf=e.target.closest('form[data-sbcfg]');if(cf){e.preventDefault();const url=String(new FormData(cf).get('url')||'').trim().replace(/\/+$/,'');if(!/^https:\/\//.test(url)){toast('La URL debe empezar por https://');return}try{localStorage.setItem('forja.sburl',url)}catch(err){}sbInit();render();toast('Conexión guardada. Crea tu cuenta o entra.');return}
@@ -691,6 +753,7 @@ const f=e.target.closest('form[data-form]');if(!f)return;e.preventDefault();cons
 document.addEventListener('input',e=>{const el=e.target.closest('[data-in]');if(!el)return;const a=U()&&U().active;if(!a)return;const v=el.value.replace(',','.').trim();const n=v===''?null:parseFloat(v);if(v!==''&&isNaN(n))return;
  const s=a.items[a.cur].sets[+el.dataset.k];if(el.dataset.in==='w')s.w=n;else s.r=n==null?0:Math.round(n);saveSoon()});
 ['input','change'].forEach(t=>document.addEventListener(t,e=>{const f=e.target.closest&&e.target.closest('form[data-form]');if(f)updatePreview(f)}));
+document.addEventListener('change',e=>{const f=e.target.closest&&e.target.closest('form[data-act]');if(f&&e.target.name==='sport'){const d=readActivity(f);d.type='';openActivity(d)}});
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){if($('#layer').innerHTML)closeModal()}});
 setInterval(()=>{const el=$('#elapsed'),u=U();if(el&&u&&u.active)el.textContent=fmtDur(Date.now()-u.active.start);updClock()},1000);
 /* ============ Instalar app (PWA) ============ */
