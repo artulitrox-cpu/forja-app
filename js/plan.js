@@ -52,7 +52,9 @@ const stepOf=ex=>ex.eq==='db'?1:ex.iso?1:2.5;
 function checkCycle(u){const wi=wk(u),c=u.cycle;if(wi.cyc>c.applied){const b=c.nextBoost||1;
  if(b!==1){Object.entries(u.prog).forEach(([id,g])=>{const ex=X(id);if(ex&&g.w)g.w=Math.max(stepOf(ex),Math.round(g.w*b/stepOf(ex))*stepOf(ex))});u.profile.loadMod=(u.profile.loadMod||1)*b;
   c.boostMsg=`Cargas ${b>1?'subidas':'bajadas'} un ${nf(Math.abs(b-1)*100)} % por tu último check-in.`}else c.boostMsg='';
- c.applied=wi.cyc;c.nextBoost=1;save()}}
+ c.applied=wi.cyc;c.nextBoost=1;regenPlan(u);save()}}
+// Regenera el plan conservando los cambios de ejercicio del usuario y rotando accesorios por bloque.
+function regenPlan(u){u.swaps=u.swaps||{};u.plan=genPlan(u.profile,{swaps:u.swaps,cyc:u.cycle?wk(u).cyc:0});return u.plan}
 const WEEK={2:['Lun','Jue'],3:['Lun','Mié','Vie'],4:['Lun','Mar','Jue','Vie'],5:['Lun','Mar','Mié','Vie','Sáb'],6:['Lun','Mar','Mié','Jue','Vie','Sáb']};
 
 /* ============ Generador de planes ============ */
@@ -64,18 +66,39 @@ const TPL={
  fbB:{name:'Cuerpo completo B',focus:'Bisagra, tirón y zancada',slots:['hinge','incline_press','vertical_pull','lunge','triceps']},
  fbC:{name:'Cuerpo completo C',focus:'Pierna, hombro y espalda',slots:['squat','shoulder_press','horizontal_row','hamstring_curl','lateral']}
 };
-function pickEx(slot,equip,off){const list=EX.filter(e=>e.slot===slot&&ALLOW[equip].includes(e.eq));return list.length?list[off%list.length]:null}
-function genPlan(pr){
- const nd=daysOf(pr),ppl=pr.level!=='beg'&&nd>=4;
+// Accesorios extra al final de cada plantilla cuando el objetivo es ganar músculo (los primeros que quita el recorte por tiempo).
+const TPL_HYP={push:['chest_fly'],legs:['quad_iso','glute_iso'],fbA:['quad_iso'],fbB:['glute_iso'],fbC:['chest_fly']};
+// Ejercicios principales: se mantienen entre bloques para medir el progreso.
+const MAIN_SLOTS=new Set(['squat','hinge','chest_press','incline_press','shoulder_press','horizontal_row','vertical_pull']);
+// Preferencia de material por nivel (más alto = preferido). El avanzado distingue principales y accesorios.
+const LEVEL_PREF={beg:{machine:3,cable:3,db:2,bar:1,body:1},int:{machine:2,cable:2,db:3,bar:3,body:1},advMain:{machine:1,cable:1,db:2,bar:3,body:1},advAcc:{machine:3,cable:3,db:2,bar:1,body:1}};
+// 60 años o más, o IMC de 35 o más: sin carga axial alta ni impacto.
+const lowImpact=pr=>(pr.age||0)>=60||(bmi(pr)||0)>=35;
+function pickEx(slot,pr,{off=0,cyc=0,exclude=[]}={}){
+ let list=EX.filter(e=>e.slot===slot&&ALLOW[pr.equip||'gym'].includes(e.eq)&&!exclude.includes(e.id));
+ if(lowImpact(pr)){const safe=list.filter(e=>!e.spine&&!e.impact);if(safe.length)list=safe}
+ if(!list.length)return null;
+ const main=MAIN_SLOTS.has(slot),pref=pr.level==='adv'?LEVEL_PREF[main?'advMain':'advAcc']:LEVEL_PREF[pr.level]||LEVEL_PREF.beg;
+ const scored=list.map((e,i)=>({e,sc:pref[e.eq]||0,i})).sort((a,b)=>b.sc-a.sc||a.i-b.i);
+ const shift=off+(main?0:cyc),top=scored[0].sc;
+ let tier=scored.filter(x=>x.sc===top);
+ if(tier.length<2&&shift>0)tier=scored.filter(x=>x.sc>=top-1);
+ return tier[shift%tier.length].e}
+function genPlan(pr,{swaps={},cyc=0,split=null,nd=daysOf(pr)}={}){
+ const ppl=split?split==='ppl':pr.level!=='beg'&&nd>=4;
  const keys=ppl?['push','pull','legs']:['fbA','fbB','fbC'];
- const count={beg:4,int:5,adv:5}[pr.level];
+ const count={beg:4,int:5,adv:5}[pr.level]||4;
  const days=[];
- for(let i=0;i<nd;i++){
-  const k=keys[i%3],tpl=TPL[k],round=Math.floor(i/3),used={},items=[];
-  for(const sl of [...tpl.slots.slice(0,count),'core']){const off=(used[sl]||0)+(ppl?round:0);used[sl]=(used[sl]||0)+1;const ex=pickEx(sl,pr.equip,off);if(ex&&!items.some(x=>x.ex===ex.id))items.push({slot:sl,ex:ex.id})}
+ for(let i=0;i<Math.max(1,nd);i++){
+  const k=keys[i%3],tpl=TPL[k],round=Math.floor(i/3),tag=k+(ppl&&round?'B':''),used={},items=[];
+  const slots=[...tpl.slots.slice(0,count),...(pr.goal==='hyp'&&TPL_HYP[k]||[]),'core'];
+  slots.forEach((sl,pos)=>{const key=`${tag}:${sl}:${pos}`,off=(used[sl]||0)+(ppl?round:0);used[sl]=(used[sl]||0)+1;
+   const exclude=items.map(x=>x.ex),sw=swaps[key]&&X(swaps[key]);
+   const ex=sw&&!exclude.includes(sw.id)?sw:pickEx(sl,pr,{off,cyc,exclude});
+   if(ex)items.push({slot:sl,ex:ex.id,key})});
   days.push({key:k,name:ppl?`${tpl.name} ${round?'B':'A'}`:tpl.name,focus:tpl.focus,items});
  }
- return {split:ppl?'ppl':'fb',days,weekdays:WEEK[nd]};
+ return {split:ppl?'ppl':'fb',days,weekdays:WEEK[Math.max(2,Math.min(6,nd))]};
 }
 function presc(ex,pr,wi=curWeek()){
  const B={str:{c:[4,4,6,8,150],i:[3,8,10,8,90]},hyp:{c:[3,8,12,8,90],i:[3,10,15,8.5,60]},fat:{c:[3,10,12,7,60],i:[3,12,15,7,45]},maint:{c:[3,8,12,7.5,90],i:[2,10,15,7.5,60]},end:{c:[3,15,20,7,45],i:[2,15,20,7,30]}}[pr.goal];

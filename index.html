@@ -179,7 +179,7 @@ function updClock(){const u=U();if(!u||!u.active||!$('#cd'))return;const c=clock
  const w=$('#wcd');if(w){const r=WARM-c.el;w.textContent=r>0?fmtDur(r*1000):'Listo';if(r<=0&&!a._wb){a._wb=1;beep();toast('Calentamiento completado. Empieza la primera serie.')}}}
 
 /* ============ Usuarios ============ */
-function createUser(pr){const id='u'+Date.now().toString(36);S.users[id]={id,profile:pr,plan:genPlan(pr),prog:{},history:[],next:0,active:null,created:Date.now(),cycle:{start:weekStart(),len:4,seen:-1,applied:0,nextBoost:1},checkins:[],checkinEvery:14};S.activeUser=id;save();view='home';render();toast(`Plan creado para ${pr.name}`)}
+function createUser(pr){const id='u'+Date.now().toString(36);S.users[id]={id,profile:pr,plan:genPlan(pr),swaps:{},prog:{},history:[],next:0,active:null,created:Date.now(),cycle:{start:weekStart(),len:4,seen:-1,applied:0,nextBoost:1},checkins:[],checkinEvery:14};S.activeUser=id;save();view='home';render();toast(`Plan creado para ${pr.name}`)}
 function readProfile(f){const fd=new FormData(f),n=(k,a,b)=>{const v=parseFloat(String(fd.get(k)||'').replace(',','.'));return v>=a&&v<=b?v:null};const d=fd.get('days')||'auto';
  return {name:(fd.get('name')||'').toString().trim().slice(0,40)||'Atleta',age:n('age',14,99)&&Math.round(n('age',14,99)),sex:fd.get('sex')||'m',height:n('height',120,230),weight:n('weight',30,300),level:fd.get('level')||'beg',goal:fd.get('goal')||'hyp',days:d==='auto'?'auto':+d,equip:fd.get('equip')||'gym'}}
 
@@ -407,11 +407,13 @@ function openSwap(ctx){const u=U();swapCtx=ctx;let curId,slot;
  const allow=ALLOW[u.profile.equip],alts=EX.filter(e=>e.slot===slot).sort((a,b)=>allow.includes(b.eq)-allow.includes(a.eq));
  modal(`<h2 class="font-display text-3xl font-extrabold leading-none">Cambiar ejercicio</h2><p class="text-dim mt-2">Alternativas de ${SLOT_LABEL[slot]} que trabajan los mismos músculos.</p>
  <div class="flex flex-col gap-2 mt-4">${alts.map(e=>`<div class="alt ${e.id===curId?'is-cur':''}"><button class="row-main" data-a="pick" data-ex="${e.id}" ${e.id===curId?'aria-current="true"':''}>${mini(e)}<span class="min-w-0 flex-1"><span class="block font-semibold leading-tight">${esc(e.n)}${e.id===curId?' <span class="text-accent text-sm">(actual)</span>':''}</span><span class="block text-sm text-dim">${esc(e.m.join(', '))}</span><span class="block text-sm ${allow.includes(e.eq)?'text-dim':'text-hard'}">${EQ_LABEL[e.eq]}${allow.includes(e.eq)?'':': fuera de tu equipamiento'}</span></span></button><button class="btn-ghost" data-a="info" data-ex="${e.id}" data-from="swap" aria-label="Ver técnica de ${esc(e.n)}">Técnica</button></div>`).join('')}</div>`,'Cambiar ejercicio')}
+// Guarda el cambio de ejercicio en el plan y en u.swaps para que sobreviva a la regeneración.
+function setSwap(u,it,exId){it.ex=exId;if(it.key){u.swaps=u.swaps||{};u.swaps[it.key]=exId}}
 function pick(exId){const u=U(),c=swapCtx;if(!c)return;
  if(c.s){const a=u.active,old=a.items[c.i];if(old.ex===exId){closeModal();return}
   if(old.sets.some(s=>s.rt)&&!confirm('Perderás las series ya registradas de este ejercicio. ¿Cambiar igualmente?'))return;
-  a.items[c.i]=mkItem(u,exId);const dIt=u.plan.days[a.dayIdx].items.find(x=>x.ex===old.ex);if(dIt)dIt.ex=exId}
- else u.plan.days[c.d].items[c.i].ex=exId;
+  a.items[c.i]=mkItem(u,exId);const dIt=u.plan.days[a.dayIdx].items.find(x=>x.ex===old.ex);if(dIt)setSwap(u,dIt,exId)}
+ else setSwap(u,u.plan.days[c.d].items[c.i],exId);
  save();closeModal();render();toast(`Cambiado a ${X(exId).n}`)}
 
 /* ============ Sesión en vivo ============ */
@@ -507,7 +509,7 @@ document.addEventListener('submit',e=>{const ck=e.target.closest('form[data-ck]'
  const au=e.target.closest('form[data-auth]');if(au){e.preventDefault();doAuth(au,e.submitter&&e.submitter.value==='up'?'up':'in');return}
  const cf=e.target.closest('form[data-sbcfg]');if(cf){e.preventDefault();const url=String(new FormData(cf).get('url')||'').trim().replace(/\/+$/,'');if(!/^https:\/\//.test(url)){toast('La URL debe empezar por https://');return}try{localStorage.setItem('forja.sburl',url)}catch(err){}sbInit();render();toast('Conexión guardada. Crea tu cuenta o entra.');return}
 const f=e.target.closest('form[data-form]');if(!f)return;e.preventDefault();const pr=readProfile(f);
- if(f.dataset.form==='edit'){const u=U();if(u.active&&!confirm('Tienes una sesión a medias. Regenerar el plan la descartará. ¿Continuar?'))return;u.profile={...u.profile,...pr};u.plan=genPlan(u.profile);u.next=0;u.active=null;save();render();scrollTo(0,0);toast(`Plan regenerado: ${u.plan.days.length} días por semana`)}
+ if(f.dataset.form==='edit'){const u=U();if(u.active&&!confirm('Tienes una sesión a medias. Regenerar el plan la descartará. ¿Continuar?'))return;u.profile={...u.profile,...pr};regenPlan(u);u.next=0;u.active=null;save();render();scrollTo(0,0);toast(`Plan regenerado: ${u.plan.days.length} días por semana`)}
  else createUser(pr)});
 document.addEventListener('input',e=>{const el=e.target.closest('[data-in]');if(!el)return;const a=U()&&U().active;if(!a)return;const v=el.value.replace(',','.').trim();const n=v===''?null:parseFloat(v);if(v!==''&&isNaN(n))return;
  const s=a.items[a.cur].sets[+el.dataset.k];if(el.dataset.in==='w')s.w=n;else s.r=n==null?0:Math.round(n);saveSoon()});
