@@ -264,13 +264,20 @@ function stretchFor(mus,short=false){const set=new Set(mus.flatMap(expandMus)),c
 /* ============ Sesión completa y límite de tiempo (spec §4) ============ */
 // Construye la sesión de una entrada de la semana: bloques, estimación y recorte al tiempo máximo.
 function buildSession(u,e,{ws=weekStart()}={}){const pr=u.profile,wi=u.cycle?wk(u,ws):null,kind=e.type==='cardio'?'cardio':'strength',short=(pr.sessionMin||60)<=45;
+ // Lesiones activas (js/injuries.js): se sustituyen u omiten ejercicios, máquina de cardio, movilidad y estiramientos.
+ const map=typeof injuryMap==='function'?injuryMap(u):{},inj=Object.keys(map).length>0;
+ let raw=kind==='strength'?e.tpl.items:[],omitted=[],notes=[],cond=e.cond?{...e.cond}:null;
+ if(inj){const r=safeItems(u,raw,map);raw=r.items;omitted=r.omitted;notes=r.notes;
+  if(cond){const c=safeCond(u,cond,map);cond=c.cond;if(c.note)notes.push(c.note)}}
  const s={kind,name:kind==='cardio'?'Cardio':e.tpl.name,focus:kind==='cardio'?'':e.tpl.focus,dayIdx:e.dayIdx??null,deload:!!(wi&&wi.deload),
-  items:kind==='strength'?e.tpl.items.map(it=>({slot:it.slot,ex:it.ex,key:it.key,p:presc(X(it.ex),pr,wi)})):[],
-  cond:e.cond?{...e.cond}:null,notes:[]};
+  items:raw.map(it=>({slot:it.slot,ex:it.ex,key:it.key,sub:it.sub,warn:it.warn,p:presc(X(it.ex),pr,wi)})),cond,omitted,notes};
  if(s.cond)s.focus=condLabel(s.cond);
  s.mob=mobFor(s.items.map(it=>it.slot),kind,short);
  const mus=new Set();s.items.forEach(it=>X(it.ex).m.forEach(m=>mus.add(m)));if(s.cond&&CARDIO_M[s.cond.machine])CARDIO_M[s.cond.machine].mus.forEach(m=>mus.add(m));
  s.stretch=stretchFor([...mus],short);
+ if(inj){const fill=(list,pool,n)=>{for(const x of pool){if(list.length>=n)break;if(!list.includes(x))list.push(x)}return list};
+  s.mob=fill(safeMobility(s.mob,map),safeMobility(MOB.filter(m=>m.zone==='general'),map),3);
+  s.stretch=fill(safeStretch(s.stretch,map),safeStretch(STRETCH,map),3)}
  return fitSession(s,(pr.sessionMin||60)*60-(kind==='cardio'?600:0))}
 function condLabel(c){const m=CARDIO_M[c.machine];return `${c.kind==='liss'?'Cardio suave':c.kind==='mod'?'Intervalos moderados':'HIIT'}: ${m?m.n.toLowerCase():''}, ${c.min} min`}
 function estSession(s){const mob=s.mob.reduce((t,m)=>t+m.sec+10,0),str=s.items.reduce((t,it)=>t+it.p.sets*(WORK+it.p.rest),0),
