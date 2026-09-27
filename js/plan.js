@@ -4,7 +4,8 @@
 const rnd=x=>Math.round(x*4)/4;
 const fmtKg=w=>(Math.round(w*100)/100).toString().replace('.',',');
 function fmtDur(ms){const s=Math.max(0,Math.floor(ms/1000)),h=Math.floor(s/3600),m=Math.floor(s%3600/60),x=s%60;return h?`${h}:${String(m).padStart(2,'0')}:${String(x).padStart(2,'0')}`:`${m}:${String(x).padStart(2,'0')}`}
-function weekStart(){const d=new Date();d.setHours(0,0,0,0);d.setDate(d.getDate()-((d.getDay()+6)%7));return d.getTime()}
+function weekStartOf(ts){const d=new Date(ts);d.setHours(0,0,0,0);d.setDate(d.getDate()-((d.getDay()+6)%7));return d.getTime()}
+const weekStart=()=>weekStartOf(Date.now());
 const unit=ex=>ex.time?'s':'reps';
 function inc(ex){if(ex.eq==='body')return 0;if(ex.iso)return 1;if(ex.eq==='db')return 2;return LOWER.has(ex.slot)?5:2.5}
 /* ---- Biometría ---- */
@@ -58,7 +59,7 @@ function startW(ex,pr){if(!hasBio(pr)||ex.eq==='body')return null;const r=(RATIO
  const st=ex.eq==='db'?1:2.5;w=Math.max(st,Math.round(w/st)*st);if(ex.eq==='bar')w=Math.max(20,w);return w}
 /* ---- Periodización por mesociclos ---- */
 const WMS=7*864e5;
-function wk(u){const c=u.cycle;let abs=Math.round((weekStart()-c.start)/WMS);if(abs<0){c.start=weekStart();abs=0}
+function wk(u,ws=weekStart()){const c=u.cycle;let abs=Math.round((ws-c.start)/WMS);if(abs<0){c.start=ws;abs=0}
  const week=abs%c.len+1;return {abs,week,len:c.len,cyc:Math.floor(abs/c.len),deload:week===c.len}}
 const curWeek=()=>{const u=typeof U==='function'?U():null;return u&&u.cycle?wk(u):null};
 function rpeOffset(wi){if(!wi||wi.deload)return 0;const L=wi.len-1;return L>1?Math.round((-.5+(wi.week-1)/(L-1))*2)/2:0}
@@ -167,6 +168,7 @@ function weekSchedule(u,ws=weekStart()){
   else if(ci<cardioMax){const j=ci++;out.push({wd,type:'cardio',done:j<doneC.length,name:'Cardio'})}
   else out.push({wd,type:'rest',done:false,name:'Descanso'})});
  if(rest7)out.push({wd:6,type:'rest',done:false,name:'Descanso'});
+ assignConditioning(u,out,ws);
  return out}
 
 /* ============ Migración de datos v1 → v2 ============ */
@@ -191,3 +193,101 @@ function migrateUser(u){if(u.v>=2)return false;const pr=u.profile;
  u.updatedAt=Date.now();return true}
 // Solo se guardan las 8 semanas editadas más recientes.
 function pruneWeeks(u){const ks=Object.keys(u.weeks||{}).sort().reverse();ks.slice(8).forEach(k=>delete u.weeks[k])}
+
+/* ============ Acondicionamiento: LISS y HIIT (spec §3 y §5) ============ */
+const FINISH_MIN={fat:[10,20],hyp:[10,15],maint:[15,20]};
+const CARDIO_DAY_MIN={fat:[30,45],hyp:[25,30],maint:[30,40]};
+const HIIT_CAP={fat:2,maint:1,hyp:0};
+const CARDIO_TARGET={fat:150,maint:150,hyp:60};
+// Pulso orientativo para LISS: 60–70 % de la FC máxima (Tanaka: 208 − 0,7 × edad).
+function hrZone(pr){const a=+pr.age;if(!(a>0))return null;const max=Math.round(208-.7*a);return {lo:Math.round(max*.6),hi:Math.round(max*.7),max}}
+const LEG_MAIN=new Set(['squat','hinge']);
+const isLegTpl=tpl=>!!tpl&&tpl.items.some(it=>LEG_MAIN.has(it.slot));
+const lvlIdx=pr=>({beg:0,int:1,adv:2}[pr.level]??0);
+// Máquinas posibles: en gimnasio, las de cardio; en casa, cardio sin material. Bajo impacto si el perfil lo pide.
+function cardioPool(pr,{hiit=false}={}){let l=CARDIO.filter(c=>(pr.equip||'gym')==='gym'?c.eq==='machine':c.eq==='body');
+ if(lowImpact(pr))l=l.filter(c=>c.impact==='low');if(hiit)l=l.filter(c=>c.hiit);return l}
+function lissMin(u,[lo,hi]){const add=(u.cprog&&u.cprog.liss&&u.cprog.liss.add)||0;return Math.max(lo,Math.min(hi,lo+Math.round((hi-lo)*lvlIdx(u.profile)/2)+add))}
+function hiitProto(u){if(lowImpact(u.profile))return HIIT_MOD;const l=u.cprog&&u.cprog.hiit&&u.cprog.hiit.lvl;
+ return HIIT[Math.max(0,Math.min(HIIT.length-1,l??lvlIdx(u.profile)))]}
+const protoMin=(rounds,work,rest)=>Math.round((HIIT_WARM+HIIT_COOL+rounds*(work+rest))/60);
+// Rellena e.cond = {kind:'liss'|'hiit'|'mod', min, machine, proto?, rounds?, work?, rest?} en las entradas de la semana.
+function assignConditioning(u,sched,ws){const pr=u.profile,g=FINISH_MIN[pr.goal]?pr.goal:'maint',wi=u.cycle?wk(u,ws):{deload:false};
+ const weeksIn=Math.floor((ws-weekStartOf(u.created||ws))/WMS);
+ const cap=wi.deload||(pr.level==='beg'&&weeksIn<2)?0:HIIT_CAP[g];
+ const at=wd=>sched.find(x=>x.wd===wd);
+ const legNext=e=>{const n=at(e.wd+1);return !!n&&n.type==='strength'&&!n.done&&isLegTpl(n.tpl)};
+ const str=sched.filter(e=>e.type==='strength');
+ // Ganar músculo: 2 bloques tras sesiones sin pierna principal o, si no hay, las más cortas.
+ const fin=g==='hyp'?[...str].sort((a,b)=>(isLegTpl(a.tpl)-isLegTpl(b.tpl))||((a.tpl?a.tpl.items.length:0)-(b.tpl?b.tpl.items.length:0))).slice(0,2):str;
+ fin.forEach(e=>e.cond={slot:'finish'});
+ sched.filter(e=>e.type==='cardio').forEach(e=>e.cond={slot:'day'});
+ const all=sched.filter(e=>e.cond);
+ // Perder grasa: alterna LISS y HIIT. Mantenimiento: el HIIT va primero a un día de cardio.
+ const order=g==='maint'?[...all.filter(e=>e.cond.slot==='day'),...all.filter(e=>e.cond.slot!=='day')]:all;
+ let hiits=0;
+ order.forEach((e,i)=>{const want=g==='fat'?i%2===1:g==='maint';
+  if(want&&hiits<cap&&!legNext(e)){e.cond.kind='hiit';hiits++}else e.cond.kind='liss'});
+ // Perder grasa: si la alternancia no colocó ningún HIIT, se prueba en otro bloque que lo permita.
+ if(g==='fat'&&hiits<cap){const alt=order.find(e=>e.cond.kind==='liss'&&!legNext(e));if(alt&&!order.some(e=>e.cond.kind==='hiit')){alt.cond.kind='hiit';hiits++}}
+ const weekN=Math.floor(ws/WMS);let mi=0;
+ all.sort((a,b)=>a.wd-b.wd).forEach(e=>{const c=e.cond,isH=c.kind==='hiit',pool=cardioPool(pr,{hiit:isH});
+  if(!pool.length){delete e.cond;return}
+  c.machine=pool[(weekN+mi++)%pool.length].id;
+  if(isH){const p=hiitProto(u);if(p===HIIT_MOD)c.kind='mod';Object.assign(c,{proto:p.id,rounds:p.rounds,work:p.work,rest:p.rest,min:protoMin(p.rounds,p.work,p.rest)})}
+  else c.min=lissMin(u,c.slot==='day'?CARDIO_DAY_MIN[g]:FINISH_MIN[g]);
+  if(wi.deload)c.min=Math.max(8,Math.round(c.min*.6))})}
+// Progresión del acondicionamiento según la valoración. Devuelve la nota para el resumen.
+function condProgress(u,c,rt){u.cprog=u.cprog||{};
+ if(c.kind==='liss'){const g=u.cprog.liss=u.cprog.liss||{add:0};
+  if(rt==='easy'){if(g.add<10){g.add+=2;return '+2 min la próxima vez'}return 'Sube un poco la intensidad la próxima vez'}
+  if(rt==='hard'){g.add=Math.max(-6,g.add-2);return '−2 min la próxima vez'}return 'Se mantiene'}
+ if(c.kind==='hiit'){const g=u.cprog.hiit=u.cprog.hiit||{lvl:lvlIdx(u.profile)};
+  if(rt==='easy'&&g.lvl<HIIT.length-1){g.lvl++;return `Siguiente protocolo: ${HIIT[g.lvl].rounds} × ${HIIT[g.lvl].work} s / ${HIIT[g.lvl].rest} s`}
+  if(rt==='hard'&&g.lvl>0){g.lvl--;return `Protocolo más suave: ${HIIT[g.lvl].rounds} × ${HIIT[g.lvl].work} s / ${HIIT[g.lvl].rest} s`}return 'Se mantiene'}
+ return 'Se mantiene'}
+
+/* ============ Movilidad y estiramientos (spec §6) ============ */
+const LOWER_SLOTS=new Set([...LOWER,'quad_iso','glute_iso']);
+function mobFor(slots,kind,short=false){const low=slots.some(s=>LOWER_SLOTS.has(s)),up=slots.some(s=>!LOWER_SLOTS.has(s)&&s!=='core');
+ const zones=kind==='cardio'?['general','cadera','tobillo']:[...(low?['cadera','tobillo']:[]),...(up?['hombro','toracica']:[]),'general'];
+ const n=kind==='cardio'||short?4:6,lists=zones.map(z=>MOB.filter(m=>m.zone===z)),out=[];
+ for(let k=0;out.length<n&&lists.some(l=>l.length);k++){const l=lists[k%lists.length];if(l.length)out.push(l.shift())}
+ return out}
+const expandMus=m=>m==='Core'?['Abdomen','Oblicuos']:[m];
+function stretchFor(mus,short=false){const set=new Set(mus.flatMap(expandMus)),cap=short?4:6,maxSec=short?210:330;
+ const ranked=STRETCH.map((s,i)=>({s,sc:s.mus.filter(m=>set.has(m)).length,i})).filter(x=>x.sc>0).sort((a,b)=>b.sc-a.sc||a.i-b.i);
+ const out=[];let t=0;for(const {s} of ranked){if(out.length>=cap)break;if(t+s.sec>maxSec)continue;out.push(s);t+=s.sec}
+ for(const id of ['s_child','s_hipflex','s_pec','s_ham']){if(out.length>=3)break;const s=STRETCH.find(x=>x.id===id);if(!out.includes(s))out.push(s)}
+ return out}
+
+/* ============ Sesión completa y límite de tiempo (spec §4) ============ */
+// Construye la sesión de una entrada de la semana: bloques, estimación y recorte al tiempo máximo.
+function buildSession(u,e,{ws=weekStart()}={}){const pr=u.profile,wi=u.cycle?wk(u,ws):null,kind=e.type==='cardio'?'cardio':'strength',short=(pr.sessionMin||60)<=45;
+ const s={kind,name:kind==='cardio'?'Cardio':e.tpl.name,focus:kind==='cardio'?'':e.tpl.focus,dayIdx:e.dayIdx??null,deload:!!(wi&&wi.deload),
+  items:kind==='strength'?e.tpl.items.map(it=>({slot:it.slot,ex:it.ex,key:it.key,p:presc(X(it.ex),pr,wi)})):[],
+  cond:e.cond?{...e.cond}:null,notes:[]};
+ if(s.cond)s.focus=condLabel(s.cond);
+ s.mob=mobFor(s.items.map(it=>it.slot),kind,short);
+ const mus=new Set();s.items.forEach(it=>X(it.ex).m.forEach(m=>mus.add(m)));if(s.cond&&CARDIO_M[s.cond.machine])CARDIO_M[s.cond.machine].mus.forEach(m=>mus.add(m));
+ s.stretch=stretchFor([...mus],short);
+ return fitSession(s,(pr.sessionMin||60)*60-(kind==='cardio'?600:0))}
+function condLabel(c){const m=CARDIO_M[c.machine];return `${c.kind==='liss'?'Cardio suave':c.kind==='mod'?'Intervalos moderados':'HIIT'}: ${m?m.n.toLowerCase():''}, ${c.min} min`}
+function estSession(s){const mob=s.mob.reduce((t,m)=>t+m.sec+10,0),str=s.items.reduce((t,it)=>t+it.p.sets*(WORK+it.p.rest),0),
+ cond=s.cond?s.cond.min*60:0,stretch=s.stretch.reduce((t,x)=>t+x.sec,0);return {mob,str,cond,stretch,total:mob+str+cond+stretch}}
+function fitSession(s,limit){const over=()=>(s.est=estSession(s)).total>limit,note=t=>s.notes.push(t);
+ // 1) Acorta el acondicionamiento hasta un mínimo de 8 min.
+ if(over()&&s.cond){const c=s.cond,before=c.min;
+  while(over()&&c.min>8){if(c.rounds){if(c.rounds<=2)break;c.rounds--;c.min=Math.max(8,protoMin(c.rounds,c.work,c.rest))}else c.min--}
+  if(c.min<before)note(`Cardio acortado a ${c.min} min para caber en tu tiempo.`)}
+ const iso=it=>!MAIN_SLOTS.has(it.slot);
+ // Quita el último accesorio; el core, al final.
+ const removeOne=()=>{let i=-1;for(let k=s.items.length-1;k>=0;k--)if(iso(s.items[k])&&s.items[k].slot!=='core'){i=k;break}
+  if(i<0)i=s.items.findIndex(it=>it.slot==='core');if(i<0)return false;
+  const [r]=s.items.splice(i,1);note(`Sin ${X(r.ex).n} para caber en tu tiempo.`);return true};
+ // 2) Un aislamiento menos · 3) una serie menos en aislamientos · 4) descansos de 45 s · y vuelta a 2).
+ if(over())removeOne();
+ if(over()){let ch=0;s.items.forEach(it=>{if(iso(it)&&it.p.sets>2){it.p={...it.p,sets:it.p.sets-1};ch=1}});if(ch)note('Una serie menos en los aislamientos.')}
+ if(over()){let ch=0;s.items.forEach(it=>{if(iso(it)&&it.p.rest>45){it.p={...it.p,rest:45};ch=1}});if(ch)note('Descansos de 45 s en los aislamientos.')}
+ while(over()&&removeOne());
+ s.overTime=over();return s}

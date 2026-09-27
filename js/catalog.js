@@ -117,3 +117,66 @@ E('crunch_machine','Crunch en máquina','core','machine','crunch',['Abdomen'],[]
 E('woodchop','Leñador en polea','core','cable','facepull',['Oblicuos'],['Abdomen'],'De lado a la polea alta, lleva el agarre en diagonal hasta la cadera contraria girando el tronco.','Los brazos casi rectos: el giro sale del tronco.',{iso:1});
 const EXM=Object.fromEntries(EX.map(e=>[e.id,e]));
 const X=id=>EXM[id];
+
+/* ============ Cardio, HIIT, movilidad y estiramientos ============ */
+// eq: 'machine' (gimnasio) o 'body' (sin material). legs: carga de piernas. mus: músculos que trabaja (para lesiones).
+const CARDIO=[];
+function CE(id,n,eq,impact,hiit,legs,mus,d,set){CARDIO.push({id,n,eq,impact,hiit,legs,mus,d,set})}
+CE('treadmill_walk','Cinta: caminar inclinado','machine','low',false,'mid',['Gemelos','Glúteos','Cuádriceps'],'Camina rápido con la cinta inclinada entre un 6 y un 12 %.','Sin agarrarte a las barras: si lo necesitas, baja la inclinación.');
+CE('treadmill_run','Cinta: correr','machine','high',true,'high',['Cuádriceps','Gemelos','Isquiotibiales'],'Trote o carrera en la cinta. En HIIT, sube la velocidad en los intervalos fuertes.','Pisadas cortas y ligeras; usa la parada de emergencia con clip.');
+CE('bike','Bici estática','machine','low',true,'high',['Cuádriceps','Glúteos'],'Pedalea con resistencia moderada. En HIIT, sube la resistencia y la cadencia en los intervalos fuertes.','Sillín a la altura de la cadera: rodilla casi estirada abajo.');
+CE('recumbent','Bici reclinada','machine','low',false,'mid',['Cuádriceps','Glúteos'],'Pedalea sentado con la espalda apoyada a ritmo constante.','Ajusta el asiento para no bloquear la rodilla.');
+CE('airbike','Assault bike','machine','low',true,'mid',['Cuádriceps','Glúteos','Deltoide anterior','Dorsal ancho'],'Bici de aire con brazos: cuanto más fuerte empujas, más resistencia.','Empuja y tira con los brazos a la vez que pedaleas.');
+CE('rower','Remo','machine','low',true,'mid',['Dorsal ancho','Cuádriceps','Glúteos','Lumbares'],'Empuja con las piernas, inclina el tronco y termina tirando con los brazos.','Orden: piernas, tronco, brazos; y al volver, al revés.');
+CE('elliptical','Elíptica','machine','low',true,'mid',['Cuádriceps','Glúteos','Gemelos'],'Movimiento continuo sin impacto; empuja y tira de los brazos.','Pies apoyados todo el recorrido.');
+CE('stair','Escaladora','machine','low',false,'high',['Glúteos','Cuádriceps','Gemelos'],'Sube escalones a ritmo constante con el tronco erguido.','Apoya el pie entero en cada escalón y no cargues peso en los brazos.');
+CE('skierg','Ski erg','machine','low',true,'low',['Dorsal ancho','Tríceps','Abdomen'],'Tira de las asas hacia abajo flexionando cadera y rodillas, como en esquí de fondo.','La potencia sale del tronco y los dorsales, no solo de los brazos.');
+CE('walk','Caminata rápida','body','low',false,'mid',['Gemelos','Glúteos','Cuádriceps'],'Camina a paso vivo al aire libre o en casa.','Brazos activos y zancada natural.');
+CE('jog','Trote','body','high',true,'high',['Cuádriceps','Gemelos','Isquiotibiales'],'Trote suave; en HIIT, sprints cortos en los intervalos fuertes.','Calzado adecuado y superficie estable.');
+CE('bw_circuit','Circuito sin material','body','high',true,'high',['Cuádriceps','Glúteos','Abdomen','Deltoide anterior'],'Jumping jacks, escaladores y sentadillas encadenados.','Técnica limpia antes que velocidad.');
+CE('step_march','Marcha y step en el sitio','body','low',true,'mid',['Cuádriceps','Glúteos','Gemelos'],'Marcha elevando rodillas o sube y baja de un escalón.','Sin saltos: ideal para cuidar las articulaciones.');
+const CARDIO_M=Object.fromEntries(CARDIO.map(c=>[c.id,c]));
+
+// Protocolos HIIT: rondas × (trabajo s / descanso s). 'M' = intervalos moderados para perfiles de bajo impacto.
+const HIIT=[{id:'H1',rounds:6,work:30,rest:90},{id:'H2',rounds:8,work:30,rest:60},{id:'H3',rounds:10,work:30,rest:60},{id:'H4',rounds:8,work:40,rest:40},{id:'H5',rounds:10,work:40,rest:20}];
+const HIIT_MOD={id:'M',rounds:6,work:60,rest:60};
+const HIIT_WARM=180,HIIT_COOL=120;
+
+// Movilidad: zone = cadera | tobillo | hombro | toracica | general. sec: duración estimada del ejercicio.
+const MOB=[];
+function ME(id,n,zone,dose,sec,d){MOB.push({id,n,zone,dose,sec,d})}
+ME('m_circles','Círculos de brazos','hombro','10 por lado',40,'Círculos amplios hacia delante y hacia atrás.');
+ME('m_band_pa','Aperturas con banda o palo','hombro','12 reps',45,'Con los brazos rectos, lleva la banda o el palo de delante hacia atrás del cuerpo.');
+ME('m_wall_slide','Deslizamientos en pared','hombro','10 reps',45,'Espalda y brazos contra la pared, sube y baja los brazos sin despegarlos.');
+ME('m_catcow','Gato-camello','toracica','10 reps',40,'A cuatro patas, redondea y arquea la espalda despacio.');
+ME('m_open_book','Libro abierto','toracica','8 por lado',60,'Tumbado de lado con rodillas flexionadas, abre el brazo de arriba girando el tronco.');
+ME('m_thread','Rotación a cuatro patas','toracica','8 por lado',50,'A cuatro patas, pasa un brazo por debajo del cuerpo y luego ábrelo hacia el techo.');
+ME('m_hip_circles','Círculos de cadera','cadera','10 por lado',40,'De pie, dibuja círculos amplios con la rodilla.');
+ME('m_9090','Rotaciones 90/90','cadera','8 por lado',60,'Sentado con ambas rodillas a 90°, gira las piernas de un lado a otro.');
+ME('m_lunge_rot','Zancada con rotación','cadera','6 por lado',50,'Zancada larga, apoya la mano en el suelo y gira el tronco abriendo el otro brazo.');
+ME('m_glute_br','Puentes de glúteo','cadera','12 reps',40,'Tumbado, eleva la cadera apretando glúteos y baja despacio.');
+ME('m_leg_swing','Balanceos de pierna','cadera','10 por lado',45,'Apoyado en la pared, balancea la pierna adelante y atrás, y luego de lado a lado.');
+ME('m_ankle','Rodilla a la pared','tobillo','10 por lado',45,'Pie a un palmo de la pared, lleva la rodilla a tocarla sin levantar el talón.');
+ME('m_calf_pump','Elevaciones de talones','tobillo','15 reps',30,'Sube y baja los talones de forma controlada.');
+ME('m_squat_hold','Sentadilla profunda sostenida','general','30 s',30,'Baja a sentadilla profunda y empuja las rodillas hacia fuera con los codos.');
+ME('m_inchworm','Gusano','general','6 reps',50,'Desde de pie, camina con las manos hasta plancha y vuelve.');
+ME('m_jacks','Jumping jacks suaves','general','40 s',40,'Saltos abriendo y cerrando piernas y brazos, a ritmo suave.');
+
+// Estiramientos (30 s o 30 s por lado). mus: músculos que estiran.
+const STRETCH=[];
+function SE(id,n,mus,sec,d){STRETCH.push({id,n,mus,sec,d})}
+SE('s_pec','Estiramiento de pecho en marco','Pectoral,Pectoral superior,Deltoide anterior'.split(','),30,'Antebrazo en el marco de una puerta, gira el cuerpo hacia el lado contrario.');
+SE('s_lat','Estiramiento de dorsal','Dorsal ancho,Romboides'.split(','),30,'Agarrado a un soporte, lleva la cadera atrás dejando caer el pecho.');
+SE('s_rear','Cruce de brazo','Deltoide posterior,Deltoide lateral,Romboides,Manguito rotador'.split(','),60,'Cruza un brazo por delante del pecho y acércalo con el otro. 30 s por lado.');
+SE('s_tri','Estiramiento de tríceps','Tríceps'.split(','),60,'Mano detrás de la cabeza y empuja suavemente el codo con la otra mano. 30 s por lado.');
+SE('s_bi','Estiramiento de bíceps en pared','Bíceps,Braquial,Antebrazo'.split(','),60,'Mano en la pared a la altura del hombro y gira el cuerpo hacia fuera. 30 s por lado.');
+SE('s_trap','Estiramiento de trapecio','Trapecio'.split(','),60,'Inclina la cabeza hacia un lado y baja el hombro contrario. 30 s por lado.');
+SE('s_child','Postura del niño','Lumbares,Dorsal ancho'.split(','),30,'De rodillas, siéntate sobre los talones y estira los brazos al frente.');
+SE('s_cobra','Cobra suave','Abdomen,Flexores de cadera'.split(','),30,'Boca abajo, eleva el pecho apoyando los antebrazos o las manos.');
+SE('s_side','Inclinación lateral','Oblicuos,Dorsal ancho'.split(','),60,'De pie con un brazo arriba, inclínate hacia el lado contrario. 30 s por lado.');
+SE('s_quad','Estiramiento de cuádriceps','Cuádriceps,Flexores de cadera'.split(','),60,'De pie, agarra el tobillo y lleva el talón al glúteo. 30 s por lado.');
+SE('s_ham','Estiramiento de isquios','Isquiotibiales'.split(','),60,'Pierna estirada sobre un banco bajo, inclina el tronco con la espalda recta. 30 s por lado.');
+SE('s_glute','Figura 4','Glúteos'.split(','),60,'Tumbado, cruza un tobillo sobre la rodilla contraria y acerca las piernas. 30 s por lado.');
+SE('s_hipflex','Zancada baja','Flexores de cadera,Cuádriceps'.split(','),60,'Rodilla trasera en el suelo, adelanta la cadera. 30 s por lado.');
+SE('s_add','Mariposa','Aductores'.split(','),30,'Sentado, junta las plantas de los pies y deja caer las rodillas.');
+SE('s_calf','Estiramiento de gemelos en pared','Gemelos,Sóleo'.split(','),60,'Manos en la pared y una pierna atrás con el talón apoyado. 30 s por lado.');
