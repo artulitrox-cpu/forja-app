@@ -127,6 +127,7 @@ details[open] .chev{transform:rotate(180deg)}
 .wk-d{flex:1 0 auto;min-width:86px;border:1px solid var(--line);border-radius:14px;padding:10px;background:var(--surface)}
 .wk-d.is-next{border-color:var(--accent)}
 .wk-d.is-done{background:color-mix(in srgb,var(--easy) 14%,var(--surface));border-color:color-mix(in srgb,var(--easy) 50%,var(--line))}
+.langsel{min-height:32px;padding:0 6px;border-radius:10px;background:var(--surface2);color:var(--fg);border:1px solid var(--line);font-weight:700;font-size:.8rem;font-family:inherit}
 /* Pulsómetro */
 .hrpill{min-height:28px;padding:0 10px;border-radius:999px;border:1px solid var(--line);background:var(--surface2);color:var(--dim);font-weight:700;font-size:.78rem;font-family:inherit;white-space:nowrap;max-width:52vw;overflow:hidden;text-overflow:ellipsis}
 .hrpill.is-on{color:var(--hard);border-color:color-mix(in srgb,var(--hard) 50%,var(--line))}
@@ -175,21 +176,23 @@ details[open] .chev{transform:rotate(180deg)}
 <div id="seq"></div>
 <div id="toast"></div>
 
-<script src="js/catalog.js?v=202609281157"></script>
-<script src="js/figures.js?v=202609281157"></script>
-<script src="js/merge.js?v=202609281157"></script>
-<script src="js/plan.js?v=202609281157"></script>
-<script src="js/injuries.js?v=202609281157"></script>
-<script src="js/progress.js?v=202609281157"></script>
-<script src="js/nutrition.js?v=202609281157"></script>
-<script src="js/activities.js?v=202609281157"></script>
-<script src="js/bodymap.js?v=202609281157"></script>
-<script src="js/sync.js?v=202609281157"></script>
+<script src="js/i18n-en.js?v=202609281229"></script>
+<script src="js/i18n.js?v=202609281229"></script>
+<script src="js/catalog.js?v=202609281229"></script>
+<script src="js/figures.js?v=202609281229"></script>
+<script src="js/merge.js?v=202609281229"></script>
+<script src="js/plan.js?v=202609281229"></script>
+<script src="js/injuries.js?v=202609281229"></script>
+<script src="js/progress.js?v=202609281229"></script>
+<script src="js/nutrition.js?v=202609281229"></script>
+<script src="js/activities.js?v=202609281229"></script>
+<script src="js/bodymap.js?v=202609281229"></script>
+<script src="js/sync.js?v=202609281229"></script>
 <!-- Dentro de la app de Android (Capacitor) se cargan el núcleo y los plugins nativos -->
 <script>if(window.Capacitor&&Capacitor.isNativePlatform&&Capacitor.isNativePlatform())document.write('<script src="js/vendor/capacitor.js"><\/script><script src="js/vendor/ble.js"><\/script><script src="js/vendor/fgs.js"><\/script>')</script>
-<script src="js/timer.js?v=202609281157"></script>
-<script src="js/push.js?v=202609281157"></script>
-<script src="js/hr.js?v=202609281157"></script>
+<script src="js/timer.js?v=202609281229"></script>
+<script src="js/push.js?v=202609281229"></script>
+<script src="js/hr.js?v=202609281229"></script>
 <script>
 
 
@@ -223,7 +226,7 @@ const ICON={
 };
 const ic=(n,s=22)=>`<svg viewBox="0 0 24 24" width="${s}" height="${s}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICON[n]}</svg>`;
 
-const hhmm=t=>new Date(t).toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'});
+const hhmm=t=>new Date(t).toLocaleTimeString(LOC(),{hour:'2-digit',minute:'2-digit'});
 function fmtSigned(sec){return (sec<0?'−':'+')+fmtDur(Math.abs(sec)*1000)}
 function itemsEst(a){return a.items.reduce((s,it)=>s+it.sets.length*(WORK+it.p.rest),0)}
 function blockSec(a){return {mob:(a.mob?a.mob.list:[]).reduce((t,id)=>t+((MOBM[id]||{}).sec||0)+10,0),st:(a.stretch?a.stretch.list:[]).reduce((t,id)=>t+((STRM[id]||{}).sec||0),0),cond:a.cond?a.cond.min*60:0}}
@@ -281,7 +284,7 @@ function daysHint(pr){return `Para tu objetivo recomendamos ${suggestDays(pr)} d
 function vOnboard(){
  const others=Object.keys(S.users).length>0;
  return `<main class="max-w-xl mx-auto px-5 pt-8 pb-16">
-  <div class="brand">For<b>ja</b></div>
+  <div class="flex items-center justify-between"><div class="brand">For<b>ja</b></div>${langSelect('lang-sel-ob')}</div>
   <h1 class="hero mt-6">Entrena con un plan que aprende de ti.</h1>
   <p class="text-dim mt-4 text-lg">Cuéntanos tu punto de partida. Calculamos tu IMC y tu metabolismo basal, elegimos días, series y pesos iniciales, y los ajustamos después de cada sesión.</p>
   ${installCard()}
@@ -290,7 +293,7 @@ function vOnboard(){
   ${others?`<button data-a="tab" data-v="profile" class="btn-text mt-4">Volver a mi perfil</button>`:''}
  </main>`;
 }
-function header(){const u=U();return `<header class="appbar"><div class="max-w-xl mx-auto px-4 h-14 flex items-center justify-between"><div class="flex items-center gap-2"><div class="brand">For<b>ja</b></div><span id="syncdot" class="dot" role="img" aria-label="${SYNC_TXT[sync.state]}" title="${SYNC_TXT[sync.state]}" style="background:${SYNC_COL[sync.state]}"></span>${hrPill()}</div><button class="btn-ghost" data-a="tab" data-v="profile" style="padding-left:4px"><span class="avatar" style="width:32px;height:32px">${esc(u.profile.name[0].toUpperCase())}</span>Mi perfil</button></div></header>`}
+function header(){return `<header class="appbar"><div class="max-w-xl mx-auto px-4 h-14 flex items-center justify-between"><div class="flex items-center gap-2"><div class="brand">For<b>ja</b></div><span id="syncdot" class="dot" role="img" aria-label="${SYNC_TXT[sync.state]}" title="${SYNC_TXT[sync.state]}" style="background:${SYNC_COL[sync.state]}"></span>${hrPill()}</div><span class="flex items-center gap-2">${langSelect()}</span></div></header>`}
 function nav(){const t=[['home','today','Hoy'],['plan','plan','Plan'],['body','body','Cuerpo'],['injuries','cross','Lesiones'],['history','hist','Progreso'],['profile','user','Perfil']];
  return `<nav class="tabbar" aria-label="Secciones"><div class="max-w-xl mx-auto flex">${t.map(([v,i,l])=>`<button class="tab" data-a="tab" data-v="${v}" ${view===v?'aria-current="page"':''}>${ic(i)}<span>${l}</span></button>`).join('')}</div></nav>`}
 function exRow(u,it,di,i){const ex=X(it.ex),p=it.p||presc(ex,u.profile),g=prog(u,ex,p);
@@ -434,7 +437,7 @@ function vBody(){const u=U(),C=u.checkins,chron=[...C].reverse(),last=C[0],prev=
  const d=last?daysSince(last.date):null,next=last?Math.max(0,u.checkinEvery-d):0;
  let comp='';if(C.length>1){const dm=last.smm!=null&&first.smm!=null?last.smm-first.smm:null,df=fatKg(last)!=null&&fatKg(first)!=null?fatKg(last)-fatKg(first):null;
   comp=`<section class="grid grid-cols-2 gap-2 mt-4"><div class="stat"><b style="color:${dm==null?'':dm>=0?'var(--easy)':'var(--hard)'}">${dm==null?'—':(dm>0?'+':'')+nf(Math.round(dm*10)/10)+' kg'}</b><span>músculo desde el primer check-in</span></div><div class="stat"><b style="color:${df==null?'':df<=0?'var(--easy)':'var(--hard)'}">${df==null?'—':(df>0?'+':'')+nf(Math.round(df*10)/10)+' kg'}</b><span>grasa desde el primer check-in</span></div></section>`}
- const rows=C.map((c,i)=>{const p=C[i+1]||{};return `<tr><td class="py-2 pr-3 whitespace-nowrap">${new Date(c.date).toLocaleDateString('es-ES',{day:'numeric',month:'short',year:'2-digit'})}</td><td class="pr-3 whitespace-nowrap">${nf(c.weight)}${delta(c.weight,p.weight)}</td><td class="pr-3 whitespace-nowrap">${c.bf!=null?nf(c.bf):'—'}${delta(c.bf,p.bf,'down')}</td><td class="pr-3 whitespace-nowrap">${c.smm!=null?nf(c.smm):'—'}${delta(c.smm,p.smm,'up')}</td><td class="pr-3 whitespace-nowrap">${c.tbw!=null?nf(c.tbw):'—'}</td><td class="pr-3 whitespace-nowrap">${c.visc!=null?c.visc:'—'}${delta(c.visc,p.visc,'down')}</td><td class="pr-3 whitespace-nowrap">${c.bwa!=null?c.bwa:'—'}</td><td><button class="btn-text btn-danger" data-a="ckdel" data-t="${c.date}" aria-label="Borrar check-in">${ic('close',16)}</button></td></tr>`}).join('');
+ const rows=C.map((c,i)=>{const p=C[i+1]||{};return `<tr><td class="py-2 pr-3 whitespace-nowrap">${new Date(c.date).toLocaleDateString(LOC(),{day:'numeric',month:'short',year:'2-digit'})}</td><td class="pr-3 whitespace-nowrap">${nf(c.weight)}${delta(c.weight,p.weight)}</td><td class="pr-3 whitespace-nowrap">${c.bf!=null?nf(c.bf):'—'}${delta(c.bf,p.bf,'down')}</td><td class="pr-3 whitespace-nowrap">${c.smm!=null?nf(c.smm):'—'}${delta(c.smm,p.smm,'up')}</td><td class="pr-3 whitespace-nowrap">${c.tbw!=null?nf(c.tbw):'—'}</td><td class="pr-3 whitespace-nowrap">${c.visc!=null?c.visc:'—'}${delta(c.visc,p.visc,'down')}</td><td class="pr-3 whitespace-nowrap">${c.bwa!=null?c.bwa:'—'}</td><td><button class="btn-text btn-danger" data-a="ckdel" data-t="${c.date}" aria-label="Borrar check-in">${ic('close',16)}</button></td></tr>`}).join('');
  return `<section class="pt-6"><h1 class="h1">Cuerpo</h1><p class="text-dim mt-2">Nutrición de hoy, historial y check-in biométrico. Compatible con los datos de un escaneo Evolt 360.</p></section>
  ${nutriCard(u)}
  <section class="card p-4 mt-4"><div class="flex items-center gap-3"><span class="flex-1"><b class="block">${last?`Último check-in hace ${d} días`:'Aún no hay check-ins'}</b><span class="block text-sm text-dim">${last?(next?`Próximo en ${next} días`:'Toca uno nuevo hoy'):'Registra tu punto de partida.'}</span></span><button class="btn-primary" style="min-height:48px" data-a="checkin">Nuevo check-in</button></div>
@@ -487,7 +490,7 @@ function vHistory(){const u=U(),H=u.history,ws=weekStart(),cMin=H.filter(h=>h.da
  ${vActivities(u)}
  ${H.length?`<section class="card p-4 mt-4"><h2 class="h2">Series por sesión</h2><div class="mt-3 scroll-x">${chart}</div></section>`:`<section class="card p-5 mt-4"><h2 class="h2">Aún no hay sesiones</h2><p class="text-dim mt-2">Completa tu primera sesión y aquí verás tu evolución.</p><button data-a="tab" data-v="home" class="btn-primary w-full mt-4">Ir a la sesión de hoy</button></section>`}
  ${loads.length?`<section class="mt-6"><h2 class="h2">Próxima carga</h2><div class="card mt-3 divide-y divide-[var(--line)]">${loads.map(o=>`<div class="flex items-center justify-between gap-3 px-4 py-3"><span class="font-semibold">${esc(o.ex.n)}</span><span class="text-dim whitespace-nowrap">${loadTxt(o.ex,o.g,u.profile)}</span></div>`).join('')}</div></section>`:''}
- ${H.length?`<section class="mt-6"><h2 class="h2">Historial</h2><div class="mt-3 flex flex-col gap-2">${H.map(h=>`<details class="card"><summary class="p-4 flex items-center gap-3"><span class="flex-1"><span class="block font-semibold">${esc(h.day)}${h.prs&&h.prs.length?` <span class="chip chip-a" style="min-height:22px;font-size:.75rem">Récord</span>`:''}</span><span class="block text-sm text-dim">${new Date(h.date).toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'short'})}, ${fmtDur(h.dur)}, ${h.sets} series${h.hr?`, ♥ ${h.hr.avg} ppm (máx. ${h.hr.max})`:''}${h.kcalReal?`, ${nf(h.kcalReal)} kcal`:''}</span></span><span class="chev text-dim">${ic('chev')}</span></summary><div class="px-4 pb-4 flex flex-col gap-3">${h.blocks&&h.blocks.cond?`<div><div class="font-semibold">${esc(condKindLbl(h.blocks.cond))}: ${esc((CARDIO_M[h.blocks.cond.machine]||{}).n||'')}</div><div class="text-sm mt-1 inline-flex items-center gap-1.5"><span class="dot d-${h.blocks.cond.rt}"></span>${h.blocks.cond.min} min</div></div>`:''}${h.items.map(it=>{const ex=X(it.ex);return ex?`<div><div class="font-semibold">${esc(ex.n)}</div><div class="flex flex-wrap gap-x-4 gap-y-1 mt-1 text-sm">${it.sets.map(s=>`<span class="inline-flex items-center gap-1.5"><span class="dot d-${s.rt}" title="${RT[s.rt]}"></span>${s.w?fmtKg(s.w)+' kg × ':''}${s.r} ${unit(ex)}</span>`).join('')}</div></div>`:''}).join('')}</div></details>`).join('')}</div></section>`:''}`}
+ ${H.length?`<section class="mt-6"><h2 class="h2">Historial</h2><div class="mt-3 flex flex-col gap-2">${H.map(h=>`<details class="card"><summary class="p-4 flex items-center gap-3"><span class="flex-1"><span class="block font-semibold">${esc(h.day)}${h.prs&&h.prs.length?` <span class="chip chip-a" style="min-height:22px;font-size:.75rem">Récord</span>`:''}</span><span class="block text-sm text-dim">${new Date(h.date).toLocaleDateString(LOC(),{weekday:'long',day:'numeric',month:'short'})}, ${fmtDur(h.dur)}, ${h.sets} series${h.hr?`, ♥ ${h.hr.avg} ppm (máx. ${h.hr.max})`:''}${h.kcalReal?`, ${nf(h.kcalReal)} kcal`:''}</span></span><span class="chev text-dim">${ic('chev')}</span></summary><div class="px-4 pb-4 flex flex-col gap-3">${h.blocks&&h.blocks.cond?`<div><div class="font-semibold">${esc(condKindLbl(h.blocks.cond))}: ${esc((CARDIO_M[h.blocks.cond.machine]||{}).n||'')}</div><div class="text-sm mt-1 inline-flex items-center gap-1.5"><span class="dot d-${h.blocks.cond.rt}"></span>${h.blocks.cond.min} min</div></div>`:''}${h.items.map(it=>{const ex=X(it.ex);return ex?`<div><div class="font-semibold">${esc(ex.n)}</div><div class="flex flex-wrap gap-x-4 gap-y-1 mt-1 text-sm">${it.sets.map(s=>`<span class="inline-flex items-center gap-1.5"><span class="dot d-${s.rt}" title="${RT[s.rt]}"></span>${s.w?fmtKg(s.w)+' kg × ':''}${s.r} ${unit(ex)}</span>`).join('')}</div></div>`:''}).join('')}</div></details>`).join('')}</div></section>`:''}`}
 function vProfile(){const u=U(),ids=Object.keys(S.users);
  return `<section class="pt-6"><h1 class="h1">Mi perfil</h1><p class="text-dim mt-2">Cambiar estos datos regenera el plan. Tu historial y tus cargas se conservan.</p></section>
  <section class="card p-5 mt-4"><h2 class="h2">Cómo ajustamos tu plan</h2><ul class="mt-3 flex flex-col gap-2">${adjNotes(u.profile).map(n=>`<li class="flex gap-2"><span class="dot d-ok mt-2 flex-none"></span><span>${esc(n)}</span></li>`).join('')}</ul></section>
@@ -576,7 +579,7 @@ function render(){
 
 /* ============ Lesiones y Recuperación ============ */
 let injView='front',injRegion=null,injDraft=null,injAnim=null;
-const fmtDay=t=>new Date(t).toLocaleDateString('es-ES',{day:'numeric',month:'short'});
+const fmtDay=t=>new Date(t).toLocaleDateString(LOC(),{day:'numeric',month:'short'});
 function injCard(u,i){const L=INJ_LEVELS[i.level],d=daysSince(i.date),tot=Math.max(1,Math.round((i.reviewAt-i.date)/864e5)),pct=Math.min(100,d/tot*100),aff=affectedBy(u,i.muscle,i.level).length,col=i.level==='mild'?'var(--accent)':'var(--hard)';
  return `<article class="card p-4" style="border-color:${col}"><div class="flex items-start gap-3"><span class="dot mt-2 flex-none" style="background:${col}"></span><span class="flex-1 min-w-0"><b class="block text-lg leading-tight">${esc(i.muscle)}</b><span class="block text-sm mt-0.5">${esc(L.label)}</span><span class="block text-sm text-dim">${esc(L.range)} · hace ${d} ${d===1?'día':'días'} · dolor ${i.pain}/10</span></span></div>
   <div class="h-2 rounded-full mt-3" style="background:var(--line)" role="img" aria-label="Recuperación estimada: ${Math.round(pct)} %"><div class="h-2 rounded-full" style="width:${pct}%;background:${col}"></div></div>
@@ -621,7 +624,7 @@ function injBanners(u){if(typeof activeInjuries!=='function')return '';const act
 const localInput=t=>new Date(t-new Date(t).getTimezoneOffset()*6e4).toISOString().slice(0,16);
 const FAT_COL={low:'var(--easy)',moderate:'var(--accent)',high:'var(--hard)'};
 function actLine(a){return `${esc(sportName(a))} · ${a.min} min · RPE ${a.rpe}${a.km?` · ${nf(a.km)} km`:''}`}
-function actRow(a,del){return `<div class="flex items-center gap-3 p-3 rounded-2xl" style="background:var(--surface2)"><span class="dot flex-none" style="background:${FAT_COL[a.level]}" title="Fatiga de piernas ${FATIGUE_LBL[a.level].toLowerCase()}"></span><span class="flex-1 min-w-0"><span class="block font-semibold truncate">${actLine(a)}</span><span class="block text-sm text-dim">${esc(sportType(a).n)} · ${new Date(a.date).toLocaleDateString('es-ES',{weekday:'short',day:'numeric',month:'short'})} ${hhmm(a.date)} · ${nf(a.kcal)} kcal${a.kcalReal?' (con pulso)':''}${a.hr?` · ♥ ${a.hr.avg}/${a.hr.max}`:''}${a.reconnects&&a.reconnects.length?` · ${a.reconnects.length} reconexión${a.reconnects.length>1?'es':''}`:''} · fatiga ${FATIGUE_LBL[a.level].toLowerCase()}</span></span>${del?`<button class="btn-text btn-danger" data-a="actdel" data-id="${a.id}" aria-label="Borrar actividad">${ic('close',16)}</button>`:''}</div>`}
+function actRow(a,del){return `<div class="flex items-center gap-3 p-3 rounded-2xl" style="background:var(--surface2)"><span class="dot flex-none" style="background:${FAT_COL[a.level]}" title="Fatiga de piernas ${FATIGUE_LBL[a.level].toLowerCase()}"></span><span class="flex-1 min-w-0"><span class="block font-semibold truncate">${actLine(a)}</span><span class="block text-sm text-dim">${esc(sportType(a).n)} · ${new Date(a.date).toLocaleDateString(LOC(),{weekday:'short',day:'numeric',month:'short'})} ${hhmm(a.date)} · ${nf(a.kcal)} kcal${a.kcalReal?' (con pulso)':''}${a.hr?` · ♥ ${a.hr.avg}/${a.hr.max}`:''}${a.reconnects&&a.reconnects.length?` · ${a.reconnects.length} reconexión${a.reconnects.length>1?'es':''}`:''} · fatiga ${FATIGUE_LBL[a.level].toLowerCase()}</span></span>${del?`<button class="btn-text btn-danger" data-a="actdel" data-id="${a.id}" aria-label="Borrar actividad">${ic('close',16)}</button>`:''}</div>`}
 // Tarjeta de Hoy: actividad de las últimas 48 h y recomendación para el gimnasio.
 // Aviso de fatiga de piernas por deporte reciente (va en los avisos de Hoy).
 function fatigueAlert(u,ss){const adj=legAdjust(u),legs=ss&&ss.items.some(it=>LOWER_SLOTS.has(it.slot));
@@ -668,7 +671,7 @@ function hrPillTxt(){const u=U(),on=HR.state==='on',z=on&&u?hrZoneOf(HR.bpm,u.pr
 function hrPill(){if(!hrSaved())return '';const tap=HR.needsTap&&HR.state!=='on';
  return `<button id="hrpill" class="hrpill ${HR.state==='on'?'is-on':''}" data-a="${tap?'hrconnect':'tab'}" data-v="profile" aria-live="polite">${esc(hrPillTxt())}</button>`}
 function hrCard(){const u=U(),sv=hrSaved(),on=HR.state==='on',z=on?hrZoneOf(HR.bpm,u.profile):null,smart=!(u.settings&&u.settings.smartRest===false),m=hrMax(u.profile);
- const auto=hrSupported()&&typeof navigator.bluetooth.getDevices==='function';
+ const auto=isNativeApp()?hrSupported():hrSupported()&&!!navigator.bluetooth&&typeof navigator.bluetooth.getDevices==='function';
  const st={off:sv?'Desconectado':'Sin banda emparejada',searching:'Buscando pulsómetro…',connecting:'Conectando…',on:'Conectado',error:'Error'}[HR.state];
  const btns=!hrSupported()?'<p class="hint">Tu navegador no admite Web Bluetooth (por ejemplo, Safari en iPhone o Samsung Internet). Abre Forja en Chrome para Android.</p>'
   :!sv?`<button class="btn-primary w-full mt-4" data-a="hrconnect" ${HR.state==='connecting'?'disabled':''}>Conectar pulsómetro Bluetooth</button>`
@@ -746,7 +749,7 @@ function pushCard(u){const cfg=pushCfg(u),next=cfg.on?upcomingReminders(u).slice
  <p class="text-sm text-dim mt-2">Avisos en el móvil: sesión o partido del día, check-in pendiente y revisión de lesiones. Necesitan cuenta iniciada y funcionan mejor con Forja instalada.</p>
  ${!pushSupported()?'<p class="hint">Este navegador no admite notificaciones push. En iPhone, instala Forja en la pantalla de inicio primero.</p>'
   :cfg.on?`<div class="flex items-center gap-3 mt-4"><span class="flex-1 text-sm"><b>Activadas</b> · cada día a las</span><label class="sr-only" for="push-hour">Hora</label><select id="push-hour" class="field" style="width:auto;min-height:42px">${Array.from({length:17},(_,i)=>i+6).map(h=>`<option value="${h}" ${h===cfg.hour?'selected':''}>${String(h).padStart(2,'0')}:00</option>`).join('')}</select></div>
-   ${next.length?`<ul class="mt-3 text-sm text-dim flex flex-col gap-1">${next.map(x=>`<li>· ${new Date(x.at).toLocaleDateString('es-ES',{weekday:'short',day:'numeric'})} ${hhmm(x.at)}: ${esc(x.title)}</li>`).join('')}</ul>`:''}
+   ${next.length?`<ul class="mt-3 text-sm text-dim flex flex-col gap-1">${next.map(x=>`<li>· ${new Date(x.at).toLocaleDateString(LOC(),{weekday:'short',day:'numeric'})} ${hhmm(x.at)}: ${esc(x.title)}</li>`).join('')}</ul>`:''}
    <button class="btn-text btn-danger mt-2" data-a="pushoff">Desactivar</button>`
   :`<button class="btn-ghost w-full mt-4" data-a="pushon">Activar notificaciones</button>`}</section>`}
 document.addEventListener('change',e=>{if(e.target&&e.target.id==='push-hour'){const u=U();u.settings={...(u.settings||{}),push:{...pushCfg(u),hour:+e.target.value}};save();pushSyncReminders(true);render()}});
@@ -761,7 +764,7 @@ function exportBackup(){const d={app:'forja',version:S.version,exported:new Date
  setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1000);toast('Copia descargada')}
 async function importBackup(file){let d;try{d=JSON.parse(await file.text())}catch(e){toast('El archivo no es una copia válida de Forja.');return}
  if(!validBackup(d)){toast('El archivo no es una copia válida de Forja.');return}
- const n=Object.keys(d.state.users).length;if(!confirm(`Se combinarán ${n} usuario${n===1?'':'s'} de la copia del ${new Date(d.exported).toLocaleDateString('es-ES')} con tus datos actuales. ¿Continuar?`))return;
+ const n=Object.keys(d.state.users).length;if(!confirm(`Se combinarán ${n} usuario${n===1?'':'s'} de la copia del ${new Date(d.exported).toLocaleDateString(LOC())} con tus datos actuales. ¿Continuar?`))return;
  mergeState(d.state);Object.values(S.users).forEach(u=>{u.updatedAt=Date.now()});if(!S.activeUser)S.activeUser=Object.keys(S.users)[0]||null;
  save();view='home';render();toast('Copia importada y combinada')}
 document.addEventListener('change',e=>{if(e.target&&e.target.id==='bk-file'&&e.target.files[0]){importBackup(e.target.files[0]);e.target.value=''}});
@@ -785,7 +788,7 @@ function strengthProgress(u){const H=u.history,R=records(H),ws=weekStart(),w=wee
  return `<section class="card p-4 mt-4"><div class="flex items-baseline justify-between"><h2 class="h2">Series por músculo</h2><span class="text-sm text-dim">esta semana</span></div>
   <p class="text-sm text-dim mt-1">Principal cuenta 1 serie; secundario, 0,5. Zona verde: ${lo}–${hi} series, el rango orientativo para tu objetivo.</p>
   <div class="flex flex-col gap-2 mt-3">${bars}</div></section>
- ${recs.length?`<section class="card p-4 mt-4"><h2 class="h2">Récords personales</h2><div class="mt-3 divide-y divide-[var(--line)]">${recs.slice(0,12).map(o=>`<div class="flex items-center justify-between gap-3 py-2"><span class="min-w-0"><span class="block font-semibold truncate">${esc(o.ex.n)}</span><span class="block text-xs text-dim">${new Date(o.r.date).toLocaleDateString('es-ES',{day:'numeric',month:'short'})}</span></span><span class="text-right whitespace-nowrap">${o.r.e1rm?`<b>${nf(Math.round(o.r.e1rm*10)/10)} kg</b><span class="block text-xs text-dim">1RM est. · mejor ${fmtKg(o.r.w)} kg</span>`:`<b>${o.r.reps} reps</b>`}</span></div>`).join('')}</div></section>`:''}
+ ${recs.length?`<section class="card p-4 mt-4"><h2 class="h2">Récords personales</h2><div class="mt-3 divide-y divide-[var(--line)]">${recs.slice(0,12).map(o=>`<div class="flex items-center justify-between gap-3 py-2"><span class="min-w-0"><span class="block font-semibold truncate">${esc(o.ex.n)}</span><span class="block text-xs text-dim">${new Date(o.r.date).toLocaleDateString(LOC(),{day:'numeric',month:'short'})}</span></span><span class="text-right whitespace-nowrap">${o.r.e1rm?`<b>${nf(Math.round(o.r.e1rm*10)/10)} kg</b><span class="block text-xs text-dim">1RM est. · mejor ${fmtKg(o.r.w)} kg</span>`:`<b>${o.r.reps} reps</b>`}</span></div>`).join('')}</div></section>`:''}
  ${progEx?`<section class="card p-4 mt-4"><h2 class="h2">Evolución del 1RM</h2><label class="sr-only" for="prog-ex">Ejercicio</label><select id="prog-ex" class="field mt-3">${withE.map(o=>`<option value="${o.ex.id}" ${o.ex.id===progEx?'selected':''}>${esc(o.ex.n)}</option>`).join('')}</select>
   <div class="mt-3">${lineChart([{name:'1RM estimado',color:'var(--accent)',vals:e1rmSeries(H,progEx)}],'kg','Evolución del 1RM estimado')}</div><p class="hint">Estimación de Epley con tu mejor serie de cada sesión.</p></section>`:''}`}
 document.addEventListener('change',e=>{if(e.target&&e.target.id==='prog-ex'){progEx=e.target.value;render()}});

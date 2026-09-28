@@ -109,6 +109,38 @@ async function flows(page) {
     await page.reload({ waitUntil: 'load' });
     await page.evaluate(() => { for (const v of ['home', 'plan', 'body', 'injuries', 'history', 'profile']) { view = v; render(); } });
     console.log('Migración v1: ok');
+    // 3) App de Android (Capacitor) simulada: todas las vistas y el pulsómetro/grabación con plugins falsos
+    const nat = await ctx.newPage(); watch(nat);
+    // Como en el WebView de Android: sin Web Bluetooth (navigator.bluetooth no existe).
+    await nat.addInitScript(() => { window.Capacitor = { isNativePlatform: () => true, Plugins: {}, getPlatform: () => 'android' }; Object.defineProperty(Navigator.prototype, 'bluetooth', { get: () => undefined, configurable: true }); });
+    await nat.goto(`${base}/?fast=1`, { waitUntil: 'load' });
+    const natDone = await nat.evaluate(async () => {
+      // El núcleo de Capacitor sustituye window.Capacitor al cargar; fuera de Android se declara web. Se fuerza el modo nativo.
+      window.Capacitor.isNativePlatform = () => true;
+      let hrCb = null, onDisc = null;
+      window.capacitorCommunityBluetoothLe = { BleClient: {
+        initialize: async () => {}, requestDevice: async () => ({ deviceId: 'AA:BB', name: 'Banda' }),
+        connect: async (id, d) => { onDisc = d; }, startNotifications: async (id, s, c, cb) => { if (c.includes('2a37')) hrCb = cb; },
+        read: async () => new DataView(new Uint8Array([80]).buffer), stopNotifications: async () => {}, disconnect: async () => {} } };
+      const fgs = []; window.capacitorForegroundService = { ForegroundService: {
+        requestPermissions: async () => {}, createNotificationChannel: async () => {}, startForegroundService: async () => fgs.push('start'),
+        updateForegroundService: async () => {}, stopForegroundService: async () => fgs.push('stop') } };
+      localStorage.clear(); S = { version: 2, activeUser: null, users: {}, deleted: {} };
+      createUser({ name: 'Nativa', age: 30, sex: 'm', height: 175, weight: 75, level: 'beg', goal: 'hyp', avail: [0, 2, 4], sessionMin: 60, equip: 'gym' });
+      for (const v of ['home', 'plan', 'body', 'injuries', 'history', 'profile']) { view = v; render(); }
+      if (!(await hrConnect())) throw new Error('No conecta el pulsómetro nativo');
+      hrCb(new DataView(new Uint8Array([0, 120]).buffer));
+      view = 'profile'; render();
+      const u = U(); view = 'home'; render();
+      document.querySelector('[data-a=livepick]').click(); document.querySelector('form[data-live]').requestSubmit();
+      await new Promise((r) => setTimeout(r, 100));
+      onDisc('AA:BB'); clearTimeout(hrTimer); await hrAuto();
+      openLiveFinish(); finishLive(document.querySelector('form[data-livefin]')); closeModal();
+      await new Promise((r) => setTimeout(r, 100));
+      if (fgs.join() !== 'start,stop') throw new Error('Servicio en primer plano: ' + fgs.join());
+      return 'ok';
+    });
+    console.log('App nativa (simulada):', natDone);
   } catch (e) {
     errors.push(String(e && e.stack || e));
   } finally {

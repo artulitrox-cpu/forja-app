@@ -37,7 +37,7 @@ function strengthDays(pr,n){n=Math.min(MAX_SESSIONS,n);if(n<=0)return 0;
 function tdee(pr){const b=bmr(pr);if(!b)return null;const d=daysOf(pr);return Math.round(b*(d<=3?1.375:d<=5?1.55:1.725))}
 const GOAL_KCAL={fat:.8,hyp:1.1,maint:1};
 function kcalTarget(pr){const t=tdee(pr);return t?Math.round(t*((GOAL_KCAL[pr.goal]||1)+(pr.kcalAdj||0))/10)*10:null}
-const nf=n=>Number(n).toLocaleString('es-ES',{maximumFractionDigits:1});
+const nf=n=>Number(n).toLocaleString(LOC(),{maximumFractionDigits:1});
 function adjNotes(pr){const n=[],b=bmi(pr),a=pr.age||0;
  n.push({fat:'Perder grasa: rangos de 10 a 15 reps y descansos cortos para más gasto por sesión.',hyp:'Masa muscular: básicos en 8 a 12 reps a RPE 8 y aislamientos en 10 a 15.',maint:'Mantenimiento: volumen moderado a RPE 7,5 para salud y constancia.'}[pr.goal]||'');
  if(pr.level==='beg')n.push('Principiante: una serie menos y RPE un punto más bajo para aprender la técnica.');

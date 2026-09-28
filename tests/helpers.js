@@ -16,7 +16,7 @@ function load(files, globals = {}) {
   return ctx;
 }
 
-const LOGIC = ['js/catalog.js', 'js/plan.js'];
+const LOGIC = ['js/i18n-en.js', 'js/i18n.js', 'js/catalog.js', 'js/plan.js'];
 
 function sampleProfile(over = {}) {
   return {
