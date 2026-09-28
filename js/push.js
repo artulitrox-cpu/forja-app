@@ -1,10 +1,22 @@
-/* Forja: notificaciones push (Web Push + Supabase). Script clásico.
+/* Forja: notificaciones. Script clásico.
+   En la app de Android: notificaciones locales programadas en el teléfono (sin servidor ni cuenta).
+   En la web: Web Push + Supabase.
    La app calcula los avisos de los próximos 7 días (upcomingReminders, sin DOM) y los guarda en la tabla
    push_reminders; la función send-reminders de Supabase los envía cada 15 minutos a las suscripciones del usuario. */
 
 // Clave pública VAPID (la privada está solo en los secretos de la función de Supabase).
 const VAPID_PUBLIC='BNzvfMssZKEhR9hWQHkp2WiNvb_qkM_spQtg5uTFKnYh-_UtO_OhutZGiRtyw19FMZUBL2f3eC2WW4mnnpe1fSk';
-const pushSupported=()=>typeof navigator!=='undefined'&&'serviceWorker' in navigator&&typeof window!=='undefined'&&'PushManager' in window&&'Notification' in window;
+/* ---- App nativa: notificaciones locales (@capacitor/local-notifications, cargado desde js/vendor/) ---- */
+const nativeLN=()=>typeof capacitorLocalNotifications!=='undefined'?capacitorLocalNotifications.LocalNotifications:null;
+const useLocal=()=>typeof isNativeApp==='function'&&isNativeApp()&&!!nativeLN();
+const LN_BASE=1000,LN_MAX=60,LN_CHANNEL='forja-reminders';
+// Avisos → notificaciones locales de Android (ids fijos 1000–1059 para poder reprogramarlos).
+function localNotifs(list){return list.slice(0,LN_MAX).map((x,i)=>({id:LN_BASE+i,title:x.title,body:x.body,schedule:{at:new Date(x.at),allowWhileIdle:true},smallIcon:'ic_stat_forja',channelId:LN_CHANNEL,extra:{tag:x.tag}}))}
+let localSig='';
+async function localSync(force){const L=nativeLN(),u=typeof U==='function'?U():null;if(!L||!u)return;
+ const list=pushCfg(u).on?upcomingReminders(u):[],sig=JSON.stringify(list);if(!force&&sig===localSig)return;
+ try{await L.cancel({notifications:Array.from({length:LN_MAX},(_,i)=>({id:LN_BASE+i}))});if(list.length)await L.schedule({notifications:localNotifs(list)});localSig=sig}catch(e){}}
+const pushSupported=()=>useLocal()||(typeof navigator!=='undefined'&&'serviceWorker' in navigator&&typeof window!=='undefined'&&'PushManager' in window&&'Notification' in window);
 const pushCfg=u=>({on:false,hour:8,...((u.settings&&u.settings.push)||{})});
 // Avisos de los próximos días: [{at, title, body, tag}] (at en ms).
 function upcomingReminders(u,now=Date.now(),days=7){const cfg=pushCfg(u);if(!cfg.on)return [];const out=[];
@@ -24,7 +36,10 @@ const entryTitleTxt=e=>e.type==='cardio'?'Cardio':e.name;
 function b64uToU8(s){const p='='.repeat((4-s.length%4)%4),b=atob((s+p).replace(/-/g,'+').replace(/_/g,'/'));return Uint8Array.from(b,c=>c.charCodeAt(0))}
 async function pushSubscription(){if(!pushSupported())return null;const reg=await navigator.serviceWorker.ready;return reg.pushManager.getSubscription()}
 // Pide permiso, suscribe este dispositivo y lo guarda en Supabase. Devuelve '' si va bien o el motivo del fallo.
-async function pushEnable(){if(!pushSupported())return 'Este navegador no admite notificaciones push. En iPhone, instala Forja en la pantalla de inicio primero.';
+async function pushEnable(){
+ if(useLocal()){const L=nativeLN();try{const p=await L.requestPermissions();if(p.display!=='granted')return 'Has bloqueado las notificaciones de Forja. Actívalas en Ajustes > Aplicaciones > Forja > Notificaciones.';
+  try{await L.createChannel({id:LN_CHANNEL,name:'Recordatorios',description:'Sesiones, partidos, check-ins y lesiones',importance:4})}catch(e){}return ''}catch(e){return 'No se pudo activar: '+(e&&e.message||e)}}
+ if(!pushSupported())return 'Este navegador no admite notificaciones push. En iPhone, instala Forja en la pantalla de inicio primero.';
  if(!sb||!sbUser)return 'Inicia sesión en Mi perfil > Cuenta y sincronización para activar las notificaciones.';
  const perm=await Notification.requestPermission();if(perm!=='granted')return 'Has bloqueado las notificaciones. Actívalas en los ajustes del navegador para Forja.';
  try{const reg=await navigator.serviceWorker.ready;let sub=await reg.pushManager.getSubscription();
@@ -32,11 +47,12 @@ async function pushEnable(){if(!pushSupported())return 'Este navegador no admite
   const j=sub.toJSON(),{error}=await sb.from('push_subscriptions').upsert({endpoint:j.endpoint,user_id:sbUser.id,p256dh:j.keys.p256dh,auth:j.keys.auth,ua:navigator.userAgent.slice(0,200)},{onConflict:'endpoint'});
   if(error)throw error;return ''}
  catch(e){return /push_subscriptions|42P01|PGRST205/.test(String(e&&e.message||e))?'Falta preparar Supabase: ejecuta supabase/push.sql (ver README).':'No se pudo activar: '+(e&&e.message||e)}}
-async function pushDisable(){try{const sub=await pushSubscription();if(sub){if(sb&&sbUser)await sb.from('push_subscriptions').delete().eq('endpoint',sub.endpoint);await sub.unsubscribe()}}catch(e){}
+async function pushDisable(){if(useLocal()){const L=nativeLN();try{await L.cancel({notifications:Array.from({length:LN_MAX},(_,i)=>({id:LN_BASE+i}))})}catch(e){}localSig='';return}
+try{const sub=await pushSubscription();if(sub){if(sb&&sbUser)await sb.from('push_subscriptions').delete().eq('endpoint',sub.endpoint);await sub.unsubscribe()}}catch(e){}
  if(sb&&sbUser)try{await sb.from('push_reminders').delete().eq('user_id',sbUser.id).eq('sent',false)}catch(e){}}
 // Reescribe en Supabase los avisos pendientes del usuario activo (solo si han cambiado).
 let pushLastSig='';
-async function pushSyncReminders(force){const u=typeof U==='function'?U():null;if(!u||!sb||!sbUser||!pushCfg(u).on)return;
+async function pushSyncReminders(force){if(useLocal())return localSync(force);const u=typeof U==='function'?U():null;if(!u||!sb||!sbUser||!pushCfg(u).on)return;
  const list=upcomingReminders(u),sig=JSON.stringify(list);if(!force&&sig===pushLastSig)return;
  try{let r=await sb.from('push_reminders').delete().eq('user_id',sbUser.id).eq('sent',false);if(r.error)throw r.error;
   if(list.length){r=await sb.from('push_reminders').insert(list.map(x=>({user_id:sbUser.id,at:new Date(x.at).toISOString(),title:x.title,body:x.body,tag:x.tag})));if(r.error)throw r.error}

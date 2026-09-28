@@ -46,6 +46,9 @@ const IGNORE = [/navigator\.vibrate/i, /Failed to load resource/i, /ERR_INTERNET
       const fgs = []; window.capacitorForegroundService = { ForegroundService: {
         requestPermissions: async () => {}, createNotificationChannel: async () => {}, startForegroundService: async () => fgs.push('start'),
         updateForegroundService: async () => {}, stopForegroundService: async () => fgs.push('stop') } };
+      const ln = []; window.capacitorLocalNotifications = { LocalNotifications: {
+        requestPermissions: async () => ({ display: 'granted' }), createChannel: async () => {},
+        cancel: async () => ln.push('cancel'), schedule: async (o) => ln.push('schedule:' + o.notifications.length) } };
       localStorage.clear(); S = { version: 2, activeUser: null, users: {}, deleted: {} };
       createUser({ name: 'Nativa', age: 30, sex: 'm', height: 175, weight: 75, level: 'beg', goal: 'hyp', avail: [0, 2, 4], sessionMin: 60, equip: 'gym' });
       for (const v of ['home', 'plan', 'body', 'injuries', 'history', 'profile']) { view = v; render(); }
@@ -59,6 +62,11 @@ const IGNORE = [/navigator\.vibrate/i, /Failed to load resource/i, /ERR_INTERNET
       openLiveFinish(); finishLive(document.querySelector('form[data-livefin]')); closeModal();
       await new Promise((r) => setTimeout(r, 100));
       if (fgs.join() !== 'start,stop') throw new Error('Servicio en primer plano: ' + fgs.join());
+      // Recordatorios locales: activar desde Perfil programa los avisos en el teléfono
+      view = 'profile'; render();
+      if (!document.body.innerText.includes('Recordatorios en este teléfono')) throw new Error('Tarjeta de recordatorios nativa');
+      await A.pushon(); await new Promise((r) => setTimeout(r, 50));
+      if (!ln.some((x) => x.startsWith('schedule:'))) throw new Error('No se programaron recordatorios: ' + ln.join());
       return 'ok';
     });
     console.log('App nativa (simulada):', natDone);

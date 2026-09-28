@@ -10,6 +10,7 @@ const FILES = {
   'capacitor.js': '@capacitor/core/dist/capacitor.js',               // define capacitorExports
   'ble.js': '@capacitor-community/bluetooth-le/dist/plugin.js',       // define capacitorCommunityBluetoothLe
   'fgs.js': '@capawesome-team/capacitor-android-foreground-service/dist/plugin.js', // define capacitorForegroundService
+  'localnotif.js': '@capacitor/local-notifications/dist/plugin.js', // define capacitorLocalNotifications
 };
 fs.mkdirSync(OUT, { recursive: true });
 for (const [name, rel] of Object.entries(FILES)) {

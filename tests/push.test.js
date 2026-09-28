@@ -52,3 +52,16 @@ test('sin sesión el día de "no voy"; desactivado no genera nada', () => {
   u.settings.push.on = false;
   assert.equal(upcomingReminders(u, MON, 7).length, 0);
 });
+
+test('app Android: los avisos se convierten en notificaciones locales con ids fijos', () => {
+  const localNotifs = c.get('localNotifs');
+  const r = upcomingReminders(mkUser(), MON, 7);
+  const n = localNotifs(r);
+  assert.equal(n.length, r.length);
+  assert.equal(n[0].id, 1000);
+  assert.equal(n[0].title, r[0].title);
+  assert.equal(n[0].schedule.at.getTime(), r[0].at);
+  assert.equal(n[0].schedule.allowWhileIdle, true);
+  assert.equal(n[0].channelId, 'forja-reminders');
+  assert.ok(localNotifs(Array.from({ length: 80 }, (_, i) => ({ at: MON + i, title: 't', body: 'b', tag: 'x' }))).length <= 60);
+});

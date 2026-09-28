@@ -8,9 +8,10 @@
     "vendor": "node tools/vendor.js"
   },
   "dependencies": {
+    "@capacitor-community/bluetooth-le": "8.3.0",
     "@capacitor/android": "8.5.2",
     "@capacitor/core": "8.5.2",
-    "@capacitor-community/bluetooth-le": "8.3.0",
+    "@capacitor/local-notifications": "8.3.1",
     "@capawesome-team/capacitor-android-foreground-service": "8.1.0"
   },
   "devDependencies": {
