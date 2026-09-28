@@ -2,7 +2,9 @@
 
 /* ---- Utilidades puras ---- */
 const rnd=x=>Math.round(x*4)/4;
-const fmtKg=w=>(Math.round(w*100)/100).toString().replace('.',',');
+// Decimal con coma en español y con punto en inglés.
+const dec=x=>typeof LANG!=='undefined'&&LANG==='en'?String(x):String(x).replace('.',',');
+const fmtKg=w=>dec(Math.round(w*100)/100);
 function fmtDur(ms){const s=Math.max(0,Math.floor(ms/1000)),h=Math.floor(s/3600),m=Math.floor(s%3600/60),x=s%60;return h?`${h}:${String(m).padStart(2,'0')}:${String(x).padStart(2,'0')}`:`${m}:${String(x).padStart(2,'0')}`}
 function weekStartOf(ts){const d=new Date(ts);d.setHours(0,0,0,0);d.setDate(d.getDate()-((d.getDay()+6)%7));return d.getTime()}
 const weekStart=()=>weekStartOf(Date.now());
@@ -132,7 +134,7 @@ function presc(ex,pr,wi=curWeek()){
 }
 function prog(u,ex,p){let g=u.prog[ex.id];if(!g)g=u.prog[ex.id]={w:null,r:p.min};return g}
 const presTxt=(p,ex)=>`${p.sets} × ${p.min}–${p.max} ${unit(ex)}`;
-const rirTxt=rpe=>{const r=10-rpe;return r<=0?'al fallo':`deja unas ${String(r).replace('.',',')} reps en reserva`};
+const rirTxt=rpe=>{const r=10-rpe;return r<=0?'al fallo':`deja unas ${dec(r)} reps en reserva`};
 function loadTxt(ex,g,pr){if(ex.eq==='body')return `objetivo ${g.r} ${unit(ex)}`;if(g.w)return `${fmtKg(g.w)} kg × ${g.r}`;const sw=pr&&startW(ex,pr);return sw?`${fmtKg(sw)} kg × ${g.r} (sugerido)`:'elige peso inicial'}
 const WARM=480,WORK=45;
 /* Tiempo estimado: 8 min calentamiento + series×45 s + series×descanso */

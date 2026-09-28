@@ -176,23 +176,24 @@ details[open] .chev{transform:rotate(180deg)}
 <div id="seq"></div>
 <div id="toast"></div>
 
-<script src="js/i18n-en.js?v=202609281229"></script>
-<script src="js/i18n.js?v=202609281229"></script>
-<script src="js/catalog.js?v=202609281229"></script>
-<script src="js/figures.js?v=202609281229"></script>
-<script src="js/merge.js?v=202609281229"></script>
-<script src="js/plan.js?v=202609281229"></script>
-<script src="js/injuries.js?v=202609281229"></script>
-<script src="js/progress.js?v=202609281229"></script>
-<script src="js/nutrition.js?v=202609281229"></script>
-<script src="js/activities.js?v=202609281229"></script>
-<script src="js/bodymap.js?v=202609281229"></script>
-<script src="js/sync.js?v=202609281229"></script>
+<script src="js/i18n-en.js?v=202609281245"></script>
+<script src="js/i18n.js?v=202609281245"></script>
+<script src="js/catalog.js?v=202609281245"></script>
+<script src="js/figures.js?v=202609281245"></script>
+<script src="js/merge.js?v=202609281245"></script>
+<script src="js/plan.js?v=202609281245"></script>
+<script src="js/injuries.js?v=202609281245"></script>
+<script src="js/progress.js?v=202609281245"></script>
+<script src="js/nutrition.js?v=202609281245"></script>
+<script src="js/activities.js?v=202609281245"></script>
+<script src="js/bodymap.js?v=202609281245"></script>
+<script src="js/sync.js?v=202609281245"></script>
 <!-- Dentro de la app de Android (Capacitor) se cargan el núcleo y los plugins nativos -->
 <script>if(window.Capacitor&&Capacitor.isNativePlatform&&Capacitor.isNativePlatform())document.write('<script src="js/vendor/capacitor.js"><\/script><script src="js/vendor/ble.js"><\/script><script src="js/vendor/fgs.js"><\/script>')</script>
-<script src="js/timer.js?v=202609281229"></script>
-<script src="js/push.js?v=202609281229"></script>
-<script src="js/hr.js?v=202609281229"></script>
+<script src="js/timer.js?v=202609281245"></script>
+<script src="js/push.js?v=202609281245"></script>
+<script src="js/hr.js?v=202609281245"></script>
+<script src="js/i18n-en-catalog.js?v=202609281245"></script>
 <script>
 
 
@@ -297,7 +298,7 @@ function header(){return `<header class="appbar"><div class="max-w-xl mx-auto px
 function nav(){const t=[['home','today','Hoy'],['plan','plan','Plan'],['body','body','Cuerpo'],['injuries','cross','Lesiones'],['history','hist','Progreso'],['profile','user','Perfil']];
  return `<nav class="tabbar" aria-label="Secciones"><div class="max-w-xl mx-auto flex">${t.map(([v,i,l])=>`<button class="tab" data-a="tab" data-v="${v}" ${view===v?'aria-current="page"':''}>${ic(i)}<span>${l}</span></button>`).join('')}</div></nav>`}
 function exRow(u,it,di,i){const ex=X(it.ex),p=it.p||presc(ex,u.profile),g=prog(u,ex,p);
- return `<div class="row"><button class="row-main" data-a="info" data-ex="${ex.id}" data-d="${di}" data-i="${i}" aria-label="Ver técnica de ${esc(ex.n)}">${mini(ex)}<span class="min-w-0 flex-1"><span class="block font-semibold leading-tight">${esc(ex.n)}</span><span class="block text-sm text-dim mt-0.5">${presTxt(p,ex)}, RPE ${String(p.rpe).replace('.',',')}</span><span class="block text-sm ${g.w||ex.eq==='body'?'text-fg':'text-accent'}">${loadTxt(ex,g,u.profile)}</span>${it.sub?`<span class="block text-xs mt-0.5" style="color:var(--accent)">En lugar de ${esc(X(it.sub.from).n)} por molestia en ${esc(it.sub.mus)}</span>`:''}${it.warn?`<span class="block text-xs mt-0.5" style="color:var(--accent)">Molestia leve en ${esc(it.warn)}: ve con cuidado</span>`:''}</span></button>${di==null?'':`<button class="btn-ghost" data-a="swap" data-d="${di}" data-i="${i}" aria-label="Cambiar ${esc(ex.n)}">${ic('swap',18)}<span>Cambiar</span></button>`}</div>`}
+ return `<div class="row"><button class="row-main" data-a="info" data-ex="${ex.id}" data-d="${di}" data-i="${i}" aria-label="Ver técnica de ${esc(ex.n)}">${mini(ex)}<span class="min-w-0 flex-1"><span class="block font-semibold leading-tight">${esc(ex.n)}</span><span class="block text-sm text-dim mt-0.5">${presTxt(p,ex)}, RPE ${dec(p.rpe)}</span><span class="block text-sm ${g.w||ex.eq==='body'?'text-fg':'text-accent'}">${loadTxt(ex,g,u.profile)}</span>${it.sub?`<span class="block text-xs mt-0.5" style="color:var(--accent)">En lugar de ${esc(X(it.sub.from).n)} por molestia en ${esc(it.sub.mus)}</span>`:''}${it.warn?`<span class="block text-xs mt-0.5" style="color:var(--accent)">Molestia leve en ${esc(it.warn)}: ve con cuidado</span>`:''}</span></button>${di==null?'':`<button class="btn-ghost" data-a="swap" data-d="${di}" data-i="${i}" aria-label="Cambiar ${esc(ex.n)}">${ic('swap',18)}<span>Cambiar</span></button>`}</div>`}
 function weekStrip(u){const s=weekSchedule(u),td=weekday(Date.now());
  if(!s.length)return '<p class="text-dim">Sin días marcados esta semana. Puedes editarla en Plan.</p>';
  return `<div class="wk">${s.map(e=>`<div class="wk-d ${e.done?'is-done':''} ${e.type==='match'?'is-match':''} ${e.wd===td&&!e.done&&e.type!=='rest'&&e.type!=='skip'?'is-next':''}"><div class="text-sm text-dim">${DAY_SHORT[e.wd]}</div><div class="font-semibold leading-tight mt-1">${esc(entryTitle(e))}</div><div class="text-xs mt-1 ${e.done?'text-easy':'text-dim'}">${e.done?'Hecho':e.type==='rest'||e.type==='skip'?'—':e.type==='match'?(e.wd===td?'Hoy':'Partido'):e.wd<td?'Pendiente':e.wd===td?'Hoy':'Previsto'}</div></div>`).join('')}</div>`}
@@ -542,7 +543,7 @@ function vStageStr(u,a){const it=a.items[a.cur],ex=X(it.ex),p=it.p,cur=it.sets.f
    <div class="flex gap-4 items-start"><button class="fig-lg" data-a="info" data-ex="${ex.id}" data-s="1" data-i="${a.cur}" aria-label="Ver técnica">${animSvg(ex)}</button>
     <div class="min-w-0 flex-1">${a.deload?'<span class="chip mb-2" style="border-color:var(--normal);color:var(--normal)">Semana de descarga: pesos al 85 %</span>':''}${it.sub?`<span class="chip mb-2" style="border-color:var(--accent);color:var(--accent)">Sustituye a ${esc(X(it.sub.from).n)} (molestia en ${esc(it.sub.mus)})</span>`:''}${it.warn?`<span class="chip mb-2" style="border-color:var(--accent);color:var(--accent)">Molestia leve en ${esc(it.warn)}</span>`:''}${it.leg?`<span class="chip mb-2" style="border-color:var(--hard);color:var(--hard)">Piernas −${it.leg} % por fatiga de ${esc(a.legAdj?a.legAdj.sport:'deporte')}</span>`:''}<p class="text-sm text-dim">Ejercicio ${a.cur+1} de ${a.items.length}</p><h1 class="font-display text-3xl font-extrabold leading-none mt-1">${esc(ex.n)}</h1><p class="text-sm text-dim mt-1">${esc(ex.m.join(', '))}</p>
      <button data-a="swap" data-s="1" data-i="${a.cur}" class="btn-ghost mt-3">${ic('swap',18)}Cambiar ejercicio</button></div></div>
-   <div class="tip mt-4 text-sm"><b>${presTxt(p,ex)}</b> a RPE ${String(p.rpe).replace('.',',')}: ${rirTxt(p.rpe)}. Descanso ${p.rest} s.${!body&&!(u.prog[ex.id]&&u.prog[ex.id].w)?(startW(ex,u.profile)?' Peso sugerido según tu perfil: ajústalo si la primera serie no encaja con ese RPE.':' Primera vez: elige un peso con el que llegues al rango con ese margen.'):''}</div>
+   <div class="tip mt-4 text-sm"><b>${presTxt(p,ex)}</b> a RPE ${dec(p.rpe)}: ${rirTxt(p.rpe)}. Descanso ${p.rest} s.${!body&&!(u.prog[ex.id]&&u.prog[ex.id].w)?(startW(ex,u.profile)?' Peso sugerido según tu perfil: ajústalo si la primera serie no encaja con ese RPE.':' Primera vez: elige un peso con el que llegues al rango con ese margen.'):''}</div>
    <div class="flex flex-col gap-2 mt-4">${rows}</div>
   </section>
   <div class="flex gap-2 mt-4"><button data-a="prev" class="btn-ghost flex-1" ${a.cur===0?'disabled':''}>Anterior</button>${last?`<button data-a="stagenext" class="btn-primary flex-[2]">${nxt?`Pasar a ${(nxt==='cond'&&a.cond.kind!=='liss'?'HIIT':STAGE_LBL[nxt]).toLowerCase()}`:'Terminar sesión'}</button>`:`<button data-a="next" class="btn-ghost flex-[2]">Siguiente ejercicio</button>`}</div>`}
@@ -716,8 +717,8 @@ function updLive(){const u=U();if(!u||!u.live)return;liveNotify();const L=u.live
  set('#lv-rc',(L.reconnects||[]).map(t=>`Reconectado a las ${hhmm(t)}`).join(' · '));
  if(on&&z&&z.z>=3&&restDayToday(u))zoneAlert(z.z)}
 // Notificación fija de la app nativa mientras se graba (se actualiza cada 10 s).
-const liveTitle=L=>`Forja · Grabando ${sportName(L).toLowerCase()}`;
-const liveBody=L=>`${fmtDur(Date.now()-L.start)} · ${HR.state==='on'?`♥ ${HR.bpm||'--'} ppm`:hrSaved()?'buscando pulsómetro…':'sin pulsómetro'}`;
+const liveTitle=L=>tr(`Forja · Grabando ${sportName(L).toLowerCase()}`);
+const liveBody=L=>`${fmtDur(Date.now()-L.start)} · ${tr(HR.state==='on'?`♥ ${HR.bpm||'--'} ppm`:hrSaved()?'buscando pulsómetro…':'sin pulsómetro')}`;
 let liveFgsAt=0;
 function liveNotify(){const u=U();if(!u||!u.live||Date.now()-liveFgsAt<10000)return;liveFgsAt=Date.now();liveServiceUpdate(liveTitle(u.live),liveBody(u.live))}
 function openLiveFinish(){const u=U(),L=u.live,s=liveSummary(L,HR.samples,u.profile,Date.now());
@@ -809,7 +810,7 @@ function openInfo(exId,ctx){const u=U(),ex=X(exId),p=presc(ex,u.profile);infoCtx
   <a class="btn-ghost w-full mt-4" href="https://www.youtube.com/results?search_query=${encodeURIComponent(ex.n+' técnica')}" target="_blank" rel="noopener noreferrer">${ic('play',18)}Ver vídeos de la técnica en YouTube</a>
   ${PHOTO[ex.id]?'<p class="hint">Fotos: Free Exercise DB (dominio público).</p>':''}
   <h3 class="h2 mt-6 text-xl">Tu prescripción</h3>
-  <p class="mt-2">${presTxt(p,ex)} a RPE ${String(p.rpe).replace('.',',')} (${rirTxt(p.rpe)}), descanso ${p.rest} s.</p>${act}`,ex.n)}
+  <p class="mt-2">${presTxt(p,ex)} a RPE ${dec(p.rpe)} (${rirTxt(p.rpe)}), descanso ${p.rest} s.</p>${act}`,ex.n)}
 function openSwap(ctx){const u=U();swapCtx=ctx;let curId,slot;
  if(ctx.s){curId=u.active.items[ctx.i].ex;slot=X(curId).slot}else{const it=u.plan.days[ctx.d].items[ctx.i];curId=it.ex;slot=it.slot}
  const allow=ALLOW[u.profile.equip],alts=EX.filter(e=>e.slot===slot).sort((a,b)=>allow.includes(b.eq)-allow.includes(a.eq));

@@ -34,6 +34,8 @@ jobs:
           npx playwright install --with-deps chromium
       - name: Prueba de humo
         run: node tools/smoke.js
+      - name: Traducción al inglés completa
+        run: node tools/i18n-check.js
 
   publicar:
     needs: pruebas

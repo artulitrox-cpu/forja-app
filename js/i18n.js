@@ -5,13 +5,14 @@
 
 const LANG_KEY='forja.lang';
 let LANG=(()=>{try{const l=localStorage.getItem(LANG_KEY);if(l==='es'||l==='en')return l}catch(e){}
- return typeof navigator!=='undefined'&&/^es/i.test(navigator.language||'es')?'es':'en'})();
+ return typeof navigator==='undefined'||/^es/i.test(navigator.language||'es')?'es':'en'})();
 const LOC=()=>LANG==='en'?'en-GB':'es-ES';
 // Traduce una cadena completa (conserva los espacios de los extremos). Sin traducción, devuelve el original.
 function tr(s){if(LANG!=='en'||s==null)return s;const str=String(s),m=str.match(/^(\s*)([\s\S]*?)(\s*)$/),core=m[2];if(!core)return str;
  const d=typeof I18N_EN!=='undefined'?I18N_EN:null;if(!d)return str;
  let out=d.dict[core];
- if(out==null)for(const [re,rep] of d.patterns){if(re.test(core)){out=core.replace(re,typeof rep==='function'?rep:rep);break}}
+ // Patrones: reemplazo de texto ($1…) o función que recibe las partes y devuelve la traducción (o null si no aplica).
+ if(out==null)for(const [re,rep] of d.patterns){const mm=core.match(re);if(!mm)continue;const r=typeof rep==='function'?rep(...mm):core.replace(re,rep);if(r!=null){out=r;break}}
  if(out==null&&typeof window!=='undefined'&&window.__i18nMissing)window.__i18nMissing.add(core);
  return out==null?str:m[1]+out+m[3]}
 /* ---- Traducción del DOM ---- */

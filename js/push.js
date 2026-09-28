@@ -17,7 +17,8 @@ function upcomingReminders(u,now=Date.now(),days=7){const cfg=pushCfg(u);if(!cfg
  // Check-in: el día que toca a las 9:00; si ya pasó, la próxima vez que sean las 9:00.
  if(last){let w=at(last.date+(u.checkinEvery||14)*864e5,9);if(w<=now)w=at(now,9)>now?at(now,9):at(now+864e5,9);if(w<end)out.push({at:w,title:'Toca check-in biométrico',body:'Pésate o hazte un escaneo para ajustar calorías y cargas.',tag:`checkin-${weekKey(w)}`})}
  (typeof activeInjuries==='function'?activeInjuries(u):[]).forEach(i=>{const w=Math.max(at(i.reviewAt,9),i.reviewAt);if(w>now&&w<end)out.push({at:w,title:`¿Cómo va tu molestia en ${i.muscle}?`,body:'Ya ha pasado el tiempo estimado de recuperación. Revisa si estás recuperado.',tag:`injury-${i.id}`})});
- return out.sort((a,b)=>a.at-b.at)}
+ // Se guardan en el idioma de la app (la notificación la envía el servidor tal cual).
+ return out.sort((a,b)=>a.at-b.at).map(x=>typeof tr==='function'?{...x,title:tr(x.title),body:tr(x.body)}:x)}
 const entryTitleTxt=e=>e.type==='cardio'?'Cardio':e.name;
 /* ---- Suscripción (navegador + Supabase) ---- */
 function b64uToU8(s){const p='='.repeat((4-s.length%4)%4),b=atob((s+p).replace(/-/g,'+').replace(/_/g,'/'));return Uint8Array.from(b,c=>c.charCodeAt(0))}
