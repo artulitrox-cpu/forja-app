@@ -144,33 +144,83 @@ const estMin=(u,day)=>{const e=estimate(u,day);return Math.round((e.work+e.rest)
 const DAY_MS=864e5;
 const weekday=ts=>(new Date(ts).getDay()+6)%7;
 function weekKey(ts){const d=new Date(ts);return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}
-// Días de entreno de una semana: la edición de esa semana (u.weeks) o, si no hay, los habituales.
-function weekDaysFor(u,ws){const w=u.weeks&&u.weeks[weekKey(ws)];
- return [...new Set(Array.isArray(w)?w:availOf(u.profile))].filter(x=>x>=0&&x<=6).sort((a,b)=>a-b)}
+// Edición de una semana: {days?, matches, skips, extras, log}. Las semanas antiguas eran una lista de días.
+function weekObj(u,ws){const w=u.weeks&&u.weeks[weekKey(ws)];if(!w)return {matches:{},skips:[],extras:[],log:[]};
+ if(Array.isArray(w))return {days:[...w],matches:{},skips:[],extras:[],log:[]};return {matches:{},skips:[],extras:[],log:[],...w}}
+// Igual que weekObj, pero guardado en u.weeks para poder modificarlo.
+function weekEdit(u,ws){u.weeks=u.weeks||{};const k=weekKey(ws);u.weeks[k]=weekObj(u,ws);pruneWeeks(u);return u.weeks[k]}
+// Días de gimnasio habituales de esa semana (sin extras, partidos ni "no voy").
+function weekDaysFor(u,ws){const w=weekObj(u,ws);return [...new Set(w.days||availOf(u.profile))].filter(x=>x>=0&&x<=6).sort((a,b)=>a-b)}
+// Partidos de la semana: los habituales del perfil más los cambios de esa semana (null = quitado).
+function weekMatches(u,ws){const m={};(u.profile.sports||[]).forEach(s=>{m[s.wd]=s.sport});
+ Object.entries(weekObj(u,ws).matches).forEach(([wd,sp])=>{if(sp)m[wd]=sp;else delete m[wd]});return m}
 // f posiciones de n, lo más separadas posible.
 function spread(n,f){const out=new Set();for(let j=0;j<f;j++)out.add(Math.min(n-1,Math.max(0,Math.round((j+.5)*n/f-.5))));
  for(let i=0;out.size<f&&i<n;i++)out.add(i);return out}
-// Reparto de la semana: [{wd, type:'strength'|'cardio'|'rest', done, name, tpl?, dayIdx?}].
+const sportLbl=sp=>typeof sportName==='function'?sportName({sport:sp}):sp;
+// Versión de tren superior de una plantilla (víspera de partido sin intercambio posible).
+function upperTpl(u,tpl){let items=tpl.items.filter(it=>!LOWER_SLOTS.has(it.slot));
+ if(!items.some(it=>it.slot!=='core'))items=genPlan(u.profile,{swaps:u.swaps||{},split:'fb',nd:1}).days[0].items.filter(it=>!LOWER_SLOTS.has(it.slot));
+ return {...tpl,name:`${tpl.name} (tren superior)`,focus:'Solo tren superior: mañana hay partido',items,upper:true}}
+// Reparto de la semana: [{wd, type:'strength'|'cardio'|'rest'|'match'|'skip', done, name, tpl?, dayIdx?, sport?, extra?}].
 // La rotación de fuerza continúa desde u.next; las sesiones ya hechas esa semana se marcan por orden.
 function weekSchedule(u,ws=weekStart()){
- const pr=u.profile,days=weekDaysFor(u,ws),rest7=days.length>MAX_SESSIONS,act=rest7?days.filter(d=>d!==6):days;
+ const pr=u.profile,w=weekObj(u,ws),matches=weekMatches(u,ws),skips=new Set(w.skips),extras=new Set(w.extras);
+ const all=[...new Set([...weekDaysFor(u,ws),...extras])].sort((a,b)=>a-b);
+ let act=all.filter(d=>matches[d]==null&&!skips.has(d));
+ const rest7=act.length>MAX_SESSIONS;if(rest7)act=act.filter(d=>d!==6);
  const n=act.length,F=strengthDays(pr,n),pos=spread(n,F);
  const fallback=u.plan.split==='ppl'&&F<3;
  const tpls=fallback?genPlan(pr,{swaps:u.swaps||{},cyc:u.cycle?wk(u).cyc:0,split:'fb',nd:Math.max(1,F)}).days:u.plan.days;
  const end=ws+7*DAY_MS,hist=(u.history||[]).filter(h=>h.date>=ws&&h.date<end).sort((a,b)=>a.date-b.date);
  const doneS=hist.filter(h=>h.kind!=='cardio'),doneC=hist.filter(h=>h.kind==='cardio');
- const cardioMax=pr.goal==='hyp'?1:Infinity;
+ // Cada partido cuenta como un día de cardio.
+ const nMatch=Object.keys(matches).length,cardioMax=Math.max(0,(pr.goal==='hyp'?1:n-F)-nMatch);
  let si=0,ci=0;const out=[];
- act.forEach((wd,i)=>{
+ act.forEach((wd,i)=>{const x=extras.has(wd)?{extra:true}:{};
   if(pos.has(i)){const j=si++;
-   if(j<doneS.length){out.push({wd,type:'strength',done:true,name:doneS[j].day});return}
+   if(j<doneS.length){out.push({wd,type:'strength',done:true,name:doneS[j].day,...x});return}
    const k=j-doneS.length,idx=fallback?k%tpls.length:(u.next+k)%tpls.length,tpl=tpls[idx];
-   out.push({wd,type:'strength',done:false,name:tpl.name,tpl,dayIdx:fallback?null:idx})}
-  else if(ci<cardioMax){const j=ci++;out.push({wd,type:'cardio',done:j<doneC.length,name:'Cardio'})}
-  else out.push({wd,type:'rest',done:false,name:'Descanso'})});
+   out.push({wd,type:'strength',done:false,name:tpl.name,tpl,dayIdx:fallback?null:idx,...x})}
+  else if(ci<cardioMax){const j=ci++;out.push({wd,type:'cardio',done:j<doneC.length,name:'Cardio',...x})}
+  else out.push({wd,type:'rest',done:false,name:'Descanso',...x})});
+ Object.entries(matches).forEach(([wd,sp])=>{wd=+wd;const d0=ws+wd*DAY_MS;
+  out.push({wd,type:'match',sport:sp,name:sportLbl(sp),done:(u.activities||[]).some(a=>a.date>=d0&&a.date<d0+DAY_MS)})});
+ all.filter(d=>skips.has(d)&&matches[d]==null).forEach(wd=>out.push({wd,type:'skip',done:false,name:'No voy'}));
  if(rest7)out.push({wd:6,type:'rest',done:false,name:'Descanso'});
+ out.sort((a,b)=>a.wd-b.wd);
+ preMatch(u,out,matches);
  assignConditioning(u,out,ws);
  return out}
+// Víspera de partido: sin pierna principal. Se intercambia con una sesión posterior sin pierna o queda en tren superior.
+function preMatch(u,out,matches){out.forEach(e=>{if(e.type!=='strength'||e.done||!e.tpl||matches[e.wd+1]==null||!isLegTpl(e.tpl))return;
+ const swap=out.find(o=>o.wd>e.wd&&o.type==='strength'&&!o.done&&o.tpl&&!isLegTpl(o.tpl)&&matches[o.wd+1]==null);
+ if(swap){[e.tpl,swap.tpl]=[swap.tpl,e.tpl];[e.dayIdx,swap.dayIdx]=[swap.dayIdx,e.dayIdx];e.name=e.tpl.name;swap.name=swap.tpl.name}
+ else{e.tpl=upperTpl(u,e.tpl);e.name=e.tpl.name;e.dayIdx=null}})}
+// Días libres de la semana después de "desde": sin gimnasio, partido ni "no voy".
+function freeDays(u,ws,from){const w=weekObj(u,ws),m=weekMatches(u,ws),used=new Set([...weekDaysFor(u,ws),...w.extras,...w.skips]);
+ return [0,1,2,3,4,5,6].filter(d=>d>from&&!used.has(d)&&m[d]==null)}
+// Sesiones (fuerza o cardio) que la semana pierde por los "no voy" frente a no haber marcado ninguno.
+function lostSessions(u,ws){const w=weekObj(u,ws);if(!w.skips.length)return 0;const k=weekKey(ws),cnt=s=>s.filter(e=>e.type==='strength'||e.type==='cardio').length;
+ return Math.max(0,cnt(weekSchedule({...u,weeks:{...(u.weeks||{}),[k]:{...w,skips:[]}}},ws))-cnt(weekSchedule(u,ws)))}
+/* ---- Cambios de la semana (con deshacer) ---- */
+const wlog=(w,e)=>{w.log.push({id:'c'+Date.now().toString(36)+Math.random().toString(36).slice(2,5),...e})};
+// En un día extra, 'no voy' simplemente quita el extra.
+function skipDay(u,ws,wd){const w=weekEdit(u,ws);if(w.skips.includes(wd))return;
+ if(w.extras.includes(wd)){w.extras=w.extras.filter(d=>d!==wd);w.log=w.log.filter(l=>!(l.type==='extra'&&l.wd===wd));return}
+ w.skips.push(wd);wlog(w,{type:'skip',wd})}
+function addExtra(u,ws,wd){const w=weekEdit(u,ws);if(w.skips.includes(wd)){w.skips=w.skips.filter(d=>d!==wd);w.log=w.log.filter(l=>!(l.type==='skip'&&l.wd===wd));return}
+ if(w.extras.includes(wd)||weekDaysFor(u,ws).includes(wd))return;w.extras.push(wd);wlog(w,{type:'extra',wd})}
+function setMatch(u,ws,wd,sport){const w=weekEdit(u,ws),prev=Object.prototype.hasOwnProperty.call(w.matches,wd)?w.matches[wd]:undefined;
+ w.matches[wd]=sport;wlog(w,{type:'match',wd,sport,prev})}
+function removeMatch(u,ws,wd){const w=weekEdit(u,ws),prev=Object.prototype.hasOwnProperty.call(w.matches,wd)?w.matches[wd]:undefined;
+ const habitual=(u.profile.sports||[]).some(s=>s.wd===wd);if(habitual)w.matches[wd]=null;else delete w.matches[wd];wlog(w,{type:'unmatch',wd,prev})}
+function undoChange(u,ws,id){const w=weekEdit(u,ws),i=w.log.findIndex(l=>l.id===id);if(i<0)return;const l=w.log[i];w.log.splice(i,1);
+ if(l.type==='skip')w.skips=w.skips.filter(d=>d!==l.wd);
+ else if(l.type==='extra')w.extras=w.extras.filter(d=>d!==l.wd);
+ else if(l.prev===undefined)delete w.matches[l.wd];else w.matches[l.wd]=l.prev}
+// Texto de un cambio para la lista "Cambios de esta semana".
+function changeLabel(l){const d=DAY_LONG[l.wd];return {skip:`No voy el ${d}`,extra:`Día extra el ${d}`,match:`Partido de ${sportLbl(l.sport)} el ${d}`,unmatch:`Sin partido el ${d}`}[l.type]}
 
 /* ============ Migración de datos v1 → v2 ============ */
 // Primer ejercicio añadido en la v2: los anteriores forman el catálogo con el que se eligió el plan v1.
@@ -217,7 +267,8 @@ function assignConditioning(u,sched,ws){const pr=u.profile,g=FINISH_MIN[pr.goal]
  const weeksIn=Math.floor((ws-weekStartOf(u.created||ws))/WMS);
  const cap=wi.deload||(pr.level==='beg'&&weeksIn<2)?0:HIIT_CAP[g];
  const at=wd=>sched.find(x=>x.wd===wd);
- const legNext=e=>{const n=at(e.wd+1);return !!n&&n.type==='strength'&&!n.done&&isLegTpl(n.tpl)};
+ // Sin HIIT la víspera de una sesión con pierna principal ni la víspera de un partido.
+ const legNext=e=>{const n=at(e.wd+1);return !!n&&((n.type==='strength'&&!n.done&&isLegTpl(n.tpl))||n.type==='match')};
  const str=sched.filter(e=>e.type==='strength');
  // Ganar músculo: 2 bloques tras sesiones sin pierna principal o, si no hay, las más cortas.
  const fin=g==='hyp'?[...str].sort((a,b)=>(isLegTpl(a.tpl)-isLegTpl(b.tpl))||((a.tpl?a.tpl.items.length:0)-(b.tpl?b.tpl.items.length:0))).slice(0,2):str;

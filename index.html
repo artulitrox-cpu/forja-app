@@ -120,6 +120,12 @@ details[open] .chev{transform:rotate(180deg)}
 .wk-d{flex:1 0 auto;min-width:86px;border:1px solid var(--line);border-radius:14px;padding:10px;background:var(--surface)}
 .wk-d.is-next{border-color:var(--accent)}
 .wk-d.is-done{background:color-mix(in srgb,var(--easy) 14%,var(--surface));border-color:color-mix(in srgb,var(--easy) 50%,var(--line))}
+/* Semana dinámica */
+.wkrow{display:flex;align-items:center;gap:12px;width:100%;min-height:48px;padding:6px 8px;border-radius:12px;background:none;border:1px solid transparent;color:inherit;font:inherit;text-align:left}
+.wkrow:hover{background:var(--surface2)}.wkrow.is-today{border-color:var(--accent)}
+.chip-match{background:var(--normal);color:#040f24;border-color:var(--normal)}
+.wk-d.is-match{border-color:var(--normal)}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 /* Lesiones */
 .bodywrap{background:var(--bg);border-radius:16px;padding:8px}
 .bodymap{width:100%;max-width:280px;height:auto;max-height:440px;display:block;margin:0 auto}
@@ -275,8 +281,8 @@ function exRow(u,it,di,i){const ex=X(it.ex),p=it.p||presc(ex,u.profile),g=prog(u
  return `<div class="row"><button class="row-main" data-a="info" data-ex="${ex.id}" data-d="${di}" data-i="${i}" aria-label="Ver técnica de ${esc(ex.n)}">${mini(ex)}<span class="min-w-0 flex-1"><span class="block font-semibold leading-tight">${esc(ex.n)}</span><span class="block text-sm text-dim mt-0.5">${presTxt(p,ex)}, RPE ${String(p.rpe).replace('.',',')}</span><span class="block text-sm ${g.w||ex.eq==='body'?'text-fg':'text-accent'}">${loadTxt(ex,g,u.profile)}</span>${it.sub?`<span class="block text-xs mt-0.5" style="color:var(--accent)">En lugar de ${esc(X(it.sub.from).n)} por molestia en ${esc(it.sub.mus)}</span>`:''}${it.warn?`<span class="block text-xs mt-0.5" style="color:var(--accent)">Molestia leve en ${esc(it.warn)}: ve con cuidado</span>`:''}</span></button>${di==null?'':`<button class="btn-ghost" data-a="swap" data-d="${di}" data-i="${i}" aria-label="Cambiar ${esc(ex.n)}">${ic('swap',18)}<span>Cambiar</span></button>`}</div>`}
 function weekStrip(u){const s=weekSchedule(u),td=weekday(Date.now());
  if(!s.length)return '<p class="text-dim">Sin días marcados esta semana. Puedes editarla en Plan.</p>';
- return `<div class="wk">${s.map(e=>`<div class="wk-d ${e.done?'is-done':''} ${e.wd===td&&!e.done&&e.type!=='rest'?'is-next':''}"><div class="text-sm text-dim">${DAY_SHORT[e.wd]}</div><div class="font-semibold leading-tight mt-1">${esc(entryTitle(e))}</div><div class="text-xs mt-1 ${e.done?'text-easy':'text-dim'}">${e.done?'Hecho':e.type==='rest'?'—':e.wd<td?'Pendiente':e.wd===td?'Hoy':'Previsto'}</div></div>`).join('')}</div>`}
-const entryTitle=e=>e.type==='strength'?e.name:e.type==='cardio'?'Cardio':'Descanso';
+ return `<div class="wk">${s.map(e=>`<div class="wk-d ${e.done?'is-done':''} ${e.type==='match'?'is-match':''} ${e.wd===td&&!e.done&&e.type!=='rest'&&e.type!=='skip'?'is-next':''}"><div class="text-sm text-dim">${DAY_SHORT[e.wd]}</div><div class="font-semibold leading-tight mt-1">${esc(entryTitle(e))}</div><div class="text-xs mt-1 ${e.done?'text-easy':'text-dim'}">${e.done?'Hecho':e.type==='rest'||e.type==='skip'?'—':e.type==='match'?(e.wd===td?'Hoy':'Partido'):e.wd<td?'Pendiente':e.wd===td?'Hoy':'Previsto'}</div></div>`).join('')}</div>`}
+const entryTitle=e=>e.type==='strength'||e.type==='match'?e.name:e.type==='cardio'?'Cardio':e.type==='skip'?'No voy':'Descanso';
 function profileSummary(u){const pr=u.profile;
  if(!hasBio(pr))return `<section class="card p-4 mt-4 flex items-center gap-3"><span class="flex-1"><span class="block font-semibold">Completa tu perfil biométrico</span><span class="block text-sm text-dim">Con edad, estatura y peso ajustamos días, series y pesos iniciales.</span></span><button class="btn-ghost" data-a="tab" data-v="profile">Completar</button></section>`;
  const b=bmi(pr),cat=bmiCat(b),col=cat==='Normal'?'var(--easy)':cat==='Obesidad'?'var(--hard)':'var(--accent)';
@@ -305,37 +311,74 @@ function estCard(u,s){const e=s.est,pc=v=>(v/Math.max(1,e.total)*100).toFixed(1)
   ${s.notes.length?`<ul class="mt-2 text-sm text-dim flex flex-col gap-1">${s.notes.map(n=>`<li>· ${esc(n)}</li>`).join('')}</ul>`:''}</div>`}
 function condRow(c){const m=CARDIO_M[c.machine];return `<div class="row"><span class="row-main"><span class="mini grid place-items-center" style="color:var(--normal)">${ic('today',26)}</span><span class="min-w-0 flex-1"><span class="block font-semibold leading-tight">${esc(condKindLbl(c))}: ${esc(m?m.n:'')}</span><span class="block text-sm text-dim mt-0.5">${c.kind==='liss'?`${c.min} min continuos`:`${c.rounds} × ${c.work} s fuerte / ${c.rest} s suave · ${c.min} min`}</span></span></span></div>`}
 function blockRow(title,sub,icon){return `<div class="row"><span class="row-main"><span class="mini grid place-items-center text-dim">${ic(icon,26)}</span><span class="min-w-0 flex-1"><span class="block font-semibold leading-tight">${esc(title)}</span><span class="block text-sm text-dim mt-0.5">${esc(sub)}</span></span></span></div>`}
-// Qué ofrecer hoy: la sesión de hoy si está pendiente; si no, la siguiente pendiente de la semana.
+// Qué ofrecer hoy: la sesión de hoy si está pendiente; si no, el estado del día y la siguiente sesión.
 function todayPick(u){const s=weekSchedule(u),td=weekday(Date.now()),e=s.find(x=>x.wd===td);
- const pend=s.filter(x=>!x.done&&x.type!=='rest'),next=pend.find(x=>x.wd>=td)||pend[0]||null;
- let msg='';if(!s.length)msg='Sin sesiones esta semana.';else if(e&&e.done)msg='La sesión de hoy ya está hecha.';else if(e&&e.type==='rest')msg='Hoy toca descanso.';else if(!e)msg='Hoy no tenías sesión.';
- const today=e&&!e.done&&e.type!=='rest'?e:null;
- // Sin nada pendiente: la siguiente sesión de fuerza de la rotación.
- const extra=today||next||{wd:td,type:'strength',done:false,tpl:u.plan.days[u.next%u.plan.days.length],name:u.plan.days[u.next%u.plan.days.length].name,dayIdx:u.next%u.plan.days.length};
- return {s,td,today,offer:extra,msg}}
+ const pend=s.filter(x=>!x.done&&(x.type==='strength'||x.type==='cardio')),next=pend.find(x=>x.wd>td)||null;
+ const msg=!s.length?'Sin sesiones esta semana.':!e?'Hoy no tenías sesión.':e.type==='skip'?'Hoy marcaste que no vas.':e.done?'La sesión de hoy ya está hecha.':e.type==='rest'?'Hoy toca descanso.':'';
+ const today=e&&!e.done&&(e.type==='strength'||e.type==='cardio')?e:null;
+ // Para "entrenar igualmente": la siguiente pendiente o, si no hay, la siguiente de la rotación.
+ const rot=u.plan.days[u.next%u.plan.days.length];
+ const offer=today||pend.find(x=>x.wd>=td)||pend[0]||{wd:td,type:'strength',done:false,tpl:rot,name:rot.name,dayIdx:u.next%u.plan.days.length};
+ return {s,td,e,today,next,offer,msg}}
+const weekBlock=u=>`<section class="mt-8"><div class="flex items-baseline justify-between"><h2 class="h2">Esta semana</h2><button class="btn-text" data-a="tab" data-v="plan">Editar</button></div><div class="mt-3">${weekStrip(u)}</div></section>`;
 function vHome(){const u=U(),a=u.active;
  if(a)return `${banners(u)}<section class="pt-6"><p class="text-dim text-lg">Hola, ${esc(u.profile.name)}. Tienes una sesión a medias:</p><h1 class="hero">${esc(activeName(u,a))}</h1>
-  <button data-a="start" class="btn-primary w-full mt-5">${ic('play',20)}Continuar sesión</button></section>
-  <section class="mt-8"><h2 class="h2">Esta semana</h2><div class="mt-3">${weekStrip(u)}</div></section>`;
- const t=todayPick(u),e=t.offer,idx=t.s.indexOf(e);
- const head=t.today?`<p class="text-dim text-lg">Hola, ${esc(u.profile.name)}. Hoy toca</p>`:`<p class="text-dim text-lg">Hola, ${esc(u.profile.name)}. ${t.msg}</p><p class="text-dim">${e.wd!==t.td&&idx>=0?`Siguiente: ${DAY_LONG[e.wd]}. ¿Entrenar igualmente hoy?`:'¿Entrenar igualmente hoy?'}</p>`;
- const btn=`<button data-a="start" ${idx>=0?`data-w="${idx}"`:`data-d="${e.dayIdx}"`} class="btn-primary w-full mt-5">${ic('play',20)}${t.today?'Empezar sesión':'Entrenar igualmente'}</button>`;
- const ss=buildSession(u,e),di=e.dayIdx;
+  <button data-a="start" class="btn-primary w-full mt-5">${ic('play',20)}Continuar sesión</button></section>${weekBlock(u)}`;
+ const t=todayPick(u),ws=weekStart(),hello=`Hola, ${esc(u.profile.name)}.`,top=`${profileSummary(u)}${banners(u)}${injBanners(u)}`,tail=`${installCard()}${cycleCard(u)}`;
+ // Día de partido
+ if(t.e&&t.e.type==='match'){const m=t.e;
+  return `${top}${actCard(u,null)}${tail}<section class="pt-6"><p class="text-dim text-lg">${hello} Hoy juegas</p><h1 class="hero">${esc(m.name)}</h1>
+   <p class="text-dim mt-2">Hoy no hay gimnasio. Haz 5–8 min de movilidad antes de jugar.</p>
+   ${m.done?`<div class="card p-4 mt-4" style="border-color:var(--easy)"><b class="block">Partido registrado</b><span class="block text-sm text-dim mt-1">Mañana ajustamos la carga de piernas según la fatiga.</span></div>`
+    :`<button class="btn-primary w-full mt-5" data-a="actopen" data-s="${m.sport}">${ic('play',20)}Registrar partido</button><p class="hint">Al terminar: duración, esfuerzo y posición. Mañana ajustamos la carga de piernas según la fatiga.</p>`}
+   <button class="btn-text mt-2" data-a="wkunmatch" data-n="${m.wd}">Al final no juego hoy</button></section>${weekBlock(u)}`}
+ // Sin sesión pendiente hoy: descanso, "no voy", hecha o día libre
+ if(!t.today){const w=weekObj(u,ws),skip=t.e&&t.e.type==='skip',free=skip&&!w.noOffer&&lostSessions(u,ws)>0?freeDays(u,ws,t.td):[];
+  const offer=free.length?`<div class="card p-4 mt-4" style="border-color:var(--accent)"><b class="block">¿Recuperas la sesión otro día?</b><span class="block text-sm text-dim mt-1">La sesión de hoy pasa al siguiente día de gimnasio. Aún tienes días libres esta semana.</span><div class="flex flex-wrap gap-2 mt-3">${free.slice(0,3).map(d=>`<button class="btn-ghost" data-a="wkextra" data-n="${d}">Añadir el ${DAY_LONG[d]}</button>`).join('')}<button class="btn-text" data-a="wknooffer">No, gracias</button></div></div>`:'';
+  const oi=t.s.indexOf(t.offer);
+  const action=skip?`<button class="btn-ghost w-full mt-4" data-a="wkunskip" data-n="${t.td}">Al final sí voy hoy</button>`
+   :!t.e?`<button class="btn-primary w-full mt-5" data-a="wkextra" data-n="${t.td}">${ic('play',20)}Agregar día de entrenamiento extra</button><p class="hint">Suma hoy una sesión con lo que toque en tu rotación.</p>`
+   :`<button class="btn-ghost w-full mt-4" data-a="start" ${oi>=0?`data-w="${oi}"`:`data-d="${t.offer.dayIdx}"`}>Entrenar igualmente: ${esc(entryTitle(t.offer))}</button>`;
+  return `${top}${actCard(u,null)}${tail}<section class="pt-6"><p class="text-dim text-lg">${hello} ${t.msg}</p>${t.next?`<h1 class="hero">${esc(DAY_SHORT[t.next.wd])}: ${esc(entryTitle(t.next))}</h1><p class="text-dim mt-2">Tu próxima sesión es el ${DAY_LONG[t.next.wd]}.</p>`:''}
+   ${offer}${action}<button class="btn-text w-full mt-2 justify-center" data-a="matchtoday">Tengo partido hoy</button></section>${weekBlock(u)}`}
+ // Hoy toca sesión
+ const e=t.today,idx=t.s.indexOf(e),ss=buildSession(u,e),di=e.dayIdx;
  const blocks=`<section class="mt-8"><h2 class="h2">Bloques de hoy</h2><p class="text-sm text-dim mt-1">Toca un ejercicio para ver la técnica.</p><div class="mt-3 flex flex-col gap-2">
   ${blockRow('Movilidad',`${ss.mob.length} ejercicios · ~${Math.round(ss.est.mob/60)} min`,'body')}
   ${ss.items.map(it=>exRow(u,it,di,e.tpl?e.tpl.items.indexOf(e.tpl.items.find(x=>x.key===it.key)):null)).join('')}
   ${ss.omitted.map(o=>`<div class="row" style="opacity:.75"><span class="row-main"><span class="mini grid place-items-center" style="color:var(--hard)">${ic('cross',24)}</span><span class="min-w-0 flex-1"><span class="block font-semibold leading-tight line-through">${esc(X(o.ex).n)}</span><span class="block text-sm" style="color:var(--hard)">Ejercicio omitido por molestia muscular en ${esc(o.mus)}</span></span></span></div>`).join('')}
   ${ss.cond?condRow(ss.cond):''}
   ${blockRow('Estiramientos',`${ss.stretch.length} estiramientos · ~${Math.round(ss.est.stretch/60)} min`,'body')}</div></section>`;
- let body=`<h1 class="hero">${esc(ss.name)}</h1><p class="text-dim mt-2">${esc(ss.focus)}${ss.items.length?`. ${ss.items.length} ejercicios`:''}.</p>${estCard(u,ss)}${btn}</section>
-  <section class="mt-8"><h2 class="h2">Esta semana</h2><div class="mt-3">${weekStrip(u)}</div></section>${blocks}`;
- return `${profileSummary(u)}${banners(u)}${injBanners(u)}${actCard(u,ss)}${installCard()}${cycleCard(u)}<section class="pt-6">${head}${body}`}
-function weekCard(u){const ws=weekStart(),k=weekKey(ws),days=weekDaysFor(u,ws),custom=!!(u.weeks&&u.weeks[k]),s=weekSchedule(u,ws);
- return `<section class="card p-5 mt-5"><div class="flex items-baseline justify-between gap-2"><h2 class="h2">Esta semana</h2><span class="chip ${custom?'chip-a':''}">${custom?'Editada':'Habitual'}</span></div>
-  <p class="text-dim text-sm mt-2">Marca los días que irás al gimnasio esta semana. Tu semana habitual no cambia.</p>
-  <div class="days mt-3" role="group" aria-label="Días de esta semana">${DAY_SHORT.map((d,i)=>`<label><input type="checkbox" data-a="wkday" data-n="${i}" ${days.includes(i)?'checked':''}><span>${d}</span></label>`).join('')}</div>
-  ${custom?'<button class="btn-text mt-2" data-a="wkreset">Volver a mi semana habitual</button>':''}
-  <div class="mt-4 flex flex-col gap-2">${s.length?s.map(e=>`<div class="flex items-center gap-3"><span class="chip ${e.type==='strength'?'chip-a':''}" style="min-width:56px;justify-content:center">${DAY_SHORT[e.wd]}</span><span class="flex-1 ${e.type==='rest'?'text-dim':''}">${esc(entryTitle(e))}</span>${e.done?'<span class="text-sm text-easy">Hecho</span>':''}</div>`).join(''):'<p class="text-dim">Sin sesiones esta semana.</p>'}</div></section>`}
+ return `${top}${actCard(u,ss)}${tail}<section class="pt-6"><p class="text-dim text-lg">${hello} Hoy toca${e.extra?' (día extra)':''}</p>
+  <h1 class="hero">${esc(ss.name)}</h1><p class="text-dim mt-2">${esc(ss.focus)}${ss.items.length?`. ${ss.items.length} ejercicios`:''}.</p>${estCard(u,ss)}
+  <button data-a="start" data-w="${idx}" class="btn-primary w-full mt-5">${ic('play',20)}Empezar sesión</button>
+  <div class="flex gap-2 mt-2"><button class="btn-ghost flex-1" data-a="wkskip" data-n="${t.td}">Hoy no puedo ir</button><button class="btn-ghost flex-1" data-a="matchtoday">Tengo partido hoy</button></div></section>
+  ${weekBlock(u)}${blocks}`}
+function weekCard(u){const ws=weekStart(),w=weekObj(u,ws),s=weekSchedule(u,ws),td=weekday(Date.now()),custom=!!(u.weeks&&u.weeks[weekKey(ws)]),by=Object.fromEntries(s.map(e=>[e.wd,e]));
+ const chipCls=e=>!e?'':e.type==='strength'?'chip-a':e.type==='match'?'chip-match':'';
+ return `<section class="card p-5 mt-5"><div class="flex items-baseline justify-between gap-2"><h2 class="h2">Esta semana</h2><span class="chip ${custom?'chip-a':''}">${custom?'Con cambios':'Habitual'}</span></div>
+  <p class="text-dim text-sm mt-2">Toca un día para marcar un partido, decir que no vas o añadir un día extra. Solo cambia esta semana.</p>
+  <div class="mt-3 flex flex-col gap-1">${DAY_SHORT.map((d,wd)=>{const e=by[wd];return `<button class="wkrow ${wd===td?'is-today':''}" data-a="dayactions" data-n="${wd}" aria-label="${DAY_LONG[wd]}: ${esc(e?entryTitle(e):'libre')}"><span class="chip ${chipCls(e)}" style="min-width:56px;justify-content:center">${d}</span><span class="flex-1 text-left ${!e||e.type==='rest'||e.type==='skip'?'text-dim':''}">${esc(e?entryTitle(e):'Libre')}${e&&e.extra?' · extra':''}${e&&e.tpl&&e.tpl.upper?'':''}</span>${e&&e.done?'<span class="text-sm text-easy">Hecho</span>':''}<span class="text-dim">${ic('chev',18)}</span></button>`}).join('')}</div>
+  ${w.log.length?`<div class="mt-4"><span class="lbl">Cambios de esta semana</span><div class="flex flex-col gap-1">${w.log.map(l=>`<div class="flex items-center gap-2 text-sm"><span class="flex-1">${esc(changeLabel(l))}</span><button class="btn-text" style="min-height:34px" data-a="wkundo" data-id="${l.id}">Deshacer</button></div>`).join('')}</div></div>`:''}
+  ${custom?'<button class="btn-text mt-2" data-a="wkreset">Volver a mi semana habitual</button>':''}</section>`}
+function openDayActions(wd){const u=U(),ws=weekStart(),s=weekSchedule(u,ws),e=s.find(x=>x.wd===wd),inDays=weekDaysFor(u,ws).includes(wd),acts=[];
+ if(e&&e.type==='match')acts.push(`<button class="btn-ghost w-full" data-a="wkunmatch" data-n="${wd}">Quitar partido de ${esc(e.name)}</button>`);
+ else{
+  if(e&&e.extra)acts.push(`<button class="btn-ghost w-full" data-a="wkskip" data-n="${wd}">Quitar día extra</button>`);
+  else if(e&&(e.type==='strength'||e.type==='cardio')&&!e.done)acts.push(`<button class="btn-ghost w-full" data-a="wkskip" data-n="${wd}">No voy este día</button>`);
+  if(e&&e.type==='skip')acts.push(`<button class="btn-ghost w-full" data-a="wkunskip" data-n="${wd}">Sí voy este día</button>`);
+  if(!e&&!inDays)acts.push(`<button class="btn-ghost w-full" data-a="wkextra" data-n="${wd}">Agregar día de entrenamiento extra</button>`);
+  acts.push(`<span class="lbl mt-3">Marcar partido o deporte</span><div class="flex flex-wrap gap-2">${Object.entries(SPORTS).filter(([k])=>k!=='other').map(([k,v])=>`<button class="chip" data-a="wkmatch" data-n="${wd}" data-s="${k}">${v.n}</button>`).join('')}</div>`)}
+ const L=DAY_LONG[wd];
+ modal(`<h2 class="font-display text-3xl font-extrabold leading-none">${L[0].toUpperCase()+L.slice(1)}</h2><p class="text-dim mt-1">${esc(e?entryTitle(e):'Día libre')}${wd<weekday(Date.now())?' · ya pasó':''}</p>
+  <div class="flex flex-col gap-2 mt-4">${acts.join('')}</div><p class="hint">Los cambios solo afectan a esta semana. Tus deportes fijos se configuran en Mi perfil.</p>`,'Cambiar día')}
+function openMatchToday(){const td=weekday(Date.now());
+ modal(`<h2 class="font-display text-3xl font-extrabold leading-none">Tengo partido hoy</h2><p class="text-dim mt-2">Hoy no habrá gimnasio y la sesión pasa al siguiente día disponible. Al terminar podrás registrar el partido.</p>
+  <div class="flex flex-wrap gap-2 mt-4">${Object.entries(SPORTS).filter(([k])=>k!=='other').map(([k,v])=>`<button class="btn-ghost" data-a="wkmatch" data-n="${td}" data-s="${k}">${v.n}</button>`).join('')}</div>`,'Partido hoy')}
+function sportsCard(u){const sp=u.profile.sports||[];
+ return `<section class="card p-5 mt-6"><h2 class="h2">Deportes habituales</h2><p class="text-sm text-dim mt-2">Partidos o deportes fijos cada semana. Ese día no hay gimnasio y la víspera se evita la pierna pesada y el HIIT.</p>
+  ${sp.length?`<div class="flex flex-col gap-2 mt-3">${sp.map((x,i)=>`<div class="flex items-center gap-3 p-3 rounded-2xl" style="background:var(--surface2)"><span class="flex-1 font-semibold">${esc(sportLbl(x.sport))} · ${DAY_LONG[x.wd]}</span><button class="btn-text btn-danger" data-a="sportdel" data-i="${i}" aria-label="Quitar ${esc(sportLbl(x.sport))} del ${DAY_LONG[x.wd]}">${ic('close',16)}</button></div>`).join('')}</div>`:''}
+  <form data-sport class="grid grid-cols-2 gap-2 mt-3"><label class="sr-only" for="sp-sport">Deporte</label><select id="sp-sport" name="sport" class="field">${Object.entries(SPORTS).filter(([k])=>k!=='other').map(([k,v])=>`<option value="${k}">${v.n}</option>`).join('')}</select><label class="sr-only" for="sp-wd">Día</label><select id="sp-wd" name="wd" class="field">${DAY_LONG.map((d,i)=>`<option value="${i}">${d}</option>`).join('')}</select><button class="btn-ghost col-span-2" type="submit">Añadir deporte habitual</button></form></section>`}
 function vPlan(){const u=U(),pl=u.plan,pr=u.profile,nx=u.next%pl.days.length;
  return `<section class="pt-6"><h1 class="h1">Tu plan</h1>
   <p class="text-dim mt-2">${daysOf(pr)} sesiones por semana, ${pl.split==='ppl'?'Empuje / Tirón / Pierna':'Cuerpo completo'} en fuerza. ${LEVELS[pr.level]}, objetivo: ${GOALS[pr.goal].toLowerCase()}. Máximo ${pr.sessionMin||60} min por sesión.</p></section>
@@ -414,7 +457,7 @@ function vHistory(){const u=U(),H=u.history,ws=weekStart(),cMin=H.filter(h=>h.da
  const chart=last.length?`<svg viewBox="0 0 ${W} 150" class="w-full" role="img" aria-label="Series completadas en las últimas sesiones">${last.map((h,i)=>{const x=(i+.5)*W/last.length,hh=Math.max(4,(h.sets||0)/mx*100),d=new Date(h.date);return `<rect x="${x-bw/2}" y="${118-hh}" width="${bw}" height="${hh}" rx="5" fill="var(--accent)"/><text x="${x}" y="${112-hh}" text-anchor="middle" font-size="12" fill="var(--fg)" font-weight="700">${h.sets||0}</text><text x="${x}" y="138" text-anchor="middle" font-size="11" fill="var(--dim)">${d.getDate()}/${d.getMonth()+1}</text>`}).join('')}<line x1="0" y1="118" x2="${W}" y2="118" stroke="var(--line)"/></svg>`:'';
  const loads=Object.entries(u.prog).map(([id,g])=>({ex:X(id),g})).filter(o=>o.ex&&(o.g.w||u.history.some(h=>h.items.some(i=>i.ex===o.ex.id))));
  return `<section class="pt-6"><h1 class="h1">Progreso</h1></section>
- <section class="grid grid-cols-3 gap-2 mt-4"><div class="stat"><b>${H.length}</b><span>sesiones</span></div><div class="stat"><b>${week}/${weekSchedule(u).filter(e=>e.type!=='rest').length}</b><span>esta semana</span></div><div class="stat"><b>${vol>=1000?fmtKg(Math.round(vol/100)/10)+' t':Math.round(vol)+' kg'}</b><span>volumen total</span></div></section>
+ <section class="grid grid-cols-3 gap-2 mt-4"><div class="stat"><b>${H.length}</b><span>sesiones</span></div><div class="stat"><b>${week}/${weekSchedule(u).filter(e=>e.type==='strength'||e.type==='cardio').length}</b><span>esta semana</span></div><div class="stat"><b>${vol>=1000?fmtKg(Math.round(vol/100)/10)+' t':Math.round(vol)+' kg'}</b><span>volumen total</span></div></section>
  <section class="card p-4 mt-4"><div class="flex items-baseline justify-between"><h2 class="h2">Cardio esta semana</h2><span class="font-semibold">${cMin} / ${cTgt} min</span></div><div class="h-3 rounded-full mt-3" style="background:var(--line)"><div class="h-3 rounded-full" style="width:${Math.min(100,cMin/cTgt*100)}%;background:var(--normal)"></div></div><p class="hint">Objetivo semanal de tu plan: LISS, HIIT, días de cardio y deportes registrados.</p></section>
  ${vActivities(u)}
  ${H.length?`<section class="card p-4 mt-4"><h2 class="h2">Series por sesión</h2><div class="mt-3 scroll-x">${chart}</div></section>`:`<section class="card p-5 mt-4"><h2 class="h2">Aún no hay sesiones</h2><p class="text-dim mt-2">Completa tu primera sesión y aquí verás tu evolución.</p><button data-a="tab" data-v="home" class="btn-primary w-full mt-4">Ir a la sesión de hoy</button></section>`}
@@ -425,6 +468,7 @@ function vProfile(){const u=U(),ids=Object.keys(S.users);
  <section class="card p-5 mt-4"><h2 class="h2">Cómo ajustamos tu plan</h2><ul class="mt-3 flex flex-col gap-2">${adjNotes(u.profile).map(n=>`<li class="flex gap-2"><span class="dot d-ok mt-2 flex-none"></span><span>${esc(n)}</span></li>`).join('')}</ul></section>
  <section class="card p-5 mt-4">${profileForm(u.profile,'edit')}</section>
  <section class="card p-5 mt-6"><h2 class="h2">Cuenta y sincronización</h2><div class="mt-3">${syncCard()}</div></section>
+ ${sportsCard(u)}
  ${hrCard()}
  ${installCard()}
  <section class="mt-6"><h2 class="h2">Usuarios en este dispositivo</h2><div class="card mt-3 divide-y divide-[var(--line)]">${ids.map(id=>{const x=S.users[id];return `<div class="flex items-center gap-3 px-4 py-3"><span class="avatar">${esc(x.profile.name[0].toUpperCase())}</span><span class="flex-1 min-w-0"><span class="block font-semibold truncate">${esc(x.profile.name)}</span><span class="block text-sm text-dim">${LEVELS[x.profile.level]}, ${x.history.length} sesiones</span></span>${id===S.activeUser?'<span class="chip chip-a">Activo</span>':`<button class="btn-ghost" data-a="switchuser" data-id="${id}">Usar</button>`}</div>`}).join('')}</div>
@@ -682,8 +726,16 @@ const A={
  start:d=>{const u=U();if(u.active){view='session';render();scrollTo(0,0);return}
   startSession(d.w!=null?weekSchedule(u)[+d.w]:{tpl:u.plan.days[+d.d],dayIdx:+d.d})},
  trainday:d=>startSession({tpl:U().plan.days[+d.d],dayIdx:+d.d}),
- wkday:d=>{const u=U(),ws=weekStart(),k=weekKey(ws),cur=weekDaysFor(u,ws),n=+d.n;u.weeks=u.weeks||{};
-  u.weeks[k]=cur.includes(n)?cur.filter(x=>x!==n):[...cur,n].sort((a,b)=>a-b);pruneWeeks(u);save();render()},
+ dayactions:d=>openDayActions(+d.n),
+ matchtoday:()=>openMatchToday(),
+ wkskip:d=>{const u=U(),wd=+d.n,today=wd===weekday(Date.now());skipDay(u,weekStart(),wd);save();closeModal();render();scrollTo(0,0);toast(today?'Hecho: la sesión pasa al siguiente día de gimnasio.':`Cambio guardado: ${DAY_LONG[wd]}.`)},
+ wkunskip:d=>{const u=U(),ws=weekStart(),l=weekObj(u,ws).log.find(x=>x.type==='skip'&&x.wd===+d.n);if(l)undoChange(u,ws,l.id);save();closeModal();render()},
+ wkextra:d=>{const u=U(),wd=+d.n;addExtra(u,weekStart(),wd);save();closeModal();render();scrollTo(0,0);toast(`Día de entrenamiento añadido: ${DAY_LONG[wd]}.`)},
+ wkmatch:d=>{const u=U(),wd=+d.n;setMatch(u,weekStart(),wd,d.s);save();closeModal();render();scrollTo(0,0);toast(`Partido de ${SPORTS[d.s].n} el ${DAY_LONG[wd]}. Gimnasio reajustado.`)},
+ wkunmatch:d=>{const u=U(),wd=+d.n;removeMatch(u,weekStart(),wd);save();closeModal();render();toast(`Sin partido el ${DAY_LONG[wd]}.`)},
+ wkundo:d=>{undoChange(U(),weekStart(),d.id);save();render()},
+ wknooffer:()=>{weekEdit(U(),weekStart()).noOffer=true;save();render()},
+ sportdel:d=>{const u=U();u.profile.sports=(u.profile.sports||[]).filter((_,i)=>i!==+d.i);save();render()},
  wkreset:()=>{const u=U();if(u.weeks)delete u.weeks[weekKey(weekStart())];save();render()},
  dismissnotice:()=>{const u=U();delete u.notice;save();render()},
  info:d=>{const ctx=d.from==='swap'?'pick':d.s?{s:1,i:+d.i}:d.d!=null?{d:+d.d,i:+d.i}:null;openInfo(d.ex,ctx)},
@@ -718,7 +770,7 @@ const A={
  injresolve:d=>{const i=resolveInjury(U(),d.id);save();render();if(i)toast(`${i.muscle}: ejercicios reactivados.`)},
  injdel:d=>{if(!confirm('¿Eliminar este registro de lesión?'))return;deleteInjury(U(),d.id);save();render()},
  injsnooze:d=>{const i=(U().injuries||[]).find(x=>x.id===d.id);if(i)i.reviewAt=Date.now()+864e5;save();render()},
- actopen:()=>openActivity(),
+ actopen:d=>openActivity(d.s?{sport:d.s}:undefined),
  actdel:d=>{if(!confirm('¿Borrar esta actividad?'))return;deleteActivity(U(),d.id);save();render()},
  actskip:()=>{U().fatigueSkip=dayKey(Date.now());save();render();toast('Ajuste por fatiga desactivado hoy.')},
  actunskip:()=>{delete U().fatigueSkip;save();render()},
@@ -743,6 +795,7 @@ const A={
 };
 document.addEventListener('click',e=>{const el=e.target.closest('[data-a]');if(!el)return;const fn=A[el.dataset.a];if(fn)fn(el.dataset,el,e)});
 document.addEventListener('submit',e=>{const ck=e.target.closest('form[data-ck]');if(ck){e.preventDefault();saveCheckin(ck);return}
+ const sf=e.target.closest('form[data-sport]');if(sf){e.preventDefault();const u=U(),fd=new FormData(sf),x={sport:String(fd.get('sport')),wd:+fd.get('wd')};u.profile.sports=(u.profile.sports||[]).filter(y=>y.wd!==x.wd);u.profile.sports.push(x);u.profile.sports.sort((a,b)=>a.wd-b.wd);save();render();toast(`${sportLbl(x.sport)} los ${DAY_LONG[x.wd]} añadido.`);return}
  const af=e.target.closest('form[data-act]');if(af){e.preventDefault();const u=U(),a=addActivity(u,readActivity(af));save();closeModal();render();showActivityResult(a);return}
  const ij=e.target.closest('form[data-inj]');if(ij){e.preventDefault();const fd=new FormData(ij);injDraft={muscle:ij.dataset.inj,pain:+fd.get('pain')||1,mob:+fd.get('mob')||0,infl:+fd.get('infl')||0,rest:+fd.get('rest')||0,flags:fd.getAll('flags')};showTriage();return}
  const au=e.target.closest('form[data-auth]');if(au){e.preventDefault();doAuth(au,e.submitter&&e.submitter.value==='up'?'up':'in');return}

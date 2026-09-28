@@ -5,6 +5,7 @@ App web sin compilación (`index.html` + `js/*.js`). Guarda los datos en el nave
 ## Qué hace
 
 - **Plan semanal por objetivo:** reparte fuerza, cardio suave (LISS) y HIIT entre los días que puedes ir al gimnasio, dentro de tu tiempo máximo por sesión. Cada semana se puede editar en *Plan > Esta semana*.
+- **Semana dinámica:** deportes habituales en *Mi perfil* y partidos de cada semana en *Plan > Esta semana*. El día de partido no hay gimnasio y la víspera se evita la pierna pesada y el HIIT. En Hoy: *Hoy no puedo ir* (la sesión se corre y, si se pierde, te ofrece un día libre), *Tengo partido hoy* y *Agregar día de entrenamiento extra*. Cada cambio se puede deshacer.
 - **Sesión por bloques:** movilidad → fuerza → cardio/HIIT → estiramientos, con temporizador guiado a pantalla completa.
 - **Actividades y deportes extra:** registra fútbol, futsal, running, ciclismo, pádel u otros (Hoy > *Registrar actividad*). Calcula calorías y fatiga de piernas, ajusta el objetivo calórico del día y, tras un partido intenso, baja la carga de piernas del gimnasio (15 % o 10 %) durante 24–48 h.
 - **Pulsómetro Bluetooth:** en *Mi perfil* (Chrome en Android o escritorio). Muestra las pulsaciones durante la sesión y guarda la media y la máxima.
