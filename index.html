@@ -168,17 +168,18 @@ details[open] .chev{transform:rotate(180deg)}
 <div id="seq"></div>
 <div id="toast"></div>
 
-<script src="js/catalog.js?v=202609280937"></script>
-<script src="js/figures.js?v=202609280937"></script>
-<script src="js/merge.js?v=202609280937"></script>
-<script src="js/plan.js?v=202609280937"></script>
-<script src="js/injuries.js?v=202609280937"></script>
-<script src="js/progress.js?v=202609280937"></script>
-<script src="js/activities.js?v=202609280937"></script>
-<script src="js/bodymap.js?v=202609280937"></script>
-<script src="js/sync.js?v=202609280937"></script>
-<script src="js/timer.js?v=202609280937"></script>
-<script src="js/hr.js?v=202609280937"></script>
+<script src="js/catalog.js?v=202609281040"></script>
+<script src="js/figures.js?v=202609281040"></script>
+<script src="js/merge.js?v=202609281040"></script>
+<script src="js/plan.js?v=202609281040"></script>
+<script src="js/injuries.js?v=202609281040"></script>
+<script src="js/progress.js?v=202609281040"></script>
+<script src="js/nutrition.js?v=202609281040"></script>
+<script src="js/activities.js?v=202609281040"></script>
+<script src="js/bodymap.js?v=202609281040"></script>
+<script src="js/sync.js?v=202609281040"></script>
+<script src="js/timer.js?v=202609281040"></script>
+<script src="js/hr.js?v=202609281040"></script>
 <script>
 
 
@@ -327,7 +328,7 @@ function todayPick(u){const s=weekSchedule(u),td=weekday(Date.now()),e=s.find(x=
  return {s,td,e,today,next,offer,msg}}
 const weekBlock=u=>`<section class="mt-8"><div class="flex items-baseline justify-between"><h2 class="h2">Esta semana</h2><button class="btn-text" data-a="tab" data-v="plan">Editar</button></div><div class="mt-3">${weekStrip(u)}</div></section>`;
 // Contexto del día en una línea: bloque del ciclo y calorías de hoy.
-function heroMeta(u){const wi=wk(u),d=dayKcal(u);return `<p class="text-sm text-dim mt-1">Bloque ${wi.cyc+1} · semana ${wi.week} de ${wi.len}${wi.deload?' (descarga)':''}${d.total?` · hoy ${nf(d.total)} kcal${d.sport?` (+${nf(d.sport)} deporte)`:''}`:''}</p>`}
+function heroMeta(u){const wi=wk(u),d=dayKcal(u);return `<p class="text-sm text-dim mt-1">Bloque ${wi.cyc+1} · semana ${wi.week} de ${wi.len}${wi.deload?' (descarga)':''}${d.total?` · hoy ${nf(d.total)} kcal${d.sport?` (+${nf(d.sport)} deporte)`:''}`:''}${(m=>m?` · ${m.protein} g proteína`:'')(macros(u))}</p>`}
 // Avisos agrupados: el más importante a la vista y el resto plegado.
 function homeAlerts(u,ss){const split=h=>h.split(/(?=<section)/).map(x=>x.trim()).filter(Boolean);
  const list=[fatigueAlert(u,ss),...split(injBanners(u)),...split(banners(u))].filter(Boolean);if(!list.length)return '';
@@ -424,7 +425,8 @@ function vBody(){const u=U(),C=u.checkins,chron=[...C].reverse(),last=C[0],prev=
  let comp='';if(C.length>1){const dm=last.smm!=null&&first.smm!=null?last.smm-first.smm:null,df=fatKg(last)!=null&&fatKg(first)!=null?fatKg(last)-fatKg(first):null;
   comp=`<section class="grid grid-cols-2 gap-2 mt-4"><div class="stat"><b style="color:${dm==null?'':dm>=0?'var(--easy)':'var(--hard)'}">${dm==null?'—':(dm>0?'+':'')+nf(Math.round(dm*10)/10)+' kg'}</b><span>músculo desde el primer check-in</span></div><div class="stat"><b style="color:${df==null?'':df<=0?'var(--easy)':'var(--hard)'}">${df==null?'—':(df>0?'+':'')+nf(Math.round(df*10)/10)+' kg'}</b><span>grasa desde el primer check-in</span></div></section>`}
  const rows=C.map((c,i)=>{const p=C[i+1]||{};return `<tr><td class="py-2 pr-3 whitespace-nowrap">${new Date(c.date).toLocaleDateString('es-ES',{day:'numeric',month:'short',year:'2-digit'})}</td><td class="pr-3 whitespace-nowrap">${nf(c.weight)}${delta(c.weight,p.weight)}</td><td class="pr-3 whitespace-nowrap">${c.bf!=null?nf(c.bf):'—'}${delta(c.bf,p.bf,'down')}</td><td class="pr-3 whitespace-nowrap">${c.smm!=null?nf(c.smm):'—'}${delta(c.smm,p.smm,'up')}</td><td class="pr-3 whitespace-nowrap">${c.tbw!=null?nf(c.tbw):'—'}</td><td class="pr-3 whitespace-nowrap">${c.visc!=null?c.visc:'—'}${delta(c.visc,p.visc,'down')}</td><td class="pr-3 whitespace-nowrap">${c.bwa!=null?c.bwa:'—'}</td><td><button class="btn-text btn-danger" data-a="ckdel" data-t="${c.date}" aria-label="Borrar check-in">${ic('close',16)}</button></td></tr>`}).join('');
- return `<section class="pt-6"><h1 class="h1">Cuerpo</h1><p class="text-dim mt-2">Historial y check-in biométrico. Compatible con los datos de un escaneo Evolt 360.</p></section>
+ return `<section class="pt-6"><h1 class="h1">Cuerpo</h1><p class="text-dim mt-2">Nutrición de hoy, historial y check-in biométrico. Compatible con los datos de un escaneo Evolt 360.</p></section>
+ ${nutriCard(u)}
  <section class="card p-4 mt-4"><div class="flex items-center gap-3"><span class="flex-1"><b class="block">${last?`Último check-in hace ${d} días`:'Aún no hay check-ins'}</b><span class="block text-sm text-dim">${last?(next?`Próximo en ${next} días`:'Toca uno nuevo hoy'):'Registra tu punto de partida.'}</span></span><button class="btn-primary" style="min-height:48px" data-a="checkin">Nuevo check-in</button></div>
   <span class="lbl mt-4">Recordatorio</span><div class="seg">${[14,30].map(n=>`<label><input type="radio" name="ckev" value="${n}" ${u.checkinEvery===n?'checked':''} data-a="ckevery" data-n="${n}"><span>Cada ${n} días</span></label>`).join('')}</div></section>
  ${last?`<section class="grid grid-cols-3 gap-2 mt-4">${[['Peso',nf(last.weight)+' kg',delta(last.weight,prev&&prev.weight)],['% grasa',last.bf!=null?nf(last.bf)+' %':'—',delta(last.bf,prev&&prev.bf,'down')],['Músculo',last.smm!=null?nf(last.smm)+' kg':'—',delta(last.smm,prev&&prev.smm,'up')],['Agua',last.tbw!=null?nf(last.tbw)+' L':'—',delta(last.tbw,prev&&prev.tbw)],['Visceral',last.visc!=null?last.visc:'—',delta(last.visc,prev&&prev.visc,'down')],['BWA',last.bwa!=null?last.bwa:'—',delta(last.bwa,prev&&prev.bwa,'up')]].map(([l,v,dl])=>`<div class="stat"><b style="font-size:1.5rem">${v}</b><span>${l}${dl}</span></div>`).join('')}</section>`:''}
@@ -736,6 +738,14 @@ async function importBackup(file){let d;try{d=JSON.parse(await file.text())}catc
  mergeState(d.state);Object.values(S.users).forEach(u=>{u.updatedAt=Date.now()});if(!S.activeUser)S.activeUser=Object.keys(S.users)[0]||null;
  save();view='home';render();toast('Copia importada y combinada')}
 document.addEventListener('change',e=>{if(e.target&&e.target.id==='bk-file'&&e.target.files[0]){importBackup(e.target.files[0]);e.target.value=''}});
+
+/* ---- Nutrición de hoy ---- */
+function nutriCard(u){const m=macros(u);if(!m)return `<section class="card p-4 mt-4"><h2 class="h2">Nutrición de hoy</h2><p class="text-sm text-dim mt-2">Completa edad, estatura y peso en tu perfil para calcular tus objetivos.</p></section>`;
+ const row=(l,g,k,col)=>`<div class="stat"><b style="color:${col}">${g} g</b><span>${l} · ${nf(k)} kcal</span></div>`;
+ return `<section class="card p-4 mt-4"><div class="flex items-baseline justify-between gap-2"><h2 class="h2">Nutrición de hoy</h2><b class="font-display text-2xl">${nf(m.kcal)} kcal</b></div>
+  <div class="grid grid-cols-3 gap-2 mt-3">${row('Proteína',m.protein,m.protein*4,'var(--hard)')}${row('Grasa',m.fat,m.fat*9,'var(--accent)')}${row('Carbohidratos',m.carbs,m.carbs*4,'var(--normal)')}</div>
+  <ul class="mt-3 flex flex-col gap-1 text-sm"><li>· Reparte la proteína en 3–5 comidas de unos ${m.perMeal} g.</li>${m.sport?`<li>· Hoy suma ${nf(m.sport)} kcal por deporte: van a carbohidratos para recuperar.</li>`:'<li>· Los días de partido o deporte sube el objetivo y la diferencia va a carbohidratos.</li>'}${m.refWeight!==u.profile.weight?`<li>· Proteína calculada sobre ${nf(m.refWeight)} kg (peso de referencia con IMC 25).</li>`:''}</ul>
+  <p class="hint">Objetivos orientativos: ${PROTEIN_GKG[u.profile.goal]||1.6} g/kg de proteína para tu objetivo, grasa al 25 % y el resto en carbohidratos.</p></section>`}
 
 /* ---- Progreso de fuerza ---- */
 let progEx=null;
