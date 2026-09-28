@@ -42,9 +42,9 @@ Pruebas: `npm test` (Node 20 o superior, sin dependencias). Para probar los temp
 ## Notificaciones push (opcional)
 
 1. **SQL Editor:** pega `supabase/push.sql` y pulsa *Run*.
-2. **Edge Functions > Deploy a new function > Via Editor:** nombre `send-reminders`, pega `supabase/functions/send-reminders/index.ts` y despliega.
-3. **Edge Functions > Secrets:** añade `VAPID_PUBLIC_KEY` y `VAPID_PRIVATE_KEY` con los valores de `.secrets/vapid.json` (archivo local, no está en GitHub). La pública debe coincidir con `VAPID_PUBLIC` de `js/push.js`.
-4. **Integrations > Cron:** activa Cron y crea un trabajo cada 15 minutos (`*/15 * * * *`) de tipo *Supabase Edge Function* que llame a `send-reminders`.
+2. **Edge Functions > Deploy a new function > Via Editor:** nombre `send-reminders`, pega `supabase/functions/send-reminders/index.ts` y despliega. En sus ajustes, desactiva *Verify JWT* (el cron la llama sin clave; solo envía avisos que ya tocaban).
+3. **Edge Functions > Secrets** (no en Vault): añade `VAPID_PUBLIC_KEY` y `VAPID_PRIVATE_KEY` con los valores de `.secrets/vapid.json` (archivo local, no está en GitHub). La pública debe coincidir con `VAPID_PUBLIC` de `js/push.js`.
+4. **Cron:** con la extensión `pg_cron` activada, ejecuta `supabase/cron.sql` en el SQL Editor (llama a la función cada 15 minutos).
 5. En la app: *Mi perfil > Notificaciones > Activar*.
 
 ## 2. GitHub Pages
