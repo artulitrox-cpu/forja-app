@@ -175,19 +175,21 @@ details[open] .chev{transform:rotate(180deg)}
 <div id="seq"></div>
 <div id="toast"></div>
 
-<script src="js/catalog.js?v=202609281121"></script>
-<script src="js/figures.js?v=202609281121"></script>
-<script src="js/merge.js?v=202609281121"></script>
-<script src="js/plan.js?v=202609281121"></script>
-<script src="js/injuries.js?v=202609281121"></script>
-<script src="js/progress.js?v=202609281121"></script>
-<script src="js/nutrition.js?v=202609281121"></script>
-<script src="js/activities.js?v=202609281121"></script>
-<script src="js/bodymap.js?v=202609281121"></script>
-<script src="js/sync.js?v=202609281121"></script>
-<script src="js/timer.js?v=202609281121"></script>
-<script src="js/push.js?v=202609281121"></script>
-<script src="js/hr.js?v=202609281121"></script>
+<script src="js/catalog.js?v=202609281157"></script>
+<script src="js/figures.js?v=202609281157"></script>
+<script src="js/merge.js?v=202609281157"></script>
+<script src="js/plan.js?v=202609281157"></script>
+<script src="js/injuries.js?v=202609281157"></script>
+<script src="js/progress.js?v=202609281157"></script>
+<script src="js/nutrition.js?v=202609281157"></script>
+<script src="js/activities.js?v=202609281157"></script>
+<script src="js/bodymap.js?v=202609281157"></script>
+<script src="js/sync.js?v=202609281157"></script>
+<!-- Dentro de la app de Android (Capacitor) se cargan el núcleo y los plugins nativos -->
+<script>if(window.Capacitor&&Capacitor.isNativePlatform&&Capacitor.isNativePlatform())document.write('<script src="js/vendor/capacitor.js"><\/script><script src="js/vendor/ble.js"><\/script><script src="js/vendor/fgs.js"><\/script>')</script>
+<script src="js/timer.js?v=202609281157"></script>
+<script src="js/push.js?v=202609281157"></script>
+<script src="js/hr.js?v=202609281157"></script>
 <script>
 
 
@@ -701,8 +703,8 @@ function vLive(){const u=U(),L=u.live;
   <p id="lv-rc" class="mt-2 text-sm text-dim text-center"></p>
   <button class="btn-primary w-full mt-6" data-a="livefinishopen">Finalizar ${L.sport==='football'||L.sport==='futsal'?'partido':'actividad'}</button>
   <button class="btn-text btn-danger w-full mt-2 justify-center" data-a="livecancel">Descartar grabación</button>
-  <p class="hint text-center">Deja Forja abierta en pantalla: sin ella, el navegador no recibe el pulso. Si la banda se aleja, la grabación sigue y se reconecta al volver.</p></main>`}
-function updLive(){const u=U();if(!u||!u.live)return;const L=u.live,mini=$('#lv-mini');if(mini)mini.textContent=fmtDur(Date.now()-L.start);if(view!=='live')return;
+  <p class="hint text-center">${isNativeApp()?'Puedes bloquear el teléfono: la grabación y el pulso siguen (notificación «Forja · Grabando»). Si la banda se aleja, se reconecta sola al volver.':'Deja Forja abierta en pantalla: sin ella, el navegador no recibe el pulso. Si la banda se aleja, la grabación sigue y se reconecta al volver. Con la app de Android puedes bloquear el teléfono.'}</p></main>`}
+function updLive(){const u=U();if(!u||!u.live)return;liveNotify();const L=u.live,mini=$('#lv-mini');if(mini)mini.textContent=fmtDur(Date.now()-L.start);if(view!=='live')return;
  const on=HR.state==='on',z=on?hrZoneOf(HR.bpm,u.profile):null,set=(id,v)=>{const el=$(id);if(el)el.textContent=v};
  set('#lv-t',fmtDur(Date.now()-L.start));set('#lv-hr',on&&HR.bpm?HR.bpm:'--');set('#lv-z',z?'Z'+z.z:'--');set('#lv-zn',z?z.name:'zona');set('#lv-b',on&&HR.battery!=null?HR.battery+'%':'--');
  const ze=$('#lv-z');if(ze)ze.style.color=z?ZONE_COL[z.z]:'';
@@ -710,6 +712,11 @@ function updLive(){const u=U();if(!u||!u.live)return;const L=u.live,mini=$('#lv-
  const tap=$('#lv-tap');if(tap){tap.hidden=on||!hrSupported()||(hrSaved()&&!HR.needsTap);tap.textContent=hrSaved()?'Toca para reconectar el pulsómetro':'Conectar pulsómetro'}
  set('#lv-rc',(L.reconnects||[]).map(t=>`Reconectado a las ${hhmm(t)}`).join(' · '));
  if(on&&z&&z.z>=3&&restDayToday(u))zoneAlert(z.z)}
+// Notificación fija de la app nativa mientras se graba (se actualiza cada 10 s).
+const liveTitle=L=>`Forja · Grabando ${sportName(L).toLowerCase()}`;
+const liveBody=L=>`${fmtDur(Date.now()-L.start)} · ${HR.state==='on'?`♥ ${HR.bpm||'--'} ppm`:hrSaved()?'buscando pulsómetro…':'sin pulsómetro'}`;
+let liveFgsAt=0;
+function liveNotify(){const u=U();if(!u||!u.live||Date.now()-liveFgsAt<10000)return;liveFgsAt=Date.now();liveServiceUpdate(liveTitle(u.live),liveBody(u.live))}
 function openLiveFinish(){const u=U(),L=u.live,s=liveSummary(L,HR.samples,u.profile,Date.now());
  modal(`<h2 class="font-display text-3xl font-extrabold leading-none">Finalizar ${esc(sportName(L).toLowerCase())}</h2>
  <div class="grid grid-cols-3 gap-2 mt-4"><div class="stat"><b>${s.min}</b><span>min</span></div><div class="stat"><b>${s.hr?s.hr.avg:'--'}</b><span>ppm medio</span></div><div class="stat"><b>${s.hr?s.hr.max:'--'}</b><span>ppm máx.</span></div></div>
@@ -719,7 +726,7 @@ function openLiveFinish(){const u=U(),L=u.live,s=liveSummary(L,HR.samples,u.prof
 function finishLive(f){const u=U(),L=u.live,fd=new FormData(f),rpe=+fd.get('rpe')||6,type=String(fd.get('type')||L.type),now=Date.now();
  const s=liveSummary({...L,type},HR.samples,u.profile,now,rpe),a=addActivity(u,{sport:L.sport,type,min:s.min,rpe,date:L.start});
  Object.assign(a,{kcal:s.kcal,kcalReal:s.kcalReal,hr:s.hr,reconnects:[...(L.reconnects||[])],live:true});
- delete u.live;try{localStorage.removeItem(LIVE_KEY)}catch(e){}keepAwake(false);save();closeModal();view='home';render();scrollTo(0,0);showActivityResult(a)}
+ delete u.live;try{localStorage.removeItem(LIVE_KEY)}catch(e){}keepAwake(false);liveServiceStop();save();closeModal();view='home';render();scrollTo(0,0);showActivityResult(a)}
 let hrPrevState=HR.state,liveBuf=0;
 onHr(()=>{const u=U(),changed=hrPrevState!==HR.state;
  // Reconexión durante una grabación: se anota la hora sin interrumpirla.
@@ -933,7 +940,7 @@ const A={
  livepick:d=>openLivePick(d.s),
  livego:()=>{view='live';render();scrollTo(0,0)},
  livefinishopen:()=>openLiveFinish(),
- livecancel:()=>{if(!confirm('¿Descartar la grabación? No se guardará nada.'))return;const u=U();delete u.live;try{localStorage.removeItem(LIVE_KEY)}catch(e){}keepAwake(false);save();view='home';render()},
+ livecancel:()=>{if(!confirm('¿Descartar la grabación? No se guardará nada.'))return;const u=U();delete u.live;try{localStorage.removeItem(LIVE_KEY)}catch(e){}keepAwake(false);liveServiceStop();save();view='home';render()},
  sqpause:()=>seqPause(),sqadd:()=>seqAdd(15),sqskip:()=>seqNext(),sqexit:()=>seqStop(false),
  seenweek:()=>{const u=U();u.cycle.seen=wk(u).abs;save();render()},
  checkin:()=>openCheckin(),
@@ -953,7 +960,7 @@ const A={
 };
 document.addEventListener('click',e=>{const el=e.target.closest('[data-a]');if(!el)return;const fn=A[el.dataset.a];if(fn)fn(el.dataset,el,e)});
 document.addEventListener('submit',e=>{const ck=e.target.closest('form[data-ck]');if(ck){e.preventDefault();saveCheckin(ck);return}
- const lf=e.target.closest('form[data-live]');if(lf){e.preventDefault();const u=U(),fd=new FormData(lf);u.live={sport:String(fd.get('sport')),type:String(fd.get('type')),start:Date.now(),reconnects:[],hadHr:HR.state==='on'};save();closeModal();view='live';render();keepAwake(true);if(hrSaved()&&HR.state!=='on')hrResume();return}
+ const lf=e.target.closest('form[data-live]');if(lf){e.preventDefault();const u=U(),fd=new FormData(lf);u.live={sport:String(fd.get('sport')),type:String(fd.get('type')),start:Date.now(),reconnects:[],hadHr:HR.state==='on'};save();closeModal();view='live';render();keepAwake(true);liveServiceStart(liveTitle(u.live),liveBody(u.live));if(hrSaved()&&HR.state!=='on')hrResume();return}
  const lfin=e.target.closest('form[data-livefin]');if(lfin){e.preventDefault();finishLive(lfin);return}
  const sf=e.target.closest('form[data-sport]');if(sf){e.preventDefault();const u=U(),fd=new FormData(sf),x={sport:String(fd.get('sport')),wd:+fd.get('wd')};u.profile.sports=(u.profile.sports||[]).filter(y=>y.wd!==x.wd);u.profile.sports.push(x);u.profile.sports.sort((a,b)=>a.wd-b.wd);save();render();toast(`${sportLbl(x.sport)} los ${DAY_LONG[x.wd]} añadido.`);return}
  const af=e.target.closest('form[data-act]');if(af){e.preventDefault();const u=U(),a=addActivity(u,readActivity(af));save();closeModal();render();showActivityResult(a);return}
@@ -978,7 +985,7 @@ function installCard(){return installEvt?`<section class="card p-5 mt-4 flex ite
 A.install=async()=>{if(!installEvt)return;const ev=installEvt;installEvt=null;ev.prompt();try{await ev.userChoice}catch(e){}render()};
 if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
 sbInit();
-if(U()&&U().live){HR.samples.push(...liveSamples());view='live';keepAwake(true)}
+if(U()&&U().live){HR.samples.push(...liveSamples());view='live';keepAwake(true);liveServiceStart(liveTitle(U().live),liveBody(U().live))}
 render();
 hrAuto();
 </script>

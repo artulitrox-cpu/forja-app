@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Icono de la notificación de grabación: una "F" blanca (Android la tiñe) -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp" android:height="24dp"
+    android:viewportWidth="24" android:viewportHeight="24">
+    <path android:fillColor="#FFFFFFFF" android:pathData="M7,3h11v3.2h-7.2v3.9h6.2v3.2h-6.2v7.7H7z"/>
+</vector>

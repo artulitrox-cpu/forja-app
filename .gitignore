@@ -2,3 +2,4 @@
 
 # Claves privadas (no subir)
 .secrets/
+node_modules/

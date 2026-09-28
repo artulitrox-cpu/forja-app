@@ -3,6 +3,17 @@
   "private": true,
   "description": "Forja: app de entrenamiento (sin compilación). package.json solo para las pruebas.",
   "scripts": {
-    "test": "node --test \"tests/**/*.test.js\""
+    "test": "node --test \"tests/**/*.test.js\"",
+    "android:sync": "npx cap sync android",
+    "vendor": "node tools/vendor.js"
+  },
+  "dependencies": {
+    "@capacitor/android": "8.5.2",
+    "@capacitor/core": "8.5.2",
+    "@capacitor-community/bluetooth-le": "8.3.0",
+    "@capawesome-team/capacitor-android-foreground-service": "8.1.0"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "8.5.2"
   }
 }

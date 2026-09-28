@@ -1,0 +1,22 @@
+{
+  "appId": "io.github.artulitroxcpu.forja",
+  "appName": "Forja",
+  "webDir": "www",
+  "server": {
+    "url": "https://artulitrox-cpu.github.io/forja-app/",
+    "errorPath": "index.html"
+  },
+  "android": {
+    "backgroundColor": "#131A26"
+  },
+  "plugins": {
+    "BluetoothLe": {
+      "displayStrings": {
+        "scanning": "Buscando pulsómetros…",
+        "cancel": "Cancelar",
+        "availableDevices": "Pulsómetros disponibles",
+        "noDeviceFound": "No se encontró ninguno"
+      }
+    }
+  }
+}
