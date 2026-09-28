@@ -22,7 +22,7 @@ function addActivity(u,d){const r=activityCalc(d,u.profile),date=d.date||Date.no
  const a={id:'a'+date.toString(36)+Math.random().toString(36).slice(2,6),date,sport:d.sport,type:sportType(d).id,name:d.sport==='other'?(d.name||'').slice(0,40):undefined,
   min:+d.min,rpe:+d.rpe,km:d.km>0?+d.km:undefined,kcal:r.kcal,fatigue:r.fatigue,level:r.level};
  u.activities=[a,...(u.activities||[])].sort((x,y)=>y.date-x.date).slice(0,200);return a}
-function deleteActivity(u,id){u.activities=(u.activities||[]).filter(a=>a.id!==id)}
+function deleteActivity(u,id){u.activities=(u.activities||[]).filter(a=>a.id!==id);if(typeof tombstone==='function')tombstone(u,id)}
 // Decaimiento de la fatiga: 100 % en 24 h, 60 % hasta 48 h, nada después.
 const decay=h=>h<0?0:h<24?1:h<48?.6:0;
 function legFatigue(u,now=Date.now()){let v=0,top=null,topV=0;

@@ -68,6 +68,13 @@ async function flows(page) {
     openLiveFinish(); finishLive(document.querySelector('form[data-livefin]')); closeModal();
     startTimer(60, 'x'); tickTimer(); endTimer(false);
     done.push('actividad en vivo');
+    // Copia de seguridad: exportar el estado e importarlo de nuevo (se combina sin duplicar)
+    window.confirm = () => true;
+    const before = U().activities.length;
+    const copy = { app: 'forja', version: 2, exported: new Date().toISOString(), state: JSON.parse(JSON.stringify(S)) };
+    await importBackup(new File([JSON.stringify(copy)], 'copia.json', { type: 'application/json' }));
+    if (U().activities.length !== before) throw new Error('La importación duplicó actividades');
+    done.push('copia de seguridad');
     for (const v of ['home', 'plan', 'body', 'injuries', 'history', 'profile']) { view = v; render(); }
     await wait(300);
     return done;

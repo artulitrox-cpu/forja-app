@@ -29,12 +29,12 @@ function triage({pain=1,mob=0,infl=0,rest=0,flags=[]}){const score=pain+2*(mob+i
 /* ---- Lesiones del usuario ---- */
 const activeInjuries=u=>(u.injuries||[]).filter(i=>i.active).sort((a,b)=>b.date-a.date);
 function addInjury(u,d){const t=triage(d),now=d.date||Date.now();
- u.injuries=(u.injuries||[]).filter(i=>!(i.active&&i.muscle===d.muscle));
+ u.injuries=(u.injuries||[]).filter(i=>{const rep=i.active&&i.muscle===d.muscle;if(rep&&typeof tombstone==='function')tombstone(u,i.id);return !rep});
  const inj={id:'i'+now.toString(36)+Math.random().toString(36).slice(2,6),muscle:d.muscle,date:now,pain:d.pain,mob:d.mob,infl:d.infl,rest:d.rest,flags:[...(d.flags||[])],
-  level:t.level,reviewAt:now+t.days*864e5,active:true,resolvedAt:null};
+  level:t.level,reviewAt:now+t.days*864e5,active:true,resolvedAt:null,upd:Date.now()};
  u.injuries.unshift(inj);u.injuries.sort((a,b)=>b.date-a.date);u.injuries=u.injuries.slice(0,30);return inj}
-function resolveInjury(u,id){const i=(u.injuries||[]).find(x=>x.id===id);if(i){i.active=false;i.resolvedAt=Date.now()}return i}
-function deleteInjury(u,id){u.injuries=(u.injuries||[]).filter(x=>x.id!==id)}
+function resolveInjury(u,id){const i=(u.injuries||[]).find(x=>x.id===id);if(i){i.active=false;i.resolvedAt=Date.now();i.upd=Date.now()}return i}
+function deleteInjury(u,id){u.injuries=(u.injuries||[]).filter(x=>x.id!==id);if(typeof tombstone==='function')tombstone(u,id)}
 // { músculo: nivel } de las lesiones activas.
 function injuryMap(u){const m={};activeInjuries(u).forEach(i=>{if(!m[i.muscle]||LEVEL_RANK[i.level]>LEVEL_RANK[m[i.muscle]])m[i.muscle]=i.level});return m}
 

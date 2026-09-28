@@ -25,7 +25,9 @@ function sbInit(){const url=sbUrl();if(!url){sync.state='off';return}
   if(changed)setTimeout(()=>pull(true),0)})}
 function mergeState(r){if(!r||!r.users)return false;let changed=false;const del={...(S.deleted||{})};
  Object.entries(r.deleted||{}).forEach(([id,t])=>{if(!(del[id]>=t))del[id]=t});
- Object.entries(r.users).forEach(([id,ru])=>{if(del[id]>=(ru.updatedAt||0))return;const lu=S.users[id];if(!lu||(ru.updatedAt||0)>(lu.updatedAt||0)){S.users[id]=ru;changed=true}});
+ // Cada usuario se combina por partes (js/merge.js): historial, actividades, lesiones y check-ins se unen.
+ Object.entries(r.users).forEach(([id,ru])=>{if(del[id]>=(ru.updatedAt||0))return;migrateUser(ru);const lu=S.users[id];
+  if(!lu){S.users[id]=ru;changed=true;return}const m=mergeUser(lu,ru);if(JSON.stringify(m)!==JSON.stringify(lu)){S.users[id]=m;changed=true}});
  Object.keys(S.users).forEach(id=>{if(del[id]>=(S.users[id].updatedAt||0)){delete S.users[id];changed=true}});
  S.deleted=del;
  if(!S.users[S.activeUser]){S.activeUser=S.users[r.activeUser]?r.activeUser:(Object.keys(S.users)[0]||null);changed=true}

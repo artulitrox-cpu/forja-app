@@ -168,15 +168,16 @@ details[open] .chev{transform:rotate(180deg)}
 <div id="seq"></div>
 <div id="toast"></div>
 
-<script src="js/catalog.js?v=202609280927"></script>
-<script src="js/figures.js?v=202609280927"></script>
-<script src="js/plan.js?v=202609280927"></script>
-<script src="js/injuries.js?v=202609280927"></script>
-<script src="js/activities.js?v=202609280927"></script>
-<script src="js/bodymap.js?v=202609280927"></script>
-<script src="js/sync.js?v=202609280927"></script>
-<script src="js/timer.js?v=202609280927"></script>
-<script src="js/hr.js?v=202609280927"></script>
+<script src="js/catalog.js?v=202609280934"></script>
+<script src="js/figures.js?v=202609280934"></script>
+<script src="js/merge.js?v=202609280934"></script>
+<script src="js/plan.js?v=202609280934"></script>
+<script src="js/injuries.js?v=202609280934"></script>
+<script src="js/activities.js?v=202609280934"></script>
+<script src="js/bodymap.js?v=202609280934"></script>
+<script src="js/sync.js?v=202609280934"></script>
+<script src="js/timer.js?v=202609280934"></script>
+<script src="js/hr.js?v=202609280934"></script>
 <script>
 
 
@@ -473,6 +474,7 @@ function vProfile(){const u=U(),ids=Object.keys(S.users);
  <section class="card p-5 mt-4">${profileForm(u.profile,'edit')}</section>
  <section class="card p-5 mt-6"><h2 class="h2">Cuenta y sincronización</h2><div class="mt-3">${syncCard()}</div></section>
  ${sportsCard(u)}
+ ${backupCard()}
  ${hrCard()}
  ${installCard()}
  <section class="mt-6"><h2 class="h2">Usuarios en este dispositivo</h2><div class="card mt-3 divide-y divide-[var(--line)]">${ids.map(id=>{const x=S.users[id];return `<div class="flex items-center gap-3 px-4 py-3"><span class="avatar">${esc(x.profile.name[0].toUpperCase())}</span><span class="flex-1 min-w-0"><span class="block font-semibold truncate">${esc(x.profile.name)}</span><span class="block text-sm text-dim">${LEVELS[x.profile.level]}, ${x.history.length} sesiones</span></span>${id===S.activeUser?'<span class="chip chip-a">Activo</span>':`<button class="btn-ghost" data-a="switchuser" data-id="${id}">Usar</button>`}</div>`}).join('')}</div>
@@ -711,6 +713,21 @@ onHr(()=>{const u=U(),changed=hrPrevState!==HR.state;
  updLive();
  if(changed&&(view==='profile'||view==='session'||view==='home'))softRender()});
 
+/* ---- Copia de seguridad ---- */
+function backupCard(){return `<section class="card p-5 mt-6"><h2 class="h2">Copia de seguridad</h2>
+ <p class="text-sm text-dim mt-2">Descarga un archivo con todos tus datos (plan, historial, actividades, lesiones y check-ins). Al importarlo se combina con lo que tengas: no se borra nada.</p>
+ <div class="flex gap-2 mt-4"><button class="btn-ghost flex-1" data-a="backupexport">Exportar</button><button class="btn-ghost flex-1" data-a="backupimport">Importar</button></div>
+ <input id="bk-file" type="file" accept="application/json,.json" hidden></section>`}
+function exportBackup(){const d={app:'forja',version:S.version,exported:new Date().toISOString(),state:S},blob=new Blob([JSON.stringify(d,null,1)],{type:'application/json'});
+ const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`forja-copia-${weekKey(Date.now())}.json`;document.body.appendChild(a);a.click();
+ setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1000);toast('Copia descargada')}
+async function importBackup(file){let d;try{d=JSON.parse(await file.text())}catch(e){toast('El archivo no es una copia válida de Forja.');return}
+ if(!validBackup(d)){toast('El archivo no es una copia válida de Forja.');return}
+ const n=Object.keys(d.state.users).length;if(!confirm(`Se combinarán ${n} usuario${n===1?'':'s'} de la copia del ${new Date(d.exported).toLocaleDateString('es-ES')} con tus datos actuales. ¿Continuar?`))return;
+ mergeState(d.state);Object.values(S.users).forEach(u=>{u.updatedAt=Date.now()});if(!S.activeUser)S.activeUser=Object.keys(S.users)[0]||null;
+ save();view='home';render();toast('Copia importada y combinada')}
+document.addEventListener('change',e=>{if(e.target&&e.target.id==='bk-file'&&e.target.files[0]){importBackup(e.target.files[0]);e.target.value=''}});
+
 /* ============ Modales ============ */
 function modal(html,label){$('#layer').innerHTML=`<div class="layer" data-a="close-bg"><div class="sheet" role="dialog" aria-modal="true" aria-label="${esc(label||'Detalle')}"><div class="flex justify-end -mt-1 -mr-2"><button class="btn-text" data-a="close" aria-label="Cerrar">${ic('close')}</button></div>${html}</div></div>`;ensureAnim();const b=$('#layer .sheet button, #layer .sheet a');b&&b.focus()}
 function closeModal(){$('#layer').innerHTML=''}
@@ -807,6 +824,8 @@ const A={
  wkunmatch:d=>{const u=U(),wd=+d.n;removeMatch(u,weekStart(),wd);save();closeModal();render();toast(`Sin partido el ${DAY_LONG[wd]}.`)},
  wkundo:d=>{undoChange(U(),weekStart(),d.id);save();render()},
  wknooffer:()=>{weekEdit(U(),weekStart()).noOffer=true;save();render()},
+ backupexport:()=>exportBackup(),
+ backupimport:()=>{const i=$('#bk-file');if(i)i.click()},
  sportdel:d=>{const u=U();u.profile.sports=(u.profile.sports||[]).filter((_,i)=>i!==+d.i);save();render()},
  wkreset:()=>{const u=U();if(u.weeks)delete u.weeks[weekKey(weekStart())];save();render()},
  dismissnotice:()=>{const u=U();delete u.notice;save();render()},
@@ -841,7 +860,7 @@ const A={
  injsave:()=>{const u=U(),inj=addInjury(u,injDraft);save();closeModal();render();toast(`Molestia en ${inj.muscle} guardada. Rutina adaptada.`)},
  injresolve:d=>{const i=resolveInjury(U(),d.id);save();render();if(i)toast(`${i.muscle}: ejercicios reactivados.`)},
  injdel:d=>{if(!confirm('¿Eliminar este registro de lesión?'))return;deleteInjury(U(),d.id);save();render()},
- injsnooze:d=>{const i=(U().injuries||[]).find(x=>x.id===d.id);if(i)i.reviewAt=Date.now()+864e5;save();render()},
+ injsnooze:d=>{const i=(U().injuries||[]).find(x=>x.id===d.id);if(i){i.reviewAt=Date.now()+864e5;i.upd=Date.now()}save();render()},
  actopen:d=>openActivity(d.s?{sport:d.s}:undefined),
  actdel:d=>{if(!confirm('¿Borrar esta actividad?'))return;deleteActivity(U(),d.id);save();render()},
  actskip:()=>{U().fatigueSkip=dayKey(Date.now());save();render();toast('Ajuste por fatiga desactivado hoy.')},
@@ -860,7 +879,7 @@ const A={
  checkin:()=>openCheckin(),
  cksnooze:()=>{U().ckSnooze=Date.now()+864e5;save();render()},
  ckevery:d=>{U().checkinEvery=+d.n;save();render()},
- ckdel:d=>{const u=U();if(!confirm('¿Borrar este check-in? Los ajustes ya aplicados se mantienen.'))return;u.checkins=u.checkins.filter(c=>c.date!==+d.t);save();render()},
+ ckdel:d=>{const u=U();if(!confirm('¿Borrar este check-in? Los ajustes ya aplicados se mantienen.'))return;u.checkins=u.checkins.filter(c=>c.date!==+d.t);tombstone(u,'c'+d.t);save();render()},
  cyclen:d=>{const u=U();u.cycle.len=+d.n;u.cycle.seen=wk(u).abs;save();render()},
  wkshift:d=>{const u=U();u.cycle.start-=(+d.n)*WMS;u.cycle.seen=wk(u).abs;save();render()},
  syncnow:()=>pull(true),
