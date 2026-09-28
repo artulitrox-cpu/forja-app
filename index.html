@@ -168,15 +168,15 @@ details[open] .chev{transform:rotate(180deg)}
 <div id="seq"></div>
 <div id="toast"></div>
 
-<script src="js/catalog.js"></script>
-<script src="js/figures.js"></script>
-<script src="js/plan.js"></script>
-<script src="js/injuries.js"></script>
-<script src="js/activities.js"></script>
-<script src="js/bodymap.js"></script>
-<script src="js/sync.js"></script>
-<script src="js/timer.js"></script>
-<script src="js/hr.js"></script>
+<script src="js/catalog.js?v=202609280927"></script>
+<script src="js/figures.js?v=202609280927"></script>
+<script src="js/plan.js?v=202609280927"></script>
+<script src="js/injuries.js?v=202609280927"></script>
+<script src="js/activities.js?v=202609280927"></script>
+<script src="js/bodymap.js?v=202609280927"></script>
+<script src="js/sync.js?v=202609280927"></script>
+<script src="js/timer.js?v=202609280927"></script>
+<script src="js/hr.js?v=202609280927"></script>
 <script>
 
 
@@ -623,7 +623,7 @@ function readActivity(f){const fd=new FormData(f),when=new Date(String(fd.get('w
  return {sport:fd.get('sport')||'other',type:fd.get('type')||'',name:String(fd.get('name')||'').trim(),min:Math.max(5,Math.min(600,Math.round(+fd.get('min')||0))),rpe:+fd.get('rpe')||5,km:parseFloat(String(fd.get('km')||'').replace(',','.'))||undefined,date:isNaN(when)?Date.now():Math.min(Date.now(),when)}}
 function showActivityResult(a){const u=U(),adj=legAdjust(u),d=dayKcal(u);
  modal(`<p class="text-dim">${actLine(a)}</p><h2 class="font-display text-3xl font-extrabold leading-none mt-1">Actividad guardada</h2>
- <div class="grid grid-cols-2 gap-2 mt-5"><div class="stat"><b>${nf(a.kcal)}</b><span>kcal estimadas</span></div><div class="stat"><b style="color:${FAT_COL[a.level]}">${FATIGUE_LBL[a.level]}</b><span>fatiga de piernas (${a.fatigue}/100)</span></div></div>
+ <div class="grid grid-cols-2 gap-2 mt-5"><div class="stat"><b>${nf(a.kcal)}</b><span>${a.kcalReal?`kcal (${nf(a.kcalReal)} medidas con pulso)`:'kcal estimadas'}</span></div>${a.hr?`<div class="stat"><b>${a.hr.avg}</b><span>ppm medio (máx. ${a.hr.max})</span></div>`:''}<div class="stat"><b style="color:${FAT_COL[a.level]}">${FATIGUE_LBL[a.level]}</b><span>fatiga de piernas (${a.fatigue}/100)</span></div></div>
  ${d.total&&dayKey(a.date)===dayKey(Date.now())?`<p class="mt-4">Tu objetivo de hoy sube a <b>${nf(d.total)} kcal</b> (+${nf(d.sport)} por deporte).</p>`:''}
  <h3 class="h2 text-xl mt-5">En el gimnasio</h3><p class="mt-2">${adj.pct?esc(adj.text):'No hace falta ajustar la carga de piernas.'}</p>
  ${u.profile.weight>0?'':'<p class="hint">Sin peso en tu perfil: calculado con 70 kg.</p>'}

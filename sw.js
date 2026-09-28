@@ -1,13 +1,16 @@
 // Forja: service worker. Permite instalar la app y abrirla sin conexión.
-// La app (mismo origen) se pide primero a la red para recibir siempre la última versión;
-// las librerías y fuentes externas se sirven desde la caché. Supabase nunca se cachea.
-const CACHE = 'forja-v2';
+// La app (mismo origen) se pide siempre a la red revalidando con el servidor (cache: 'no-cache'),
+// para no mezclar un index.html nuevo con scripts antiguos de la caché HTTP. Sin conexión se usa la copia guardada.
+// Las librerías y fuentes externas (con versión fija) se sirven desde la caché. Supabase nunca se cachea.
+const CACHE = 'forja-v3';
 const CORE = ['./', 'index.html', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png', 'apple-touch-icon.png',
   'js/catalog.js', 'js/figures.js', 'js/plan.js', 'js/injuries.js', 'js/activities.js', 'js/bodymap.js', 'js/sync.js', 'js/timer.js', 'js/hr.js'];
 const CDN = ['cdn.tailwindcss.com', 'cdn.jsdelivr.net', 'fonts.googleapis.com', 'fonts.gstatic.com'];
 
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(CORE)).then(() => self.skipWaiting()));
+  e.waitUntil(caches.open(CACHE)
+    .then(c => c.addAll(CORE.map(u => new Request(u, { cache: 'reload' }))))
+    .then(() => self.skipWaiting()));
 });
 
 self.addEventListener('activate', e => {
@@ -22,10 +25,11 @@ self.addEventListener('fetch', e => {
   const url = new URL(req.url);
 
   if (url.origin === location.origin) {
-    e.respondWith(fetch(req).then(res => {
+    e.respondWith(fetch(req.url, { cache: 'no-cache', credentials: 'same-origin' }).then(res => {
       if (res.ok) { const copy = res.clone(); caches.open(CACHE).then(c => c.put(req, copy)); }
       return res;
-    }).catch(() => caches.match(req).then(r => r || (req.mode === 'navigate' ? caches.match('index.html') : undefined))));
+    }).catch(() => caches.match(req, { ignoreSearch: true })
+      .then(r => r || (req.mode === 'navigate' ? caches.match('index.html') : undefined))));
     return;
   }
 
