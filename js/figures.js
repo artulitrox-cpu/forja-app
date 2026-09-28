@@ -49,5 +49,7 @@ let rafOn=false;
 function tick(ts){const svgs=document.querySelectorAll('svg[data-anim]');if(!svgs.length){rafOn=false;return}
  svgs.forEach(el=>{const t=reduceMotion?.5:phaseT((ts%2800)/2800);el.innerHTML=figMarkup(el.dataset.anim,el.dataset.eq,t)});requestAnimationFrame(tick)}
 function ensureAnim(){if(!rafOn&&document.querySelector('svg[data-anim]')){rafOn=true;requestAnimationFrame(tick)}}
-const animSvg=ex=>`<svg viewBox="0 0 200 200" class="fig" data-anim="${ex.anim}" data-eq="${ex.eq}" role="img" aria-label="Animación de la técnica: ${esc(ex.n)}">${figMarkup(ex.anim,ex.eq,0)}</svg>`;
-const mini=ex=>`<svg viewBox="0 0 200 200" class="mini" aria-hidden="true">${figMarkup(ex.anim,ex.eq,1)}</svg>`;
+// Fotos reales (inicio y final alternando) si el ejercicio las tiene; si no, figura animada.
+const photoMarkup=(ex,cls)=>`<span class="exph ${cls}" role="img" aria-label="Fotos de la técnica: ${esc(ex.n)}"><img src="img/ex/${PHOTO[ex.id]}-0.webp" alt="" loading="lazy" decoding="async"><img class="b" src="img/ex/${PHOTO[ex.id]}-1.webp" alt="" loading="lazy" decoding="async"></span>`;
+const animSvg=ex=>PHOTO[ex.id]?photoMarkup(ex,'fig'):`<svg viewBox="0 0 200 200" class="fig" data-anim="${ex.anim}" data-eq="${ex.eq}" role="img" aria-label="Animación de la técnica: ${esc(ex.n)}">${figMarkup(ex.anim,ex.eq,0)}</svg>`;
+const mini=ex=>PHOTO[ex.id]?photoMarkup(ex,'mini'):`<svg viewBox="0 0 200 200" class="mini" aria-hidden="true">${figMarkup(ex.anim,ex.eq,1)}</svg>`;

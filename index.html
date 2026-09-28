@@ -90,6 +90,13 @@ img,svg{max-width:100%}
 .sb.done{background:var(--easy)}.sb.cur{background:var(--accent)}
 .fig-lg{width:118px;height:118px;flex:none;background:var(--surface2);border-radius:16px;border:0;padding:0}
 .fig-xl{width:100%;max-width:260px;aspect-ratio:1;margin:0 auto;background:var(--surface2);border-radius:20px}
+.fig-xl.has-photo{max-width:100%;aspect-ratio:3/2;overflow:hidden}
+.exph{position:relative;display:block;overflow:hidden;background:#fff}
+.exph.fig{width:100%;height:100%;border-radius:inherit}
+.exph img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.fig-xl .exph img{object-fit:contain;background:#fff}
+.exph .b{opacity:0;animation:exfade 3s infinite}
+@keyframes exfade{0%,40%{opacity:0}50%,90%{opacity:1}100%{opacity:0}}
 .layer{position:fixed;inset:0;z-index:50;display:flex;align-items:flex-end;justify-content:center;background:rgba(5,8,14,.72)}
 .sheet{width:100%;max-width:560px;max-height:92vh;max-height:92dvh;overflow:auto;background:var(--surface);border:1px solid var(--line);border-radius:24px 24px 0 0;padding:18px 20px calc(24px + env(safe-area-inset-bottom,0px));animation:up .22s ease-out}
 @media (min-width:640px){.layer{align-items:center;padding:24px}.sheet{border-radius:24px}}
@@ -168,18 +175,18 @@ details[open] .chev{transform:rotate(180deg)}
 <div id="seq"></div>
 <div id="toast"></div>
 
-<script src="js/catalog.js?v=202609281040"></script>
-<script src="js/figures.js?v=202609281040"></script>
-<script src="js/merge.js?v=202609281040"></script>
-<script src="js/plan.js?v=202609281040"></script>
-<script src="js/injuries.js?v=202609281040"></script>
-<script src="js/progress.js?v=202609281040"></script>
-<script src="js/nutrition.js?v=202609281040"></script>
-<script src="js/activities.js?v=202609281040"></script>
-<script src="js/bodymap.js?v=202609281040"></script>
-<script src="js/sync.js?v=202609281040"></script>
-<script src="js/timer.js?v=202609281040"></script>
-<script src="js/hr.js?v=202609281040"></script>
+<script src="js/catalog.js?v=202609281118"></script>
+<script src="js/figures.js?v=202609281118"></script>
+<script src="js/merge.js?v=202609281118"></script>
+<script src="js/plan.js?v=202609281118"></script>
+<script src="js/injuries.js?v=202609281118"></script>
+<script src="js/progress.js?v=202609281118"></script>
+<script src="js/nutrition.js?v=202609281118"></script>
+<script src="js/activities.js?v=202609281118"></script>
+<script src="js/bodymap.js?v=202609281118"></script>
+<script src="js/sync.js?v=202609281118"></script>
+<script src="js/timer.js?v=202609281118"></script>
+<script src="js/hr.js?v=202609281118"></script>
 <script>
 
 
@@ -768,7 +775,7 @@ function modal(html,label){$('#layer').innerHTML=`<div class="layer" data-a="clo
 function closeModal(){$('#layer').innerHTML=''}
 function openInfo(exId,ctx){const u=U(),ex=X(exId),p=presc(ex,u.profile);infoCtx=ctx;
  const act=ctx==='pick'?`<button class="btn-primary w-full mt-6" data-a="pick" data-ex="${ex.id}">Usar este ejercicio</button>`:ctx?`<button class="btn-ghost w-full mt-6" data-a="swap-from-info">${ic('swap',18)}Cambiar ejercicio</button>`:'';
- modal(`<div class="fig-xl">${animSvg(ex)}</div>
+ modal(`<div class="fig-xl ${PHOTO[ex.id]?'has-photo':''}">${animSvg(ex)}</div>
   <h2 class="font-display text-4xl font-extrabold leading-none mt-4">${esc(ex.n)}</h2>
   <p class="text-dim mt-1">${EQ_LABEL[ex.eq]}, ${SLOT_LABEL[ex.slot]}</p>
   <p class="mt-4 text-lg leading-snug">${esc(ex.d)}</p>
@@ -776,6 +783,8 @@ function openInfo(exId,ctx){const u=U(),ex=X(exId),p=presc(ex,u.profile);infoCtx
   <h3 class="h2 mt-6 text-xl">Músculos</h3>
   <div class="flex flex-wrap gap-2 mt-2">${ex.m.map(m=>`<span class="chip chip-a">${esc(m)}</span>`).join('')}${ex.s.map(m=>`<span class="chip">${esc(m)}</span>`).join('')}</div>
   <p class="text-sm text-dim mt-2">Resaltados: músculos principales. El resto, secundarios.</p>
+  <a class="btn-ghost w-full mt-4" href="https://www.youtube.com/results?search_query=${encodeURIComponent(ex.n+' técnica')}" target="_blank" rel="noopener noreferrer">${ic('play',18)}Ver vídeos de la técnica en YouTube</a>
+  ${PHOTO[ex.id]?'<p class="hint">Fotos: Free Exercise DB (dominio público).</p>':''}
   <h3 class="h2 mt-6 text-xl">Tu prescripción</h3>
   <p class="mt-2">${presTxt(p,ex)} a RPE ${String(p.rpe).replace('.',',')} (${rirTxt(p.rpe)}), descanso ${p.rest} s.</p>${act}`,ex.n)}
 function openSwap(ctx){const u=U();swapCtx=ctx;let curId,slot;

@@ -30,3 +30,14 @@ test('el catálogo incluye máquinas de gimnasio completo', () => {
     assert.ok(EX.some((e) => e.id === id), id);
   }
 });
+
+test('cada foto del mapa existe (inicio y final)', () => {
+  const fs = require('node:fs');
+  const path = require('node:path');
+  const PHOTO = c.get('PHOTO');
+  const ids = new Set(EX.map((e) => e.id));
+  for (const [id, src] of Object.entries(PHOTO)) {
+    assert.ok(ids.has(id), `ejercicio desconocido en PHOTO: ${id}`);
+    for (const i of [0, 1]) assert.ok(fs.existsSync(path.join(__dirname, '..', 'img', 'ex', `${src}-${i}.webp`)), `${src}-${i}.webp`);
+  }
+});
