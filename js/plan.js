@@ -250,8 +250,8 @@ const FINISH_MIN={fat:[10,20],hyp:[10,15],maint:[15,20]};
 const CARDIO_DAY_MIN={fat:[30,45],hyp:[25,30],maint:[30,40]};
 const HIIT_CAP={fat:2,maint:1,hyp:0};
 const CARDIO_TARGET={fat:150,maint:150,hyp:60};
-// Pulso orientativo para LISS: 60–70 % de la FC máxima (Tanaka: 208 − 0,7 × edad).
-function hrZone(pr){const a=+pr.age;if(!(a>0))return null;const max=Math.round(208-.7*a);return {lo:Math.round(max*.6),hi:Math.round(max*.7),max}}
+// Pulso orientativo para LISS: 60–70 % de la FC máxima (220 − edad, igual que las zonas del pulsómetro).
+function hrZone(pr){const a=+pr.age;if(!(a>0))return null;const max=220-a;return {lo:Math.round(max*.6),hi:Math.round(max*.7),max}}
 const LEG_MAIN=new Set(['squat','hinge']);
 const isLegTpl=tpl=>!!tpl&&tpl.items.some(it=>LEG_MAIN.has(it.slot));
 const lvlIdx=pr=>({beg:0,int:1,adv:2}[pr.level]??0);

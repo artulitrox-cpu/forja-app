@@ -120,6 +120,9 @@ details[open] .chev{transform:rotate(180deg)}
 .wk-d{flex:1 0 auto;min-width:86px;border:1px solid var(--line);border-radius:14px;padding:10px;background:var(--surface)}
 .wk-d.is-next{border-color:var(--accent)}
 .wk-d.is-done{background:color-mix(in srgb,var(--easy) 14%,var(--surface));border-color:color-mix(in srgb,var(--easy) 50%,var(--line))}
+/* Pulsómetro */
+.hrpill{min-height:28px;padding:0 10px;border-radius:999px;border:1px solid var(--line);background:var(--surface2);color:var(--dim);font-weight:700;font-size:.78rem;font-family:inherit;white-space:nowrap;max-width:52vw;overflow:hidden;text-overflow:ellipsis}
+.hrpill.is-on{color:var(--hard);border-color:color-mix(in srgb,var(--hard) 50%,var(--line))}
 /* Semana dinámica */
 .wkrow{display:flex;align-items:center;gap:12px;width:100%;min-height:48px;padding:6px 8px;border-radius:12px;background:none;border:1px solid transparent;color:inherit;font:inherit;text-align:left}
 .wkrow:hover{background:var(--surface2)}.wkrow.is-today{border-color:var(--accent)}
@@ -274,7 +277,7 @@ function vOnboard(){
   ${others?`<button data-a="tab" data-v="profile" class="btn-text mt-4">Volver a mi perfil</button>`:''}
  </main>`;
 }
-function header(){const u=U();return `<header class="appbar"><div class="max-w-xl mx-auto px-4 h-14 flex items-center justify-between"><div class="flex items-center gap-2"><div class="brand">For<b>ja</b></div><span id="syncdot" class="dot" role="img" aria-label="${SYNC_TXT[sync.state]}" title="${SYNC_TXT[sync.state]}" style="background:${SYNC_COL[sync.state]}"></span></div><button class="btn-ghost" data-a="tab" data-v="profile" style="padding-left:4px"><span class="avatar" style="width:32px;height:32px">${esc(u.profile.name[0].toUpperCase())}</span>Mi perfil</button></div></header>`}
+function header(){const u=U();return `<header class="appbar"><div class="max-w-xl mx-auto px-4 h-14 flex items-center justify-between"><div class="flex items-center gap-2"><div class="brand">For<b>ja</b></div><span id="syncdot" class="dot" role="img" aria-label="${SYNC_TXT[sync.state]}" title="${SYNC_TXT[sync.state]}" style="background:${SYNC_COL[sync.state]}"></span>${hrPill()}</div><button class="btn-ghost" data-a="tab" data-v="profile" style="padding-left:4px"><span class="avatar" style="width:32px;height:32px">${esc(u.profile.name[0].toUpperCase())}</span>Mi perfil</button></div></header>`}
 function nav(){const t=[['home','today','Hoy'],['plan','plan','Plan'],['body','body','Cuerpo'],['injuries','cross','Lesiones'],['history','hist','Progreso'],['profile','user','Perfil']];
  return `<nav class="tabbar" aria-label="Secciones"><div class="max-w-xl mx-auto flex">${t.map(([v,i,l])=>`<button class="tab" data-a="tab" data-v="${v}" ${view===v?'aria-current="page"':''}>${ic(i)}<span>${l}</span></button>`).join('')}</div></nav>`}
 function exRow(u,it,di,i){const ex=X(it.ex),p=it.p||presc(ex,u.profile),g=prog(u,ex,p);
@@ -321,16 +324,17 @@ function todayPick(u){const s=weekSchedule(u),td=weekday(Date.now()),e=s.find(x=
  const offer=today||pend.find(x=>x.wd>=td)||pend[0]||{wd:td,type:'strength',done:false,tpl:rot,name:rot.name,dayIdx:u.next%u.plan.days.length};
  return {s,td,e,today,next,offer,msg}}
 const weekBlock=u=>`<section class="mt-8"><div class="flex items-baseline justify-between"><h2 class="h2">Esta semana</h2><button class="btn-text" data-a="tab" data-v="plan">Editar</button></div><div class="mt-3">${weekStrip(u)}</div></section>`;
+function liveBanner(u){return u.live?`<section class="card p-4 mt-4 flex items-center gap-3" style="border-color:var(--hard)"><span style="color:var(--hard)">●</span><span class="flex-1"><b class="block">Grabando: ${esc(sportName(u.live))}</b><span class="text-sm text-dim tabular-nums" id="lv-mini">${fmtDur(Date.now()-u.live.start)}</span></span><button class="btn-primary" style="min-height:44px" data-a="livego">Volver</button></section>`:''}
 function vHome(){const u=U(),a=u.active;
  if(a)return `${banners(u)}<section class="pt-6"><p class="text-dim text-lg">Hola, ${esc(u.profile.name)}. Tienes una sesión a medias:</p><h1 class="hero">${esc(activeName(u,a))}</h1>
   <button data-a="start" class="btn-primary w-full mt-5">${ic('play',20)}Continuar sesión</button></section>${weekBlock(u)}`;
- const t=todayPick(u),ws=weekStart(),hello=`Hola, ${esc(u.profile.name)}.`,top=`${profileSummary(u)}${banners(u)}${injBanners(u)}`,tail=`${installCard()}${cycleCard(u)}`;
+ const t=todayPick(u),ws=weekStart(),hello=`Hola, ${esc(u.profile.name)}.`,top=`${liveBanner(u)}${profileSummary(u)}${banners(u)}${injBanners(u)}`,tail=`${installCard()}${cycleCard(u)}`;
  // Día de partido
  if(t.e&&t.e.type==='match'){const m=t.e;
   return `${top}${actCard(u,null)}${tail}<section class="pt-6"><p class="text-dim text-lg">${hello} Hoy juegas</p><h1 class="hero">${esc(m.name)}</h1>
    <p class="text-dim mt-2">Hoy no hay gimnasio. Haz 5–8 min de movilidad antes de jugar.</p>
    ${m.done?`<div class="card p-4 mt-4" style="border-color:var(--easy)"><b class="block">Partido registrado</b><span class="block text-sm text-dim mt-1">Mañana ajustamos la carga de piernas según la fatiga.</span></div>`
-    :`<button class="btn-primary w-full mt-5" data-a="actopen" data-s="${m.sport}">${ic('play',20)}Registrar partido</button><p class="hint">Al terminar: duración, esfuerzo y posición. Mañana ajustamos la carga de piernas según la fatiga.</p>`}
+    :`<button class="btn-primary w-full mt-5" data-a="livepick" data-s="${m.sport}">${ic('play',20)}Grabar partido en vivo</button><button class="btn-ghost w-full mt-2" data-a="actopen" data-s="${m.sport}">Registrar partido al terminar</button><p class="hint">Al terminar: duración, esfuerzo y posición. Mañana ajustamos la carga de piernas según la fatiga.</p>`}
    <button class="btn-text mt-2" data-a="wkunmatch" data-n="${m.wd}">Al final no juego hoy</button></section>${weekBlock(u)}`}
  // Sin sesión pendiente hoy: descanso, "no voy", hecha o día libre
  if(!t.today){const w=weekObj(u,ws),skip=t.e&&t.e.type==='skip',free=skip&&!w.noOffer&&lostSessions(u,ws)>0?freeDays(u,ws,t.td):[];
@@ -462,7 +466,7 @@ function vHistory(){const u=U(),H=u.history,ws=weekStart(),cMin=H.filter(h=>h.da
  ${vActivities(u)}
  ${H.length?`<section class="card p-4 mt-4"><h2 class="h2">Series por sesión</h2><div class="mt-3 scroll-x">${chart}</div></section>`:`<section class="card p-5 mt-4"><h2 class="h2">Aún no hay sesiones</h2><p class="text-dim mt-2">Completa tu primera sesión y aquí verás tu evolución.</p><button data-a="tab" data-v="home" class="btn-primary w-full mt-4">Ir a la sesión de hoy</button></section>`}
  ${loads.length?`<section class="mt-6"><h2 class="h2">Próxima carga</h2><div class="card mt-3 divide-y divide-[var(--line)]">${loads.map(o=>`<div class="flex items-center justify-between gap-3 px-4 py-3"><span class="font-semibold">${esc(o.ex.n)}</span><span class="text-dim whitespace-nowrap">${loadTxt(o.ex,o.g,u.profile)}</span></div>`).join('')}</div></section>`:''}
- ${H.length?`<section class="mt-6"><h2 class="h2">Historial</h2><div class="mt-3 flex flex-col gap-2">${H.map(h=>`<details class="card"><summary class="p-4 flex items-center gap-3"><span class="flex-1"><span class="block font-semibold">${esc(h.day)}</span><span class="block text-sm text-dim">${new Date(h.date).toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'short'})}, ${fmtDur(h.dur)}, ${h.sets} series${h.hr?`, ♥ ${h.hr.avg} ppm (máx. ${h.hr.max})`:''}</span></span><span class="chev text-dim">${ic('chev')}</span></summary><div class="px-4 pb-4 flex flex-col gap-3">${h.blocks&&h.blocks.cond?`<div><div class="font-semibold">${esc(condKindLbl(h.blocks.cond))}: ${esc((CARDIO_M[h.blocks.cond.machine]||{}).n||'')}</div><div class="text-sm mt-1 inline-flex items-center gap-1.5"><span class="dot d-${h.blocks.cond.rt}"></span>${h.blocks.cond.min} min</div></div>`:''}${h.items.map(it=>{const ex=X(it.ex);return ex?`<div><div class="font-semibold">${esc(ex.n)}</div><div class="flex flex-wrap gap-x-4 gap-y-1 mt-1 text-sm">${it.sets.map(s=>`<span class="inline-flex items-center gap-1.5"><span class="dot d-${s.rt}" title="${RT[s.rt]}"></span>${s.w?fmtKg(s.w)+' kg × ':''}${s.r} ${unit(ex)}</span>`).join('')}</div></div>`:''}).join('')}</div></details>`).join('')}</div></section>`:''}`}
+ ${H.length?`<section class="mt-6"><h2 class="h2">Historial</h2><div class="mt-3 flex flex-col gap-2">${H.map(h=>`<details class="card"><summary class="p-4 flex items-center gap-3"><span class="flex-1"><span class="block font-semibold">${esc(h.day)}</span><span class="block text-sm text-dim">${new Date(h.date).toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'short'})}, ${fmtDur(h.dur)}, ${h.sets} series${h.hr?`, ♥ ${h.hr.avg} ppm (máx. ${h.hr.max})`:''}${h.kcalReal?`, ${nf(h.kcalReal)} kcal`:''}</span></span><span class="chev text-dim">${ic('chev')}</span></summary><div class="px-4 pb-4 flex flex-col gap-3">${h.blocks&&h.blocks.cond?`<div><div class="font-semibold">${esc(condKindLbl(h.blocks.cond))}: ${esc((CARDIO_M[h.blocks.cond.machine]||{}).n||'')}</div><div class="text-sm mt-1 inline-flex items-center gap-1.5"><span class="dot d-${h.blocks.cond.rt}"></span>${h.blocks.cond.min} min</div></div>`:''}${h.items.map(it=>{const ex=X(it.ex);return ex?`<div><div class="font-semibold">${esc(ex.n)}</div><div class="flex flex-wrap gap-x-4 gap-y-1 mt-1 text-sm">${it.sets.map(s=>`<span class="inline-flex items-center gap-1.5"><span class="dot d-${s.rt}" title="${RT[s.rt]}"></span>${s.w?fmtKg(s.w)+' kg × ':''}${s.r} ${unit(ex)}</span>`).join('')}</div></div>`:''}).join('')}</div></details>`).join('')}</div></section>`:''}`}
 function vProfile(){const u=U(),ids=Object.keys(S.users);
  return `<section class="pt-6"><h1 class="h1">Mi perfil</h1><p class="text-dim mt-2">Cambiar estos datos regenera el plan. Tu historial y tus cargas se conservan.</p></section>
  <section class="card p-5 mt-4"><h2 class="h2">Cómo ajustamos tu plan</h2><ul class="mt-3 flex flex-col gap-2">${adjNotes(u.profile).map(n=>`<li class="flex gap-2"><span class="dot d-ok mt-2 flex-none"></span><span>${esc(n)}</span></li>`).join('')}</ul></section>
@@ -486,7 +490,7 @@ function vSession(){const u=U(),a=u.active;normActive(a);const st=stagesOf(a);if
  const steps=st.length>1?`<div class="steps mt-3">${st.map(x=>`<button class="step ${x===a.stage?'cur':stageDone(a,x)?'done':''}" data-a="stage" data-v="${x}" ${x===a.stage?'aria-current="step"':''}>${x==='cond'&&a.cond.kind!=='liss'?'HIIT':STAGE_LBL[x]}</button>`).join('')}</div>`:'';
  const body=a.stage==='mob'?vStageList(a,'mob'):a.stage==='stretch'?vStageList(a,'stretch'):a.stage==='cond'?vStageCond(u,a):vStageStr(u,a);
  return `<main class="max-w-xl mx-auto px-4 pb-10">
-  <div class="flex items-center justify-between pt-3 gap-2"><button data-a="pause" class="btn-text">Salir</button><div class="text-center"><div class="font-display text-2xl font-bold leading-none">${esc(activeName(u,a))}</div><div class="text-sm text-dim mt-1 tabular-nums"><span id="elapsed">${fmtDur(Date.now()-a.start)}</span>${HR.state==='on'?` · <span id="hrb" style="color:var(--hard)">♥ ${HR.bpm||'--'} ppm</span>`:''}</div></div><button data-a="finish" class="btn-text" style="color:var(--accent)">Terminar</button></div>
+  <div class="flex items-center justify-between pt-3 gap-2"><button data-a="pause" class="btn-text">Salir</button><div class="text-center"><div class="font-display text-2xl font-bold leading-none">${esc(activeName(u,a))}</div><div class="text-sm text-dim mt-1 tabular-nums"><span id="elapsed">${fmtDur(Date.now()-a.start)}</span>${HR.state==='on'?` · <span id="hrb" style="color:var(--hard)">♥ ${HR.bpm||'--'} ppm${(z=>z?` · Z${z.z}`:'')(hrZoneOf(HR.bpm,u.profile))}</span>`:''}</div></div><button data-a="finish" class="btn-text" style="color:var(--accent)">Terminar</button></div>
   <section class="card p-3 mt-3">
    <div class="grid grid-cols-3 gap-2 text-center"><div><div id="cd" class="font-display text-3xl font-extrabold leading-none tabular-nums">--:--</div><div id="cd-l" class="text-xs text-dim mt-1">quedan (estimado)</div></div><div><div id="pct" class="font-display text-3xl font-extrabold leading-none tabular-nums">0 %</div><div class="text-xs text-dim mt-1">plan completado</div></div><div><div id="pace" class="font-display text-3xl font-extrabold leading-none tabular-nums">En hora</div><div id="pace-l" class="text-xs text-dim mt-1">ritmo</div></div></div>
    <div class="mt-3 text-xs text-dim flex justify-between"><span>Tiempo transcurrido</span><span>Fin previsto: <b id="eta" class="text-fg">--:--</b></span></div><div class="h-2 rounded-full mt-1" style="background:var(--line)"><div id="tbar" class="h-2 rounded-full" style="width:0;background:var(--dim)"></div></div>
@@ -539,6 +543,7 @@ function render(){
  const app=$('#app');
  if(!U()){view='onboard';app.innerHTML=vOnboard();return}
  if(view==='onboard'){app.innerHTML=vOnboard();return}
+ if(view==='live'){if(!U().live)view='home';else{app.innerHTML=vLive();updLive();return}}
  if(view==='session'){if(!U().active)view='home';else{app.innerHTML=vSession();ensureAnim();updClock();return}}
  checkCycle(U());const body={home:vHome,plan:vPlan,body:vBody,injuries:vInjuries,history:vHistory,profile:vProfile}[view]||vHome;
  app.innerHTML=header()+`<main class="max-w-xl mx-auto px-4 pb-32">${body()}</main>`+nav();
@@ -593,7 +598,7 @@ function injBanners(u){if(typeof activeInjuries!=='function')return '';const act
 const localInput=t=>new Date(t-new Date(t).getTimezoneOffset()*6e4).toISOString().slice(0,16);
 const FAT_COL={low:'var(--easy)',moderate:'var(--accent)',high:'var(--hard)'};
 function actLine(a){return `${esc(sportName(a))} · ${a.min} min · RPE ${a.rpe}${a.km?` · ${nf(a.km)} km`:''}`}
-function actRow(a,del){return `<div class="flex items-center gap-3 p-3 rounded-2xl" style="background:var(--surface2)"><span class="dot flex-none" style="background:${FAT_COL[a.level]}" title="Fatiga de piernas ${FATIGUE_LBL[a.level].toLowerCase()}"></span><span class="flex-1 min-w-0"><span class="block font-semibold truncate">${actLine(a)}</span><span class="block text-sm text-dim">${esc(sportType(a).n)} · ${new Date(a.date).toLocaleDateString('es-ES',{weekday:'short',day:'numeric',month:'short'})} ${hhmm(a.date)} · ${nf(a.kcal)} kcal · fatiga ${FATIGUE_LBL[a.level].toLowerCase()}</span></span>${del?`<button class="btn-text btn-danger" data-a="actdel" data-id="${a.id}" aria-label="Borrar actividad">${ic('close',16)}</button>`:''}</div>`}
+function actRow(a,del){return `<div class="flex items-center gap-3 p-3 rounded-2xl" style="background:var(--surface2)"><span class="dot flex-none" style="background:${FAT_COL[a.level]}" title="Fatiga de piernas ${FATIGUE_LBL[a.level].toLowerCase()}"></span><span class="flex-1 min-w-0"><span class="block font-semibold truncate">${actLine(a)}</span><span class="block text-sm text-dim">${esc(sportType(a).n)} · ${new Date(a.date).toLocaleDateString('es-ES',{weekday:'short',day:'numeric',month:'short'})} ${hhmm(a.date)} · ${nf(a.kcal)} kcal${a.kcalReal?' (con pulso)':''}${a.hr?` · ♥ ${a.hr.avg}/${a.hr.max}`:''}${a.reconnects&&a.reconnects.length?` · ${a.reconnects.length} reconexión${a.reconnects.length>1?'es':''}`:''} · fatiga ${FATIGUE_LBL[a.level].toLowerCase()}</span></span>${del?`<button class="btn-text btn-danger" data-a="actdel" data-id="${a.id}" aria-label="Borrar actividad">${ic('close',16)}</button>`:''}</div>`}
 // Tarjeta de Hoy: actividad de las últimas 48 h y recomendación para el gimnasio.
 function actCard(u,ss){const rec=recentActivities(u),adj=legAdjust(u),legs=ss&&ss.items.some(it=>LOWER_SLOTS.has(it.slot));
  let tip='';
@@ -601,6 +606,7 @@ function actCard(u,ss){const rec=recentActivities(u),adj=legAdjust(u),legs=ss&&s
   :`<div class="tip mt-3 text-sm">Fatiga de piernas por ${esc(adj.sport)}. Hoy no hay pierna: buen día para recuperar.</div>`;
  else if(adj.skipped)tip=`<p class="text-sm text-dim mt-3">Ajuste por fatiga desactivado hoy. <button class="btn-text" style="min-height:32px;padding:0 4px" data-a="actunskip">Volver a aplicarlo</button></p>`;
  return `<section class="card p-4 mt-3"><div class="flex items-center gap-3"><span class="flex-1"><b class="block">Actividad reciente</b><span class="block text-sm text-dim">${rec.length?'Deporte de las últimas 48 h':'¿Hiciste deporte fuera del gimnasio?'}</span></span><button class="btn-ghost" data-a="actopen">Registrar actividad</button></div>
+  <button class="btn-ghost w-full mt-3" data-a="livepick">${ic('play',18)}Iniciar actividad en vivo</button>
   ${rec.length?`<div class="flex flex-col gap-2 mt-3">${rec.map(a=>actRow(a,false)).join('')}</div>`:''}${tip}</section>`}
 function openActivity(d){d=Object.assign({sport:'futsal',min:60,rpe:7,date:Date.now()},d||{});const sp=SPORTS[d.sport]||SPORTS.other,type=sportType(d).id;
  modal(`<h2 class="font-display text-3xl font-extrabold leading-none">Registrar actividad</h2><p class="text-dim mt-2">Cuestionario después del deporte. Calculamos calorías y fatiga de piernas.</p>
@@ -629,15 +635,81 @@ function vActivities(u){const A_=u.activities||[],ws=weekStart(),wk_=A_.filter(a
   <button class="btn-ghost w-full mt-3" data-a="actopen">Registrar actividad</button>
   ${A_.length?`<div class="flex flex-col gap-2 mt-3">${A_.slice(0,50).map(a=>actRow(a,true)).join('')}</div>`:'<p class="text-dim text-sm mt-3">Aún no has registrado deportes fuera del gimnasio.</p>'}</section>`}
 /* ---- Pulsómetro Bluetooth ---- */
-function hrCard(){const on=HR.state==='on';
+// Indicador discreto de la cabecera (solo si hay una banda recordada en este navegador).
+function hrPillTxt(){const u=U(),on=HR.state==='on',z=on&&u?hrZoneOf(HR.bpm,u.profile):null;
+ if(on)return `♥ ${HR.bpm||'--'}${z?` · Z${z.z}`:''}${HR.battery!=null?` · 🔋${HR.battery}%`:''}`;
+ if(HR.state==='searching'||HR.state==='connecting')return 'Buscando pulsómetro…';
+ if(HR.state==='error')return 'Pulsómetro: error';
+ return HR.needsTap?'Toca para reconectar':'Pulsómetro desconectado'}
+function hrPill(){if(!hrSaved())return '';const tap=HR.needsTap&&HR.state!=='on';
+ return `<button id="hrpill" class="hrpill ${HR.state==='on'?'is-on':''}" data-a="${tap?'hrconnect':'tab'}" data-v="profile" aria-live="polite">${esc(hrPillTxt())}</button>`}
+function hrCard(){const u=U(),sv=hrSaved(),on=HR.state==='on',z=on?hrZoneOf(HR.bpm,u.profile):null,smart=!(u.settings&&u.settings.smartRest===false),m=hrMax(u.profile);
+ const auto=hrSupported()&&typeof navigator.bluetooth.getDevices==='function';
+ const st={off:sv?'Desconectado':'Sin banda emparejada',searching:'Buscando pulsómetro…',connecting:'Conectando…',on:'Conectado',error:'Error'}[HR.state];
+ const btns=!hrSupported()?'<p class="hint">Tu navegador no admite Web Bluetooth (por ejemplo, Safari en iPhone o Samsung Internet). Abre Forja en Chrome para Android.</p>'
+  :!sv?`<button class="btn-primary w-full mt-4" data-a="hrconnect" ${HR.state==='connecting'?'disabled':''}>Conectar pulsómetro Bluetooth</button>`
+  :`<div class="flex flex-wrap gap-2 mt-4">${on?'<button class="btn-ghost flex-1" data-a="hrdisconnect">Desconectar</button>':`<button class="btn-ghost flex-1" data-a="${HR.needsTap?'hrconnect':'hrresume'}">Reconectar</button>`}<button class="btn-text btn-danger" data-a="hrforget">Olvidar banda</button></div>`;
  return `<section class="card p-5 mt-6"><h2 class="h2">Pulsómetro Bluetooth</h2>
-  <p class="text-sm text-dim mt-2">Conecta una banda de pecho o un reloj que emita frecuencia cardíaca por Bluetooth. Durante la sesión verás tus pulsaciones y se guardarán la media y la máxima.</p>
-  <div class="flex items-center gap-3 mt-4"><span class="font-display text-4xl font-extrabold leading-none tabular-nums" id="hrv" style="color:${on?'var(--hard)':'var(--dim)'}">${on&&HR.bpm?HR.bpm:'--'}</span><span class="text-sm text-dim">ppm<br><span id="hrs">${{off:'Desconectado',connecting:'Conectando…',on:'Conectado'+(HR.device&&HR.device.name?': '+esc(HR.device.name):''),error:'Error'}[HR.state]}</span></span></div>
-  ${HR.err?`<p class="text-sm mt-2" style="color:var(--hard)">${esc(HR.err)}</p>`:''}
-  ${hrSupported()?(on?'<button class="btn-ghost w-full mt-4" data-a="hrdisconnect">Desconectar</button>':`<button class="btn-ghost w-full mt-4" data-a="hrconnect" ${HR.state==='connecting'?'disabled':''}>Conectar pulsómetro Bluetooth</button>`)
-   :'<p class="hint">Tu navegador no admite Web Bluetooth (por ejemplo, Safari en iPhone). Funciona en Chrome para Android y en Chrome o Edge de escritorio.</p>'}</section>`}
-onHr(()=>{const v=$('#hrv'),b=$('#hrb');if(v)v.textContent=HR.state==='on'&&HR.bpm?HR.bpm:'--';if(b)b.textContent=HR.bpm?`♥ ${HR.bpm} ppm`:'♥ --';
- if(view==='profile'&&(!v||HR.state!=='on'))softRender()});
+  <p class="text-sm text-dim mt-2">Banda de pecho con Bluetooth estándar. Muestra pulso, zona y batería, calcula las calorías reales y ajusta tus descansos.</p>
+  <div class="grid grid-cols-3 gap-2 mt-4"><div class="stat"><b id="hrv" style="color:${on?'var(--hard)':'var(--dim)'}">${on&&HR.bpm?HR.bpm:'--'}</b><span>ppm</span></div><div class="stat"><b id="hrz" style="color:${z?ZONE_COL[z.z]:'var(--dim)'}">${z?'Z'+z.z:'--'}</b><span>${z?esc(z.name):'zona'}</span></div><div class="stat"><b id="hrbat">${on&&HR.battery!=null?HR.battery+'%':'--'}</b><span>batería</span></div></div>
+  <p class="text-sm mt-3"><b>${esc(st)}</b>${sv&&sv.name?` · ${esc(sv.name)}`:''}</p>
+  ${HR.err?`<p class="text-sm mt-1" style="color:var(--hard)">${esc(HR.err)}</p>`:''}
+  ${btns}
+  ${sv&&hrSupported()?`<p class="hint">${auto?'Reconexión automática: al abrir Forja con la banda puesta, se conecta sola.':'Este navegador no permite reconectar sin un toque: pulsa "Reconectar" o el indicador de la cabecera. En Chrome puedes activar la reconexión automática en chrome://flags/#enable-web-bluetooth-new-permissions-backend.'}</p>`:''}
+  <label class="check mt-4"><input type="checkbox" data-a="smartrest" ${smart?'checked':''}><span>Descanso inteligente en pesas: pasa a la siguiente serie cuando el pulso baje de ${SMART_REST_BPM} ppm (mínimo 30 s).</span></label>
+  ${m?`<details class="mt-3"><summary class="text-sm font-semibold">Tus zonas (FC máx. ${m} ppm)</summary><div class="grid gap-1 mt-2 text-sm">${HR_ZONES.map((x,i)=>{const hi=HR_ZONES[i+1]?Math.round(HR_ZONES[i+1].lo*m)-1:m;return `<div class="flex justify-between"><span><span class="dot" style="background:${ZONE_COL[x.z]}"></span> Z${x.z} ${x.name}</span><span class="text-dim">${Math.round(x.lo*m)||'<'+Math.round(.6*m)}${x.z===1?'':'–'+hi} ppm</span></div>`}).join('')}</div></details>`:''}</section>`}
+/* ---- Actividad en vivo ---- */
+const LIVE_KEY='forja.live.samples';
+function liveSamples(){try{return JSON.parse(localStorage.getItem(LIVE_KEY)||'[]')}catch(e){return []}}
+function liveStore(){const u=U();if(!u||!u.live)return;try{localStorage.setItem(LIVE_KEY,JSON.stringify(HR.samples.filter(s=>s.t>=u.live.start)))}catch(e){}}
+function openLivePick(sport,type){const sp=SPORTS[sport]?sport:'futsal',tp=type||SPORTS[sp].types[0].id;
+ modal(`<h2 class="font-display text-3xl font-extrabold leading-none">Iniciar actividad en vivo</h2><p class="text-dim mt-2">Cronómetro con pulso en tiempo real. Si la banda se desconecta, la grabación sigue.</p>
+ <form data-live class="flex flex-col gap-5 mt-5"><div><span class="lbl">Deporte</span>${seg('sport',Object.fromEntries(Object.entries(SPORTS).filter(([k])=>k!=='other').map(([k,v])=>[k,v.n])),sp)}</div>
+  <div><span class="lbl">${sp==='football'||sp==='futsal'?'Posición / tipo de juego':'Tipo de sesión'}</span>${seg('type',Object.fromEntries(SPORTS[sp].types.map(t=>[t.id,t.n])),tp)}</div>
+  ${hrSaved()?'':'<p class="hint">Sin pulsómetro emparejado: se guardarán el tiempo y las kcal estimadas. Puedes conectarlo en Mi perfil.</p>'}
+  <button class="btn-primary w-full" type="submit">${ic('play',20)}Empezar a grabar</button></form>`,'Actividad en vivo')}
+const restDayToday=u=>{const e=weekSchedule(u).find(x=>x.wd===weekday(Date.now()));return !e||e.type==='rest'||e.type==='skip'};
+function vLive(){const u=U(),L=u.live;
+ return `<main class="max-w-xl mx-auto px-4 pb-10 pt-4"><div class="flex items-center justify-between"><button class="btn-text" data-a="tab" data-v="home">Minimizar</button><span class="chip" style="border-color:var(--hard);color:var(--hard)">● Grabando</span></div>
+  <p class="text-dim mt-4">${esc(sportType(L).n)}</p><h1 class="hero">${esc(sportName(L))}</h1>
+  <div class="text-center mt-6"><div id="lv-t" class="seq-time tabular-nums">${fmtDur(Date.now()-L.start)}</div><div class="text-dim">tiempo total · desde las ${hhmm(L.start)}</div></div>
+  <section class="grid grid-cols-3 gap-2 mt-6 text-center"><div class="stat"><b id="lv-hr">--</b><span>ppm</span></div><div class="stat"><b id="lv-z">--</b><span id="lv-zn">zona</span></div><div class="stat"><b id="lv-b">--</b><span>batería</span></div></section>
+  <p id="lv-st" class="text-center mt-3 text-sm font-semibold"></p>
+  <button id="lv-tap" class="btn-ghost w-full mt-3" data-a="hrconnect" hidden>Conectar pulsómetro</button>
+  <p id="lv-rc" class="mt-2 text-sm text-dim text-center"></p>
+  <button class="btn-primary w-full mt-6" data-a="livefinishopen">Finalizar ${L.sport==='football'||L.sport==='futsal'?'partido':'actividad'}</button>
+  <button class="btn-text btn-danger w-full mt-2 justify-center" data-a="livecancel">Descartar grabación</button>
+  <p class="hint text-center">Deja Forja abierta en pantalla: sin ella, el navegador no recibe el pulso. Si la banda se aleja, la grabación sigue y se reconecta al volver.</p></main>`}
+function updLive(){const u=U();if(!u||!u.live)return;const L=u.live,mini=$('#lv-mini');if(mini)mini.textContent=fmtDur(Date.now()-L.start);if(view!=='live')return;
+ const on=HR.state==='on',z=on?hrZoneOf(HR.bpm,u.profile):null,set=(id,v)=>{const el=$(id);if(el)el.textContent=v};
+ set('#lv-t',fmtDur(Date.now()-L.start));set('#lv-hr',on&&HR.bpm?HR.bpm:'--');set('#lv-z',z?'Z'+z.z:'--');set('#lv-zn',z?z.name:'zona');set('#lv-b',on&&HR.battery!=null?HR.battery+'%':'--');
+ const ze=$('#lv-z');if(ze)ze.style.color=z?ZONE_COL[z.z]:'';
+ set('#lv-st',on?'Pulsómetro conectado':!hrSaved()?'Sin pulsómetro':HR.state==='searching'||HR.state==='connecting'?'Buscando pulsómetro… la grabación sigue':'Pulsómetro desconectado · la grabación sigue');
+ const tap=$('#lv-tap');if(tap){tap.hidden=on||!hrSupported()||(hrSaved()&&!HR.needsTap);tap.textContent=hrSaved()?'Toca para reconectar el pulsómetro':'Conectar pulsómetro'}
+ set('#lv-rc',(L.reconnects||[]).map(t=>`Reconectado a las ${hhmm(t)}`).join(' · '));
+ if(on&&z&&z.z>=3&&restDayToday(u))zoneAlert(z.z)}
+function openLiveFinish(){const u=U(),L=u.live,s=liveSummary(L,HR.samples,u.profile,Date.now());
+ modal(`<h2 class="font-display text-3xl font-extrabold leading-none">Finalizar ${esc(sportName(L).toLowerCase())}</h2>
+ <div class="grid grid-cols-3 gap-2 mt-4"><div class="stat"><b>${s.min}</b><span>min</span></div><div class="stat"><b>${s.hr?s.hr.avg:'--'}</b><span>ppm medio</span></div><div class="stat"><b>${s.hr?s.hr.max:'--'}</b><span>ppm máx.</span></div></div>
+ <form data-livefin class="flex flex-col gap-5 mt-5"><div><span class="lbl">${L.sport==='football'||L.sport==='futsal'?'Posición / tipo de juego':'Tipo de sesión'}</span>${seg('type',Object.fromEntries(SPORTS[L.sport].types.map(t=>[t.id,t.n])),L.type)}</div>
+  <div><span class="lbl">Esfuerzo percibido (RPE)</span><div class="pain rpe" role="radiogroup">${Array.from({length:10},(_,i)=>`<label><input type="radio" name="rpe" value="${i+1}" ${s.rpe===i+1?'checked':''}><span>${i+1}</span></label>`).join('')}</div><p class="hint">${s.hr?'Propuesto según tu pulso medio. Ajústalo si no encaja.':'1 = muy suave · 5 = moderado · 8 = muy duro · 10 = máximo.'}</p></div>
+  <button class="btn-primary w-full" type="submit">Guardar y aplicar a mi rutina</button></form>`,'Finalizar actividad')}
+function finishLive(f){const u=U(),L=u.live,fd=new FormData(f),rpe=+fd.get('rpe')||6,type=String(fd.get('type')||L.type),now=Date.now();
+ const s=liveSummary({...L,type},HR.samples,u.profile,now,rpe),a=addActivity(u,{sport:L.sport,type,min:s.min,rpe,date:L.start});
+ Object.assign(a,{kcal:s.kcal,kcalReal:s.kcalReal,hr:s.hr,reconnects:[...(L.reconnects||[])],live:true});
+ delete u.live;try{localStorage.removeItem(LIVE_KEY)}catch(e){}keepAwake(false);save();closeModal();view='home';render();scrollTo(0,0);showActivityResult(a)}
+let hrPrevState=HR.state,liveBuf=0;
+onHr(()=>{const u=U(),changed=hrPrevState!==HR.state;
+ // Reconexión durante una grabación: se anota la hora sin interrumpirla.
+ if(u&&u.live&&changed&&HR.state==='on'){if(u.live.hadHr){u.live.reconnects=[...(u.live.reconnects||[]),Date.now()];toast('Pulsómetro reconectado. La grabación sigue.')}else u.live.hadHr=true;save()}
+ if(u&&u.live&&HR.bpm&&++liveBuf%5===0)liveStore();
+ hrPrevState=HR.state;
+ const p=$('#hrpill');if(p){p.textContent=hrPillTxt();p.classList.toggle('is-on',HR.state==='on')}
+ const z=u&&HR.state==='on'?hrZoneOf(HR.bpm,u.profile):null,set=(id,v)=>{const el=$(id);if(el)el.textContent=v};
+ set('#hrv',HR.state==='on'&&HR.bpm?HR.bpm:'--');set('#hrz',z?'Z'+z.z:'--');set('#hrbat',HR.state==='on'&&HR.battery!=null?HR.battery+'%':'--');
+ set('#hrb',`♥ ${HR.bpm||'--'} ppm${z?` · Z${z.z}`:''}`);
+ updLive();
+ if(changed&&(view==='profile'||view==='session'||view==='home'))softRender()});
 
 /* ============ Modales ============ */
 function modal(html,label){$('#layer').innerHTML=`<div class="layer" data-a="close-bg"><div class="sheet" role="dialog" aria-modal="true" aria-label="${esc(label||'Detalle')}"><div class="flex justify-end -mt-1 -mr-2"><button class="btn-text" data-a="close" aria-label="Cerrar">${ic('close')}</button></div>${html}</div></div>`;ensureAnim();const b=$('#layer .sheet button, #layer .sheet a');b&&b.focus()}
@@ -709,12 +781,12 @@ function finish(){const u=U(),a=u.active;normActive(a);seqStop(false);
   h.items.push({ex:it.ex,sets:done.map(({w,r,rt})=>({w,r,rt}))});changes.push({ex,...(a.deload?{note:'Sin cambios (descarga)',avg:0,next:loadTxt(ex,prog(u,ex,it.p),u.profile)}:progress(u,ex,it,done))})});
  const c=a.cond&&a.cond.done?a.cond:null,cNote=c?(a.deload?'Sin cambios (descarga)':condProgress(u,c,c.rt||'ok')):'';
  h.blocks={mob:!!a.mob.done,stretch:!!a.stretch.done,cond:c?{kind:c.kind,machine:c.machine,min:c.min,rt:c.rt||'ok'}:null};h.cardioMin=c?c.min:0;
- h.vol=vol;h.sets=sets;h.est=a.est||itemsEst(a);const hr=typeof hrStats==='function'?hrStats(a.start):null;if(hr)h.hr=hr;u.history.unshift(h);
+ h.vol=vol;h.sets=sets;h.est=a.est||itemsEst(a);const hr=typeof hrStats==='function'?hrStats(a.start):null;if(hr)h.hr=hr;{const ks=HR.samples.filter(x=>x.t>=a.start);if(ks.length>1){const r=kcalFromSamples(ks,u.profile);if(r.coveredMs>=60000)h.kcalReal=Math.round(r.kcal)}}u.history.unshift(h);
  if(h.kind==='strength'&&a.dayIdx!=null&&setsDone)u.next=(a.dayIdx+1)%u.plan.days.length;
  u.active=null;save();endTimer(false);view='home';render();scrollTo(0,0);
  const cm=c?CARDIO_M[c.machine]:null;
  modal(`<h2 class="hero" style="font-size:3.2rem">Sesión hecha</h2><p class="text-dim mt-2">${esc(h.day)}</p>
-  <div class="grid grid-cols-3 gap-2 mt-5"><div class="stat"><b>${fmtDur(h.dur)}</b><span>duración (estimada ~${Math.round(h.est/60)} min)</span></div>${sets?`<div class="stat"><b>${sets}</b><span>series</span></div><div class="stat"><b>${Math.round(vol)}</b><span>kg movidos</span></div>`:`<div class="stat"><b>${h.cardioMin}</b><span>min de cardio</span></div><div class="stat"><b>${[h.blocks.mob,h.blocks.stretch].filter(Boolean).length}</b><span>bloques de movilidad</span></div>`}</div>
+  <div class="grid grid-cols-3 gap-2 mt-5"><div class="stat"><b>${fmtDur(h.dur)}</b><span>duración (estimada ~${Math.round(h.est/60)} min)</span></div>${sets?`<div class="stat"><b>${sets}</b><span>series</span></div><div class="stat"><b>${h.kcalReal?nf(h.kcalReal):Math.round(vol)}</b><span>${h.kcalReal?'kcal reales (pulso)':'kg movidos'}</span></div>`:`<div class="stat"><b>${h.cardioMin}</b><span>min de cardio</span></div><div class="stat"><b>${[h.blocks.mob,h.blocks.stretch].filter(Boolean).length}</b><span>bloques de movilidad</span></div>`}</div>
   ${changes.length||c?`<h3 class="h2 text-xl mt-6">Ajustes para la próxima vez</h3>`:''}
   <div class="flex flex-col gap-2 mt-3">${changes.map(x=>`<div class="flex items-center gap-3 p-3 rounded-2xl" style="background:var(--surface2)"><span class="dot ${x.avg<=-.5?'d-easy':x.avg<.5?'d-ok':'d-hard'}"></span><span class="flex-1 min-w-0"><span class="block font-semibold">${esc(x.ex.n)}</span><span class="block text-sm text-dim">${x.next}</span></span><span class="font-semibold whitespace-nowrap">${x.note}</span></div>`).join('')}
   ${c?`<div class="flex items-center gap-3 p-3 rounded-2xl" style="background:var(--surface2)"><span class="dot d-${c.rt||'ok'}"></span><span class="flex-1 min-w-0"><span class="block font-semibold">${esc(condKindLbl(c))}: ${esc(cm?cm.n:'')}</span><span class="block text-sm text-dim">${c.min} min</span></span><span class="font-semibold text-right">${esc(cNote)}</span></div>`:''}</div>
@@ -756,7 +828,7 @@ const A={
  blockgo:d=>{const a=U().active;seqStart(listPhases(d.v,a),{title:STAGE_LBL[d.v],onDone:()=>{const x=U().active;if(!x)return;x[d.v].done=true;save();goNextStage()}})},
  blockdone:d=>{const a=U().active;a[d.v].done=true;save();goNextStage()},
  blockskip:d=>{const a=U().active;if(d.v==='cond')a.cond.skipped=true;save();goNextStage()},
- condgo:()=>{const a=U().active;seqStart(condPhases(a.cond),{title:condKindLbl(a.cond),onDone:()=>{if(U().active)openCondRate()}})},
+ condgo:()=>{const a=U().active;seqStart(condPhases(a.cond),{title:condKindLbl(a.cond),alertZ2:a.cond.kind==='liss',onDone:()=>{if(U().active)openCondRate()}})},
  condrateopen:()=>openCondRate(),
  condrate:d=>{const a=U().active;a.cond.done=true;a.cond.rt=d.r;save();closeModal();goNextStage()},
  condswap:()=>{const u=U(),c=u.active.cond,pool=cardioPool(u.profile,{hiit:c.kind!=='liss'});if(pool.length<2)return;const i=pool.findIndex(m=>m.id===c.machine);c.machine=pool[(i+1)%pool.length].id;save();render();toast(`Cambiado a ${CARDIO_M[c.machine].n}`)},
@@ -774,8 +846,15 @@ const A={
  actdel:d=>{if(!confirm('¿Borrar esta actividad?'))return;deleteActivity(U(),d.id);save();render()},
  actskip:()=>{U().fatigueSkip=dayKey(Date.now());save();render();toast('Ajuste por fatiga desactivado hoy.')},
  actunskip:()=>{delete U().fatigueSkip;save();render()},
- hrconnect:async()=>{const ok=await hrConnect();render();if(ok)toast('Pulsómetro conectado')},
+ hrconnect:async()=>{const ok=await hrConnect();softRender();if(ok)toast(HR.battery!=null?`Pulsómetro conectado · batería ${HR.battery} %`:'Pulsómetro conectado')},
  hrdisconnect:async()=>{await hrDisconnect();render()},
+ hrresume:()=>{hrResume();render()},
+ hrforget:()=>{if(!confirm('¿Olvidar la banda? Tendrás que emparejarla de nuevo.'))return;hrForget();render()},
+ smartrest:()=>{const u=U(),on=!(u.settings&&u.settings.smartRest===false);u.settings={...(u.settings||{}),smartRest:!on};save();render()},
+ livepick:d=>openLivePick(d.s),
+ livego:()=>{view='live';render();scrollTo(0,0)},
+ livefinishopen:()=>openLiveFinish(),
+ livecancel:()=>{if(!confirm('¿Descartar la grabación? No se guardará nada.'))return;const u=U();delete u.live;try{localStorage.removeItem(LIVE_KEY)}catch(e){}keepAwake(false);save();view='home';render()},
  sqpause:()=>seqPause(),sqadd:()=>seqAdd(15),sqskip:()=>seqNext(),sqexit:()=>seqStop(false),
  seenweek:()=>{const u=U();u.cycle.seen=wk(u).abs;save();render()},
  checkin:()=>openCheckin(),
@@ -795,6 +874,8 @@ const A={
 };
 document.addEventListener('click',e=>{const el=e.target.closest('[data-a]');if(!el)return;const fn=A[el.dataset.a];if(fn)fn(el.dataset,el,e)});
 document.addEventListener('submit',e=>{const ck=e.target.closest('form[data-ck]');if(ck){e.preventDefault();saveCheckin(ck);return}
+ const lf=e.target.closest('form[data-live]');if(lf){e.preventDefault();const u=U(),fd=new FormData(lf);u.live={sport:String(fd.get('sport')),type:String(fd.get('type')),start:Date.now(),reconnects:[],hadHr:HR.state==='on'};save();closeModal();view='live';render();keepAwake(true);if(hrSaved()&&HR.state!=='on')hrResume();return}
+ const lfin=e.target.closest('form[data-livefin]');if(lfin){e.preventDefault();finishLive(lfin);return}
  const sf=e.target.closest('form[data-sport]');if(sf){e.preventDefault();const u=U(),fd=new FormData(sf),x={sport:String(fd.get('sport')),wd:+fd.get('wd')};u.profile.sports=(u.profile.sports||[]).filter(y=>y.wd!==x.wd);u.profile.sports.push(x);u.profile.sports.sort((a,b)=>a.wd-b.wd);save();render();toast(`${sportLbl(x.sport)} los ${DAY_LONG[x.wd]} añadido.`);return}
  const af=e.target.closest('form[data-act]');if(af){e.preventDefault();const u=U(),a=addActivity(u,readActivity(af));save();closeModal();render();showActivityResult(a);return}
  const ij=e.target.closest('form[data-inj]');if(ij){e.preventDefault();const fd=new FormData(ij);injDraft={muscle:ij.dataset.inj,pain:+fd.get('pain')||1,mob:+fd.get('mob')||0,infl:+fd.get('infl')||0,rest:+fd.get('rest')||0,flags:fd.getAll('flags')};showTriage();return}
@@ -806,9 +887,10 @@ const f=e.target.closest('form[data-form]');if(!f)return;e.preventDefault();cons
 document.addEventListener('input',e=>{const el=e.target.closest('[data-in]');if(!el)return;const a=U()&&U().active;if(!a)return;const v=el.value.replace(',','.').trim();const n=v===''?null:parseFloat(v);if(v!==''&&isNaN(n))return;
  const s=a.items[a.cur].sets[+el.dataset.k];if(el.dataset.in==='w')s.w=n;else s.r=n==null?0:Math.round(n);saveSoon()});
 ['input','change'].forEach(t=>document.addEventListener(t,e=>{const f=e.target.closest&&e.target.closest('form[data-form]');if(f)updatePreview(f)}));
-document.addEventListener('change',e=>{const f=e.target.closest&&e.target.closest('form[data-act]');if(f&&e.target.name==='sport'){const d=readActivity(f);d.type='';openActivity(d)}});
+document.addEventListener('change',e=>{const lp=e.target.closest&&e.target.closest('form[data-live]');if(lp&&e.target.name==='sport'){openLivePick(e.target.value);return}
+ const f=e.target.closest&&e.target.closest('form[data-act]');if(f&&e.target.name==='sport'){const d=readActivity(f);d.type='';openActivity(d)}});
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){if($('#layer').innerHTML)closeModal()}});
-setInterval(()=>{const el=$('#elapsed'),u=U();if(el&&u&&u.active)el.textContent=fmtDur(Date.now()-u.active.start);updClock()},1000);
+setInterval(()=>{const el=$('#elapsed'),u=U();if(el&&u&&u.active)el.textContent=fmtDur(Date.now()-u.active.start);updClock();updLive()},1000);
 /* ============ Instalar app (PWA) ============ */
 let installEvt=null;
 window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();installEvt=e;softRender()});
@@ -817,7 +899,9 @@ function installCard(){return installEvt?`<section class="card p-5 mt-4 flex ite
 A.install=async()=>{if(!installEvt)return;const ev=installEvt;installEvt=null;ev.prompt();try{await ev.userChoice}catch(e){}render()};
 if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
 sbInit();
+if(U()&&U().live){HR.samples.push(...liveSamples());view='live';keepAwake(true)}
 render();
+hrAuto();
 </script>
 </body>
 </html>
