@@ -168,16 +168,16 @@ details[open] .chev{transform:rotate(180deg)}
 <div id="seq"></div>
 <div id="toast"></div>
 
-<script src="js/catalog.js?v=202609280934"></script>
-<script src="js/figures.js?v=202609280934"></script>
-<script src="js/merge.js?v=202609280934"></script>
-<script src="js/plan.js?v=202609280934"></script>
-<script src="js/injuries.js?v=202609280934"></script>
-<script src="js/activities.js?v=202609280934"></script>
-<script src="js/bodymap.js?v=202609280934"></script>
-<script src="js/sync.js?v=202609280934"></script>
-<script src="js/timer.js?v=202609280934"></script>
-<script src="js/hr.js?v=202609280934"></script>
+<script src="js/catalog.js?v=202609280935"></script>
+<script src="js/figures.js?v=202609280935"></script>
+<script src="js/merge.js?v=202609280935"></script>
+<script src="js/plan.js?v=202609280935"></script>
+<script src="js/injuries.js?v=202609280935"></script>
+<script src="js/activities.js?v=202609280935"></script>
+<script src="js/bodymap.js?v=202609280935"></script>
+<script src="js/sync.js?v=202609280935"></script>
+<script src="js/timer.js?v=202609280935"></script>
+<script src="js/hr.js?v=202609280935"></script>
 <script>
 
 
@@ -325,18 +325,24 @@ function todayPick(u){const s=weekSchedule(u),td=weekday(Date.now()),e=s.find(x=
  const offer=today||pend.find(x=>x.wd>=td)||pend[0]||{wd:td,type:'strength',done:false,tpl:rot,name:rot.name,dayIdx:u.next%u.plan.days.length};
  return {s,td,e,today,next,offer,msg}}
 const weekBlock=u=>`<section class="mt-8"><div class="flex items-baseline justify-between"><h2 class="h2">Esta semana</h2><button class="btn-text" data-a="tab" data-v="plan">Editar</button></div><div class="mt-3">${weekStrip(u)}</div></section>`;
+// Contexto del día en una línea: bloque del ciclo y calorías de hoy.
+function heroMeta(u){const wi=wk(u),d=dayKcal(u);return `<p class="text-sm text-dim mt-1">Bloque ${wi.cyc+1} · semana ${wi.week} de ${wi.len}${wi.deload?' (descarga)':''}${d.total?` · hoy ${nf(d.total)} kcal${d.sport?` (+${nf(d.sport)} deporte)`:''}`:''}</p>`}
+// Avisos agrupados: el más importante a la vista y el resto plegado.
+function homeAlerts(u,ss){const split=h=>h.split(/(?=<section)/).map(x=>x.trim()).filter(Boolean);
+ const list=[fatigueAlert(u,ss),...split(injBanners(u)),...split(banners(u))].filter(Boolean);if(!list.length)return '';
+ return `<div class="mt-6">${list[0]}${list.length>1?`<details class="mt-2"><summary class="btn-text" style="padding:0">${list.length-1} ${list.length===2?'aviso más':'avisos más'}</summary>${list.slice(1).join('')}</details>`:''}</div>`}
 function liveBanner(u){return u.live?`<section class="card p-4 mt-4 flex items-center gap-3" style="border-color:var(--hard)"><span style="color:var(--hard)">●</span><span class="flex-1"><b class="block">Grabando: ${esc(sportName(u.live))}</b><span class="text-sm text-dim tabular-nums" id="lv-mini">${fmtDur(Date.now()-u.live.start)}</span></span><button class="btn-primary" style="min-height:44px" data-a="livego">Volver</button></section>`:''}
 function vHome(){const u=U(),a=u.active;
  if(a)return `${banners(u)}<section class="pt-6"><p class="text-dim text-lg">Hola, ${esc(u.profile.name)}. Tienes una sesión a medias:</p><h1 class="hero">${esc(activeName(u,a))}</h1>
   <button data-a="start" class="btn-primary w-full mt-5">${ic('play',20)}Continuar sesión</button></section>${weekBlock(u)}`;
- const t=todayPick(u),ws=weekStart(),hello=`Hola, ${esc(u.profile.name)}.`,top=`${liveBanner(u)}${profileSummary(u)}${banners(u)}${injBanners(u)}`,tail=`${installCard()}${cycleCard(u)}`;
+ const t=todayPick(u),ws=weekStart(),hello=`Hola, ${esc(u.profile.name)}.`,top=liveBanner(u),meta=heroMeta(u);
  // Día de partido
  if(t.e&&t.e.type==='match'){const m=t.e;
-  return `${top}${actCard(u,null)}${tail}<section class="pt-6"><p class="text-dim text-lg">${hello} Hoy juegas</p><h1 class="hero">${esc(m.name)}</h1>
+  return `${top}<section class="pt-6"><p class="text-dim text-lg">${hello} Hoy juegas</p>${meta}<h1 class="hero">${esc(m.name)}</h1>
    <p class="text-dim mt-2">Hoy no hay gimnasio. Haz 5–8 min de movilidad antes de jugar.</p>
    ${m.done?`<div class="card p-4 mt-4" style="border-color:var(--easy)"><b class="block">Partido registrado</b><span class="block text-sm text-dim mt-1">Mañana ajustamos la carga de piernas según la fatiga.</span></div>`
     :`<button class="btn-primary w-full mt-5" data-a="livepick" data-s="${m.sport}">${ic('play',20)}Grabar partido en vivo</button><button class="btn-ghost w-full mt-2" data-a="actopen" data-s="${m.sport}">Registrar partido al terminar</button><p class="hint">Al terminar: duración, esfuerzo y posición. Mañana ajustamos la carga de piernas según la fatiga.</p>`}
-   <button class="btn-text mt-2" data-a="wkunmatch" data-n="${m.wd}">Al final no juego hoy</button></section>${weekBlock(u)}`}
+   <button class="btn-text mt-2" data-a="wkunmatch" data-n="${m.wd}">Al final no juego hoy</button></section>${homeAlerts(u,null)}${weekBlock(u)}${actCard(u,null)}${installCard()}`}
  // Sin sesión pendiente hoy: descanso, "no voy", hecha o día libre
  if(!t.today){const w=weekObj(u,ws),skip=t.e&&t.e.type==='skip',free=skip&&!w.noOffer&&lostSessions(u,ws)>0?freeDays(u,ws,t.td):[];
   const offer=free.length?`<div class="card p-4 mt-4" style="border-color:var(--accent)"><b class="block">¿Recuperas la sesión otro día?</b><span class="block text-sm text-dim mt-1">La sesión de hoy pasa al siguiente día de gimnasio. Aún tienes días libres esta semana.</span><div class="flex flex-wrap gap-2 mt-3">${free.slice(0,3).map(d=>`<button class="btn-ghost" data-a="wkextra" data-n="${d}">Añadir el ${DAY_LONG[d]}</button>`).join('')}<button class="btn-text" data-a="wknooffer">No, gracias</button></div></div>`:'';
@@ -344,8 +350,8 @@ function vHome(){const u=U(),a=u.active;
   const action=skip?`<button class="btn-ghost w-full mt-4" data-a="wkunskip" data-n="${t.td}">Al final sí voy hoy</button>`
    :!t.e?`<button class="btn-primary w-full mt-5" data-a="wkextra" data-n="${t.td}">${ic('play',20)}Agregar día de entrenamiento extra</button><p class="hint">Suma hoy una sesión con lo que toque en tu rotación.</p>`
    :`<button class="btn-ghost w-full mt-4" data-a="start" ${oi>=0?`data-w="${oi}"`:`data-d="${t.offer.dayIdx}"`}>Entrenar igualmente: ${esc(entryTitle(t.offer))}</button>`;
-  return `${top}${actCard(u,null)}${tail}<section class="pt-6"><p class="text-dim text-lg">${hello} ${t.msg}</p>${t.next?`<h1 class="hero">${esc(DAY_SHORT[t.next.wd])}: ${esc(entryTitle(t.next))}</h1><p class="text-dim mt-2">Tu próxima sesión es el ${DAY_LONG[t.next.wd]}.</p>`:''}
-   ${offer}${action}<button class="btn-text w-full mt-2 justify-center" data-a="matchtoday">Tengo partido hoy</button></section>${weekBlock(u)}`}
+  return `${top}<section class="pt-6"><p class="text-dim text-lg">${hello} ${t.msg}</p>${meta}${t.next?`<h1 class="hero">${esc(DAY_SHORT[t.next.wd])}: ${esc(entryTitle(t.next))}</h1><p class="text-dim mt-2">Tu próxima sesión es el ${DAY_LONG[t.next.wd]}.</p>`:''}
+   ${offer}${action}<button class="btn-text w-full mt-2 justify-center" data-a="matchtoday">Tengo partido hoy</button></section>${homeAlerts(u,null)}${weekBlock(u)}${actCard(u,null)}${installCard()}`}
  // Hoy toca sesión
  const e=t.today,idx=t.s.indexOf(e),ss=buildSession(u,e),di=e.dayIdx;
  const blocks=`<section class="mt-8"><h2 class="h2">Bloques de hoy</h2><p class="text-sm text-dim mt-1">Toca un ejercicio para ver la técnica.</p><div class="mt-3 flex flex-col gap-2">
@@ -354,11 +360,11 @@ function vHome(){const u=U(),a=u.active;
   ${ss.omitted.map(o=>`<div class="row" style="opacity:.75"><span class="row-main"><span class="mini grid place-items-center" style="color:var(--hard)">${ic('cross',24)}</span><span class="min-w-0 flex-1"><span class="block font-semibold leading-tight line-through">${esc(X(o.ex).n)}</span><span class="block text-sm" style="color:var(--hard)">Ejercicio omitido por molestia muscular en ${esc(o.mus)}</span></span></span></div>`).join('')}
   ${ss.cond?condRow(ss.cond):''}
   ${blockRow('Estiramientos',`${ss.stretch.length} estiramientos · ~${Math.round(ss.est.stretch/60)} min`,'body')}</div></section>`;
- return `${top}${actCard(u,ss)}${tail}<section class="pt-6"><p class="text-dim text-lg">${hello} Hoy toca${e.extra?' (día extra)':''}</p>
+ return `${top}<section class="pt-6"><p class="text-dim text-lg">${hello} Hoy toca${e.extra?' (día extra)':''}</p>${meta}
   <h1 class="hero">${esc(ss.name)}</h1><p class="text-dim mt-2">${esc(ss.focus)}${ss.items.length?`. ${ss.items.length} ejercicios`:''}.</p>${estCard(u,ss)}
   <button data-a="start" data-w="${idx}" class="btn-primary w-full mt-5">${ic('play',20)}Empezar sesión</button>
   <div class="flex gap-2 mt-2"><button class="btn-ghost flex-1" data-a="wkskip" data-n="${t.td}">Hoy no puedo ir</button><button class="btn-ghost flex-1" data-a="matchtoday">Tengo partido hoy</button></div></section>
-  ${weekBlock(u)}${blocks}`}
+  ${homeAlerts(u,ss)}${weekBlock(u)}${blocks}${actCard(u,ss)}${installCard()}`}
 function weekCard(u){const ws=weekStart(),w=weekObj(u,ws),s=weekSchedule(u,ws),td=weekday(Date.now()),custom=!!(u.weeks&&u.weeks[weekKey(ws)]),by=Object.fromEntries(s.map(e=>[e.wd,e]));
  const chipCls=e=>!e?'':e.type==='strength'?'chip-a':e.type==='match'?'chip-match':'';
  return `<section class="card p-5 mt-5"><div class="flex items-baseline justify-between gap-2"><h2 class="h2">Esta semana</h2><span class="chip ${custom?'chip-a':''}">${custom?'Con cambios':'Habitual'}</span></div>
@@ -602,14 +608,15 @@ const FAT_COL={low:'var(--easy)',moderate:'var(--accent)',high:'var(--hard)'};
 function actLine(a){return `${esc(sportName(a))} · ${a.min} min · RPE ${a.rpe}${a.km?` · ${nf(a.km)} km`:''}`}
 function actRow(a,del){return `<div class="flex items-center gap-3 p-3 rounded-2xl" style="background:var(--surface2)"><span class="dot flex-none" style="background:${FAT_COL[a.level]}" title="Fatiga de piernas ${FATIGUE_LBL[a.level].toLowerCase()}"></span><span class="flex-1 min-w-0"><span class="block font-semibold truncate">${actLine(a)}</span><span class="block text-sm text-dim">${esc(sportType(a).n)} · ${new Date(a.date).toLocaleDateString('es-ES',{weekday:'short',day:'numeric',month:'short'})} ${hhmm(a.date)} · ${nf(a.kcal)} kcal${a.kcalReal?' (con pulso)':''}${a.hr?` · ♥ ${a.hr.avg}/${a.hr.max}`:''}${a.reconnects&&a.reconnects.length?` · ${a.reconnects.length} reconexión${a.reconnects.length>1?'es':''}`:''} · fatiga ${FATIGUE_LBL[a.level].toLowerCase()}</span></span>${del?`<button class="btn-text btn-danger" data-a="actdel" data-id="${a.id}" aria-label="Borrar actividad">${ic('close',16)}</button>`:''}</div>`}
 // Tarjeta de Hoy: actividad de las últimas 48 h y recomendación para el gimnasio.
-function actCard(u,ss){const rec=recentActivities(u),adj=legAdjust(u),legs=ss&&ss.items.some(it=>LOWER_SLOTS.has(it.slot));
- let tip='';
- if(adj.pct)tip=legs?`<div class="tip mt-3 text-sm" style="border-left-color:var(--hard)"><b>${esc(adj.text)}</b> Los pesos sugeridos de pierna ya van al ${100-adj.pct} %.${adj.pct>=15?' El HIIT de hoy pasa a cardio suave.':''} <button class="btn-text" style="min-height:32px;padding:0 4px" data-a="actskip">No aplicar hoy</button></div>`
-  :`<div class="tip mt-3 text-sm">Fatiga de piernas por ${esc(adj.sport)}. Hoy no hay pierna: buen día para recuperar.</div>`;
- else if(adj.skipped)tip=`<p class="text-sm text-dim mt-3">Ajuste por fatiga desactivado hoy. <button class="btn-text" style="min-height:32px;padding:0 4px" data-a="actunskip">Volver a aplicarlo</button></p>`;
- return `<section class="card p-4 mt-3"><div class="flex items-center gap-3"><span class="flex-1"><b class="block">Actividad reciente</b><span class="block text-sm text-dim">${rec.length?'Deporte de las últimas 48 h':'¿Hiciste deporte fuera del gimnasio?'}</span></span><button class="btn-ghost" data-a="actopen">Registrar actividad</button></div>
+// Aviso de fatiga de piernas por deporte reciente (va en los avisos de Hoy).
+function fatigueAlert(u,ss){const adj=legAdjust(u),legs=ss&&ss.items.some(it=>LOWER_SLOTS.has(it.slot));
+ if(adj.pct)return `<section class="card p-4 mt-3" style="border-color:var(--hard)"><b class="block">${legs?esc(adj.text):`Fatiga de piernas por ${esc(adj.sport)}`}</b><span class="block text-sm mt-1">${legs?`Los pesos sugeridos de pierna ya van al ${100-adj.pct} %.${adj.pct>=15?' El HIIT de hoy pasa a cardio suave.':''}`:'Hoy no hay pierna: buen día para recuperar.'}</span>${legs?'<button class="btn-text mt-1" style="min-height:34px;padding:0" data-a="actskip">No aplicar hoy</button>':''}</section>`;
+ if(adj.skipped)return `<section class="card p-4 mt-3"><span class="text-sm text-dim">Ajuste por fatiga desactivado hoy.</span> <button class="btn-text" style="min-height:34px;padding:0 4px" data-a="actunskip">Volver a aplicarlo</button></section>`;
+ return ''}
+function actCard(u,ss){const rec=recentActivities(u);
+ return `<section class="card p-4 mt-8"><div class="flex items-center gap-3"><span class="flex-1"><b class="block">Actividad reciente</b><span class="block text-sm text-dim">${rec.length?'Deporte de las últimas 48 h':'¿Hiciste deporte fuera del gimnasio?'}</span></span><button class="btn-ghost" data-a="actopen">Registrar actividad</button></div>
   <button class="btn-ghost w-full mt-3" data-a="livepick">${ic('play',18)}Iniciar actividad en vivo</button>
-  ${rec.length?`<div class="flex flex-col gap-2 mt-3">${rec.map(a=>actRow(a,false)).join('')}</div>`:''}${tip}</section>`}
+  ${rec.length?`<div class="flex flex-col gap-2 mt-3">${rec.map(a=>actRow(a,false)).join('')}</div>`:''}</section>`}
 function openActivity(d){d=Object.assign({sport:'futsal',min:60,rpe:7,date:Date.now()},d||{});const sp=SPORTS[d.sport]||SPORTS.other,type=sportType(d).id;
  modal(`<h2 class="font-display text-3xl font-extrabold leading-none">Registrar actividad</h2><p class="text-dim mt-2">Cuestionario después del deporte. Calculamos calorías y fatiga de piernas.</p>
  <form data-act class="flex flex-col gap-5 mt-5">
