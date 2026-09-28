@@ -36,7 +36,7 @@ function mergeState(r){if(!r||!r.users)return false;let changed=false;const del=
 function schedulePush(){if(!sb||!sbUser)return;clearTimeout(pushT);sync.state='pending';updSyncDot();pushT=setTimeout(push,1500)}
 async function push(){if(!sb||!sbUser)return;clearTimeout(pushT);sync.state='syncing';updSyncDot();
  try{const {error}=await sb.from('app_state').upsert({user_id:sbUser.id,data:S,updated_at:new Date().toISOString()});
-  if(error)throw error;sync.state='ok';sync.last=Date.now();sync.err=''}catch(e){sync.state='error';sync.err=sbErr(e)}
+  if(error)throw error;sync.state='ok';sync.last=Date.now();sync.err='';if(typeof pushSyncReminders==='function')pushSyncReminders()}catch(e){sync.state='error';sync.err=sbErr(e)}
  updSyncDot();if(view==='profile')softRender()}
 async function pull(first){if(!sb||!sbUser||pulling)return;pulling=true;sync.state='syncing';updSyncDot();
  try{const {data,error}=await sb.from('app_state').select('data').eq('user_id',sbUser.id).maybeSingle();if(error)throw error;

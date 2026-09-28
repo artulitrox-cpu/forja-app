@@ -39,6 +39,14 @@ Pruebas: `npm test` (Node 20 o superior, sin dependencias). Para probar los temp
 4. **Authentication > URL Configuration:** pon como *Site URL* y en *Redirect URLs* la dirección de GitHub Pages, por ejemplo `https://artulitrox-cpu.github.io/forja-app/`.
 5. **Project URL:** ya está configurada en `index.html` (`SB_URL_DEFAULT`).
 
+## Notificaciones push (opcional)
+
+1. **SQL Editor:** pega `supabase/push.sql` y pulsa *Run*.
+2. **Edge Functions > Deploy a new function > Via Editor:** nombre `send-reminders`, pega `supabase/functions/send-reminders/index.ts` y despliega.
+3. **Edge Functions > Secrets:** añade `VAPID_PUBLIC_KEY` y `VAPID_PRIVATE_KEY` con los valores de `.secrets/vapid.json` (archivo local, no está en GitHub). La pública debe coincidir con `VAPID_PUBLIC` de `js/push.js`.
+4. **Integrations > Cron:** activa Cron y crea un trabajo cada 15 minutos (`*/15 * * * *`) de tipo *Supabase Edge Function* que llame a `send-reminders`.
+5. En la app: *Mi perfil > Notificaciones > Activar*.
+
 ## 2. GitHub Pages
 
 1. Crea un repositorio, por ejemplo `forja-app`.

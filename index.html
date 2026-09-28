@@ -175,18 +175,19 @@ details[open] .chev{transform:rotate(180deg)}
 <div id="seq"></div>
 <div id="toast"></div>
 
-<script src="js/catalog.js?v=202609281118"></script>
-<script src="js/figures.js?v=202609281118"></script>
-<script src="js/merge.js?v=202609281118"></script>
-<script src="js/plan.js?v=202609281118"></script>
-<script src="js/injuries.js?v=202609281118"></script>
-<script src="js/progress.js?v=202609281118"></script>
-<script src="js/nutrition.js?v=202609281118"></script>
-<script src="js/activities.js?v=202609281118"></script>
-<script src="js/bodymap.js?v=202609281118"></script>
-<script src="js/sync.js?v=202609281118"></script>
-<script src="js/timer.js?v=202609281118"></script>
-<script src="js/hr.js?v=202609281118"></script>
+<script src="js/catalog.js?v=202609281121"></script>
+<script src="js/figures.js?v=202609281121"></script>
+<script src="js/merge.js?v=202609281121"></script>
+<script src="js/plan.js?v=202609281121"></script>
+<script src="js/injuries.js?v=202609281121"></script>
+<script src="js/progress.js?v=202609281121"></script>
+<script src="js/nutrition.js?v=202609281121"></script>
+<script src="js/activities.js?v=202609281121"></script>
+<script src="js/bodymap.js?v=202609281121"></script>
+<script src="js/sync.js?v=202609281121"></script>
+<script src="js/timer.js?v=202609281121"></script>
+<script src="js/push.js?v=202609281121"></script>
+<script src="js/hr.js?v=202609281121"></script>
 <script>
 
 
@@ -491,6 +492,7 @@ function vProfile(){const u=U(),ids=Object.keys(S.users);
  <section class="card p-5 mt-4">${profileForm(u.profile,'edit')}</section>
  <section class="card p-5 mt-6"><h2 class="h2">Cuenta y sincronización</h2><div class="mt-3">${syncCard()}</div></section>
  ${sportsCard(u)}
+ ${pushCard(u)}
  ${backupCard()}
  ${hrCard()}
  ${installCard()}
@@ -731,6 +733,17 @@ onHr(()=>{const u=U(),changed=hrPrevState!==HR.state;
  updLive();
  if(changed&&(view==='profile'||view==='session'||view==='home'))softRender()});
 
+/* ---- Notificaciones ---- */
+function pushCard(u){const cfg=pushCfg(u),next=cfg.on?upcomingReminders(u).slice(0,3):[];
+ return `<section class="card p-5 mt-6"><h2 class="h2">Notificaciones</h2>
+ <p class="text-sm text-dim mt-2">Avisos en el móvil: sesión o partido del día, check-in pendiente y revisión de lesiones. Necesitan cuenta iniciada y funcionan mejor con Forja instalada.</p>
+ ${!pushSupported()?'<p class="hint">Este navegador no admite notificaciones push. En iPhone, instala Forja en la pantalla de inicio primero.</p>'
+  :cfg.on?`<div class="flex items-center gap-3 mt-4"><span class="flex-1 text-sm"><b>Activadas</b> · cada día a las</span><label class="sr-only" for="push-hour">Hora</label><select id="push-hour" class="field" style="width:auto;min-height:42px">${Array.from({length:17},(_,i)=>i+6).map(h=>`<option value="${h}" ${h===cfg.hour?'selected':''}>${String(h).padStart(2,'0')}:00</option>`).join('')}</select></div>
+   ${next.length?`<ul class="mt-3 text-sm text-dim flex flex-col gap-1">${next.map(x=>`<li>· ${new Date(x.at).toLocaleDateString('es-ES',{weekday:'short',day:'numeric'})} ${hhmm(x.at)}: ${esc(x.title)}</li>`).join('')}</ul>`:''}
+   <button class="btn-text btn-danger mt-2" data-a="pushoff">Desactivar</button>`
+  :`<button class="btn-ghost w-full mt-4" data-a="pushon">Activar notificaciones</button>`}</section>`}
+document.addEventListener('change',e=>{if(e.target&&e.target.id==='push-hour'){const u=U();u.settings={...(u.settings||{}),push:{...pushCfg(u),hour:+e.target.value}};save();pushSyncReminders(true);render()}});
+
 /* ---- Copia de seguridad ---- */
 function backupCard(){return `<section class="card p-5 mt-6"><h2 class="h2">Copia de seguridad</h2>
  <p class="text-sm text-dim mt-2">Descarga un archivo con todos tus datos (plan, historial, actividades, lesiones y check-ins). Al importarlo se combina con lo que tengas: no se borra nada.</p>
@@ -869,6 +882,8 @@ const A={
  wkunmatch:d=>{const u=U(),wd=+d.n;removeMatch(u,weekStart(),wd);save();closeModal();render();toast(`Sin partido el ${DAY_LONG[wd]}.`)},
  wkundo:d=>{undoChange(U(),weekStart(),d.id);save();render()},
  wknooffer:()=>{weekEdit(U(),weekStart()).noOffer=true;save();render()},
+ pushon:async()=>{const msg=await pushEnable();const u=U();if(msg){toast(msg);return}u.settings={...(u.settings||{}),push:{...pushCfg(u),on:true}};save();await pushSyncReminders(true);render();toast('Notificaciones activadas')},
+ pushoff:async()=>{const u=U();u.settings={...(u.settings||{}),push:{...pushCfg(u),on:false}};save();await pushDisable();render();toast('Notificaciones desactivadas')},
  backupexport:()=>exportBackup(),
  backupimport:()=>{const i=$('#bk-file');if(i)i.click()},
  sportdel:d=>{const u=U();u.profile.sports=(u.profile.sports||[]).filter((_,i)=>i!==+d.i);save();render()},

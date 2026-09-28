@@ -68,6 +68,10 @@ async function flows(page) {
     openLiveFinish(); finishLive(document.querySelector('form[data-livefin]')); closeModal();
     startTimer(60, 'x'); tickTimer(); endTimer(false);
     done.push('actividad en vivo');
+    // Notificaciones activadas: la tarjeta lista los próximos avisos
+    U().settings = { ...(U().settings || {}), push: { on: true, hour: 8 } }; view = 'profile'; render();
+    if (!upcomingReminders(U()).length) throw new Error('Sin avisos calculados');
+    done.push('notificaciones');
     // Copia de seguridad: exportar el estado e importarlo de nuevo (se combina sin duplicar)
     window.confirm = () => true;
     const before = U().activities.length;
