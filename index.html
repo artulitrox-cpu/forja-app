@@ -168,16 +168,17 @@ details[open] .chev{transform:rotate(180deg)}
 <div id="seq"></div>
 <div id="toast"></div>
 
-<script src="js/catalog.js?v=202609280935"></script>
-<script src="js/figures.js?v=202609280935"></script>
-<script src="js/merge.js?v=202609280935"></script>
-<script src="js/plan.js?v=202609280935"></script>
-<script src="js/injuries.js?v=202609280935"></script>
-<script src="js/activities.js?v=202609280935"></script>
-<script src="js/bodymap.js?v=202609280935"></script>
-<script src="js/sync.js?v=202609280935"></script>
-<script src="js/timer.js?v=202609280935"></script>
-<script src="js/hr.js?v=202609280935"></script>
+<script src="js/catalog.js?v=202609280937"></script>
+<script src="js/figures.js?v=202609280937"></script>
+<script src="js/merge.js?v=202609280937"></script>
+<script src="js/plan.js?v=202609280937"></script>
+<script src="js/injuries.js?v=202609280937"></script>
+<script src="js/progress.js?v=202609280937"></script>
+<script src="js/activities.js?v=202609280937"></script>
+<script src="js/bodymap.js?v=202609280937"></script>
+<script src="js/sync.js?v=202609280937"></script>
+<script src="js/timer.js?v=202609280937"></script>
+<script src="js/hr.js?v=202609280937"></script>
 <script>
 
 
@@ -470,10 +471,11 @@ function vHistory(){const u=U(),H=u.history,ws=weekStart(),cMin=H.filter(h=>h.da
  return `<section class="pt-6"><h1 class="h1">Progreso</h1></section>
  <section class="grid grid-cols-3 gap-2 mt-4"><div class="stat"><b>${H.length}</b><span>sesiones</span></div><div class="stat"><b>${week}/${weekSchedule(u).filter(e=>e.type==='strength'||e.type==='cardio').length}</b><span>esta semana</span></div><div class="stat"><b>${vol>=1000?fmtKg(Math.round(vol/100)/10)+' t':Math.round(vol)+' kg'}</b><span>volumen total</span></div></section>
  <section class="card p-4 mt-4"><div class="flex items-baseline justify-between"><h2 class="h2">Cardio esta semana</h2><span class="font-semibold">${cMin} / ${cTgt} min</span></div><div class="h-3 rounded-full mt-3" style="background:var(--line)"><div class="h-3 rounded-full" style="width:${Math.min(100,cMin/cTgt*100)}%;background:var(--normal)"></div></div><p class="hint">Objetivo semanal de tu plan: LISS, HIIT, días de cardio y deportes registrados.</p></section>
+ ${strengthProgress(u)}
  ${vActivities(u)}
  ${H.length?`<section class="card p-4 mt-4"><h2 class="h2">Series por sesión</h2><div class="mt-3 scroll-x">${chart}</div></section>`:`<section class="card p-5 mt-4"><h2 class="h2">Aún no hay sesiones</h2><p class="text-dim mt-2">Completa tu primera sesión y aquí verás tu evolución.</p><button data-a="tab" data-v="home" class="btn-primary w-full mt-4">Ir a la sesión de hoy</button></section>`}
  ${loads.length?`<section class="mt-6"><h2 class="h2">Próxima carga</h2><div class="card mt-3 divide-y divide-[var(--line)]">${loads.map(o=>`<div class="flex items-center justify-between gap-3 px-4 py-3"><span class="font-semibold">${esc(o.ex.n)}</span><span class="text-dim whitespace-nowrap">${loadTxt(o.ex,o.g,u.profile)}</span></div>`).join('')}</div></section>`:''}
- ${H.length?`<section class="mt-6"><h2 class="h2">Historial</h2><div class="mt-3 flex flex-col gap-2">${H.map(h=>`<details class="card"><summary class="p-4 flex items-center gap-3"><span class="flex-1"><span class="block font-semibold">${esc(h.day)}</span><span class="block text-sm text-dim">${new Date(h.date).toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'short'})}, ${fmtDur(h.dur)}, ${h.sets} series${h.hr?`, ♥ ${h.hr.avg} ppm (máx. ${h.hr.max})`:''}${h.kcalReal?`, ${nf(h.kcalReal)} kcal`:''}</span></span><span class="chev text-dim">${ic('chev')}</span></summary><div class="px-4 pb-4 flex flex-col gap-3">${h.blocks&&h.blocks.cond?`<div><div class="font-semibold">${esc(condKindLbl(h.blocks.cond))}: ${esc((CARDIO_M[h.blocks.cond.machine]||{}).n||'')}</div><div class="text-sm mt-1 inline-flex items-center gap-1.5"><span class="dot d-${h.blocks.cond.rt}"></span>${h.blocks.cond.min} min</div></div>`:''}${h.items.map(it=>{const ex=X(it.ex);return ex?`<div><div class="font-semibold">${esc(ex.n)}</div><div class="flex flex-wrap gap-x-4 gap-y-1 mt-1 text-sm">${it.sets.map(s=>`<span class="inline-flex items-center gap-1.5"><span class="dot d-${s.rt}" title="${RT[s.rt]}"></span>${s.w?fmtKg(s.w)+' kg × ':''}${s.r} ${unit(ex)}</span>`).join('')}</div></div>`:''}).join('')}</div></details>`).join('')}</div></section>`:''}`}
+ ${H.length?`<section class="mt-6"><h2 class="h2">Historial</h2><div class="mt-3 flex flex-col gap-2">${H.map(h=>`<details class="card"><summary class="p-4 flex items-center gap-3"><span class="flex-1"><span class="block font-semibold">${esc(h.day)}${h.prs&&h.prs.length?` <span class="chip chip-a" style="min-height:22px;font-size:.75rem">Récord</span>`:''}</span><span class="block text-sm text-dim">${new Date(h.date).toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'short'})}, ${fmtDur(h.dur)}, ${h.sets} series${h.hr?`, ♥ ${h.hr.avg} ppm (máx. ${h.hr.max})`:''}${h.kcalReal?`, ${nf(h.kcalReal)} kcal`:''}</span></span><span class="chev text-dim">${ic('chev')}</span></summary><div class="px-4 pb-4 flex flex-col gap-3">${h.blocks&&h.blocks.cond?`<div><div class="font-semibold">${esc(condKindLbl(h.blocks.cond))}: ${esc((CARDIO_M[h.blocks.cond.machine]||{}).n||'')}</div><div class="text-sm mt-1 inline-flex items-center gap-1.5"><span class="dot d-${h.blocks.cond.rt}"></span>${h.blocks.cond.min} min</div></div>`:''}${h.items.map(it=>{const ex=X(it.ex);return ex?`<div><div class="font-semibold">${esc(ex.n)}</div><div class="flex flex-wrap gap-x-4 gap-y-1 mt-1 text-sm">${it.sets.map(s=>`<span class="inline-flex items-center gap-1.5"><span class="dot d-${s.rt}" title="${RT[s.rt]}"></span>${s.w?fmtKg(s.w)+' kg × ':''}${s.r} ${unit(ex)}</span>`).join('')}</div></div>`:''}).join('')}</div></details>`).join('')}</div></section>`:''}`}
 function vProfile(){const u=U(),ids=Object.keys(S.users);
  return `<section class="pt-6"><h1 class="h1">Mi perfil</h1><p class="text-dim mt-2">Cambiar estos datos regenera el plan. Tu historial y tus cargas se conservan.</p></section>
  <section class="card p-5 mt-4"><h2 class="h2">Cómo ajustamos tu plan</h2><ul class="mt-3 flex flex-col gap-2">${adjNotes(u.profile).map(n=>`<li class="flex gap-2"><span class="dot d-ok mt-2 flex-none"></span><span>${esc(n)}</span></li>`).join('')}</ul></section>
@@ -735,6 +737,22 @@ async function importBackup(file){let d;try{d=JSON.parse(await file.text())}catc
  save();view='home';render();toast('Copia importada y combinada')}
 document.addEventListener('change',e=>{if(e.target&&e.target.id==='bk-file'&&e.target.files[0]){importBackup(e.target.files[0]);e.target.value=''}});
 
+/* ---- Progreso de fuerza ---- */
+let progEx=null;
+function strengthProgress(u){const H=u.history,R=records(H),ws=weekStart(),w=weeklySets(H,ws),[lo,hi]=SET_TARGET[u.profile.goal]||SET_TARGET.maint;
+ const maxV=Math.max(hi,...Object.values(w),1);
+ const bars=Object.entries(MUSCLE_GROUPS).map(([g,d])=>{const v=w[g]||0,col=v<lo?'var(--accent)':v>hi?'var(--hard)':'var(--easy)';
+  return `<div class="grid items-center gap-2 text-sm" style="grid-template-columns:92px 1fr 34px"><span>${d.n}</span><span class="relative h-3 rounded-full" style="background:var(--line)"><span class="absolute h-3" style="left:${lo/maxV*100}%;width:${(hi-lo)/maxV*100}%;background:color-mix(in srgb,var(--easy) 22%,transparent);border-radius:4px"></span><span class="absolute h-3 rounded-full" style="width:${Math.min(100,v/maxV*100)}%;background:${col}"></span></span><b class="text-right tabular-nums">${nf(v)}</b></div>`}).join('');
+ const recs=Object.entries(R).map(([id,r])=>({ex:X(id),r})).filter(o=>o.ex&&(o.r.e1rm>0||o.r.reps>0)).sort((a,b)=>b.r.date-a.r.date);
+ const withE=recs.filter(o=>o.r.e1rm>0);if(!progEx||!R[progEx]||!R[progEx].e1rm)progEx=withE[0]?withE[0].ex.id:null;
+ return `<section class="card p-4 mt-4"><div class="flex items-baseline justify-between"><h2 class="h2">Series por músculo</h2><span class="text-sm text-dim">esta semana</span></div>
+  <p class="text-sm text-dim mt-1">Principal cuenta 1 serie; secundario, 0,5. Zona verde: ${lo}–${hi} series, el rango orientativo para tu objetivo.</p>
+  <div class="flex flex-col gap-2 mt-3">${bars}</div></section>
+ ${recs.length?`<section class="card p-4 mt-4"><h2 class="h2">Récords personales</h2><div class="mt-3 divide-y divide-[var(--line)]">${recs.slice(0,12).map(o=>`<div class="flex items-center justify-between gap-3 py-2"><span class="min-w-0"><span class="block font-semibold truncate">${esc(o.ex.n)}</span><span class="block text-xs text-dim">${new Date(o.r.date).toLocaleDateString('es-ES',{day:'numeric',month:'short'})}</span></span><span class="text-right whitespace-nowrap">${o.r.e1rm?`<b>${nf(Math.round(o.r.e1rm*10)/10)} kg</b><span class="block text-xs text-dim">1RM est. · mejor ${fmtKg(o.r.w)} kg</span>`:`<b>${o.r.reps} reps</b>`}</span></div>`).join('')}</div></section>`:''}
+ ${progEx?`<section class="card p-4 mt-4"><h2 class="h2">Evolución del 1RM</h2><label class="sr-only" for="prog-ex">Ejercicio</label><select id="prog-ex" class="field mt-3">${withE.map(o=>`<option value="${o.ex.id}" ${o.ex.id===progEx?'selected':''}>${esc(o.ex.n)}</option>`).join('')}</select>
+  <div class="mt-3">${lineChart([{name:'1RM estimado',color:'var(--accent)',vals:e1rmSeries(H,progEx)}],'kg','Evolución del 1RM estimado')}</div><p class="hint">Estimación de Epley con tu mejor serie de cada sesión.</p></section>`:''}`}
+document.addEventListener('change',e=>{if(e.target&&e.target.id==='prog-ex'){progEx=e.target.value;render()}});
+
 /* ============ Modales ============ */
 function modal(html,label){$('#layer').innerHTML=`<div class="layer" data-a="close-bg"><div class="sheet" role="dialog" aria-modal="true" aria-label="${esc(label||'Detalle')}"><div class="flex justify-end -mt-1 -mr-2"><button class="btn-text" data-a="close" aria-label="Cerrar">${ic('close')}</button></div>${html}</div></div>`;ensureAnim();const b=$('#layer .sheet button, #layer .sheet a');b&&b.focus()}
 function closeModal(){$('#layer').innerHTML=''}
@@ -805,12 +823,13 @@ function finish(){const u=U(),a=u.active;normActive(a);seqStop(false);
   h.items.push({ex:it.ex,sets:done.map(({w,r,rt})=>({w,r,rt}))});changes.push({ex,...(a.deload?{note:'Sin cambios (descarga)',avg:0,next:loadTxt(ex,prog(u,ex,it.p),u.profile)}:progress(u,ex,it,done))})});
  const c=a.cond&&a.cond.done?a.cond:null,cNote=c?(a.deload?'Sin cambios (descarga)':condProgress(u,c,c.rt||'ok')):'';
  h.blocks={mob:!!a.mob.done,stretch:!!a.stretch.done,cond:c?{kind:c.kind,machine:c.machine,min:c.min,rt:c.rt||'ok'}:null};h.cardioMin=c?c.min:0;
- h.vol=vol;h.sets=sets;h.est=a.est||itemsEst(a);const hr=typeof hrStats==='function'?hrStats(a.start):null;if(hr)h.hr=hr;{const ks=HR.samples.filter(x=>x.t>=a.start);if(ks.length>1){const r=kcalFromSamples(ks,u.profile);if(r.coveredMs>=60000)h.kcalReal=Math.round(r.kcal)}}u.history.unshift(h);
+ h.vol=vol;h.sets=sets;h.est=a.est||itemsEst(a);const prs=newRecords(u.history,h);if(prs.length)h.prs=prs.map(x=>x.ex);const hr=typeof hrStats==='function'?hrStats(a.start):null;if(hr)h.hr=hr;{const ks=HR.samples.filter(x=>x.t>=a.start);if(ks.length>1){const r=kcalFromSamples(ks,u.profile);if(r.coveredMs>=60000)h.kcalReal=Math.round(r.kcal)}}u.history.unshift(h);
  if(h.kind==='strength'&&a.dayIdx!=null&&setsDone)u.next=(a.dayIdx+1)%u.plan.days.length;
  u.active=null;save();endTimer(false);view='home';render();scrollTo(0,0);
  const cm=c?CARDIO_M[c.machine]:null;
  modal(`<h2 class="hero" style="font-size:3.2rem">Sesión hecha</h2><p class="text-dim mt-2">${esc(h.day)}</p>
   <div class="grid grid-cols-3 gap-2 mt-5"><div class="stat"><b>${fmtDur(h.dur)}</b><span>duración (estimada ~${Math.round(h.est/60)} min)</span></div>${sets?`<div class="stat"><b>${sets}</b><span>series</span></div><div class="stat"><b>${h.kcalReal?nf(h.kcalReal):Math.round(vol)}</b><span>${h.kcalReal?'kcal reales (pulso)':'kg movidos'}</span></div>`:`<div class="stat"><b>${h.cardioMin}</b><span>min de cardio</span></div><div class="stat"><b>${[h.blocks.mob,h.blocks.stretch].filter(Boolean).length}</b><span>bloques de movilidad</span></div>`}</div>
+  ${prs.length?`<div class="card p-4 mt-4" style="border-color:var(--accent)"><b class="block" style="color:var(--accent)">¡Récord${prs.length>1?'s':''} personal${prs.length>1?'es':''}!</b>${prs.map(x=>`<div class="flex justify-between gap-3 text-sm mt-1"><span>${esc(X(x.ex).n)}</span><b>${x.kind==='e1rm'?`1RM est. ${nf(Math.round(x.value*10)/10)} kg`:`${x.value} reps`}</b></div>`).join('')}</div>`:''}
   ${changes.length||c?`<h3 class="h2 text-xl mt-6">Ajustes para la próxima vez</h3>`:''}
   <div class="flex flex-col gap-2 mt-3">${changes.map(x=>`<div class="flex items-center gap-3 p-3 rounded-2xl" style="background:var(--surface2)"><span class="dot ${x.avg<=-.5?'d-easy':x.avg<.5?'d-ok':'d-hard'}"></span><span class="flex-1 min-w-0"><span class="block font-semibold">${esc(x.ex.n)}</span><span class="block text-sm text-dim">${x.next}</span></span><span class="font-semibold whitespace-nowrap">${x.note}</span></div>`).join('')}
   ${c?`<div class="flex items-center gap-3 p-3 rounded-2xl" style="background:var(--surface2)"><span class="dot d-${c.rt||'ok'}"></span><span class="flex-1 min-w-0"><span class="block font-semibold">${esc(condKindLbl(c))}: ${esc(cm?cm.n:'')}</span><span class="block text-sm text-dim">${c.min} min</span></span><span class="font-semibold text-right">${esc(cNote)}</span></div>`:''}</div>
