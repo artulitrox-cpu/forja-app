@@ -27,6 +27,8 @@ App web sin compilación (`index.html` + `js/*.js`). Guarda los datos en el nave
 | `js/sync.js` | Supabase |
 | `js/figures.js` | figuras animadas de la técnica |
 
+**Publicación protegida:** cada push a `main` ejecuta en GitHub Actions las pruebas (`npm test`) y una prueba de humo en Chromium (`tools/smoke.js`). Solo si pasan se publica en GitHub Pages (requiere *Settings > Pages > Source: GitHub Actions*).
+
 Pruebas: `npm test` (Node 20 o superior, sin dependencias). Para probar los temporizadores rápido, abre la app con `?fast=1`.
 
 ## 1. Supabase

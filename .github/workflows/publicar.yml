@@ -1,0 +1,57 @@
+# Pruebas y publicación de Forja.
+# Cada push a main (incluido el respaldo automático) ejecuta las pruebas y la prueba de humo.
+# Solo si pasan, se publica en GitHub Pages. Si fallan, la app publicada sigue en la última versión buena.
+# Requisito (una vez): Settings > Pages > Build and deployment > Source: "GitHub Actions".
+name: Pruebas y publicación
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  pruebas:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Pruebas unitarias
+        run: npm test
+      - name: Instalar Chromium (Playwright)
+        run: |
+          npm i --no-save playwright@1
+          npx playwright install --with-deps chromium
+      - name: Prueba de humo
+        run: node tools/smoke.js
+
+  publicar:
+    needs: pruebas
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Versión en los scripts
+        run: node tools/stamp.js "${GITHUB_SHA::7}"
+      - name: Preparar sitio
+        run: |
+          mkdir _site
+          cp -r index.html sw.js manifest.webmanifest .nojekyll *.png js _site/
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+      - id: deploy
+        uses: actions/deploy-pages@v4
