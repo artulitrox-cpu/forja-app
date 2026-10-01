@@ -24,6 +24,9 @@ self.addEventListener('fetch', e => {
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
 
+  // Comprobación de versión: siempre a la red y sin guardar copia.
+  if (url.origin === location.origin && url.searchParams.has('fresh')) return;
+
   if (url.origin === location.origin) {
     e.respondWith(fetch(req.url, { cache: 'no-cache', credentials: 'same-origin' }).then(res => {
       if (res.ok) { const copy = res.clone(); caches.open(CACHE).then(c => c.put(req, copy)); }
