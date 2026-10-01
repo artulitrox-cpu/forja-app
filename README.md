@@ -11,7 +11,7 @@ App web sin compilación (`index.html` + `js/*.js`). Guarda los datos en el nave
 - **Pulsómetro Bluetooth (banda de pecho):** se empareja una vez en *Mi perfil* y se reconecta solo cuando el navegador lo permite (Chrome con `getDevices()`; si no, un toque en el indicador de la cabecera). Muestra pulso, zona (FC máx. = 220 − edad) y batería. Calcula calorías reales (Keytel), avisa si pasas de Z2 en cardio suave o en días de descanso y tiene *descanso inteligente*: la siguiente serie empieza cuando el pulso baja de 115 ppm.
 - **Grabar deporte o partido en vivo:** *Iniciar actividad en vivo* en Hoy (o *Grabar partido en vivo* el día de partido). Cronómetro con pulso; si la banda se desconecta, la grabación sigue y anota la reconexión. Al finalizar guarda tiempo, pulso medio y máximo, kcal reales y aplica la fatiga al gimnasio. Mantén Forja abierta en pantalla: una app web no recibe Bluetooth en segundo plano.
 - **Idioma:** español o inglés con el selector de la cabecera (se recuerda en cada dispositivo). La interfaz se escribe en español y se traduce al pintarse con `js/i18n-en.js` (frases y patrones) y `js/i18n-en-catalog.js` (catálogo por identificador). `tools/i18n-check.js` recorre la app en inglés y falla si queda algún texto sin traducir; se ejecuta antes de publicar.
-- **Lesiones y Recuperación:** eliges el músculo sobre la figura, respondes un triaje rápido y la app sustituye u omite los ejercicios afectados hasta que te das de alta. Es una estimación orientativa, no un diagnóstico.
+- **Lesiones y Recuperación:** eliges el músculo o la articulación (cuello, codo, muñeca, rodilla, tobillo, tendón de Aquiles) sobre la figura, respondes un triaje rápido y la app sustituye u omite los ejercicios afectados hasta que te das de alta. Es una estimación orientativa, no un diagnóstico.
 
 ## Código
 
@@ -23,7 +23,7 @@ App web sin compilación (`index.html` + `js/*.js`). Guarda los datos en el nave
 | `js/injuries.js` | triaje y bloqueo/sustitución por lesiones |
 | `js/activities.js` | deportes extra: calorías, fatiga de piernas, balance calórico |
 | `js/hr.js` | pulsómetro Bluetooth (Web Bluetooth, perfil Heart Rate) |
-| `js/bodymap.js` | figura anatómica SVG |
+| `js/bodymap.js` | figura anatómica SVG (formas generadas con `node tools/body.js` a partir de [react-native-body-highlighter](https://github.com/HichamELBSI/react-native-body-highlighter), licencia MIT en `tools/body-src/LICENSE`) |
 | `js/timer.js` | temporizadores y pantalla encendida |
 | `js/sync.js` | Supabase |
 | `js/figures.js` | figuras animadas de la técnica |
