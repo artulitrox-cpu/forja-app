@@ -135,3 +135,46 @@ test('todo músculo del catálogo pertenece a una región', () => {
   const names = new Set(EX.flatMap((e) => [...e.m, ...e.s]).filter((m) => m !== 'Core'));
   for (const m of names) assert.ok(regionOf(m), m);
 });
+
+test('articulaciones: cada una está en una región y tiene sus propios niveles', () => {
+  const JOINTS = c.get('JOINTS');
+  for (const j of Object.keys(JOINTS)) {
+    assert.ok(MUSCLES.includes(j), j);
+    assert.ok(regionOf(j), j);
+  }
+  assert.equal(triage({ muscle: 'Tobillo', pain: 6, mob: 1, infl: 1, rest: 0, flags: [] }).label, 'Esguince o tendinitis moderada');
+  assert.equal(triage({ muscle: 'Rodilla', pain: 2, mob: 0, infl: 0, rest: 0, flags: ['unstable'] }).level, 'refer');
+  assert.equal(triage({ muscle: 'Cuádriceps', pain: 6, mob: 1, infl: 1, rest: 0, flags: [] }).label, 'Distensión moderada');
+});
+
+test('esguince de tobillo: fuera impacto y gemelos de pie; grave, también zancadas', () => {
+  assert.equal(exBlocked(X('calf_stand'), { Tobillo: 'mild' }), 'Tobillo');
+  assert.equal(exBlocked(X('calf_seated'), { Tobillo: 'mild' }), null);
+  assert.equal(exBlocked(X('lunge_db'), { Tobillo: 'mild' }), null);
+  assert.equal(exBlocked(X('lunge_db'), { Tobillo: 'severe' }), 'Tobillo');
+  assert.equal(exBlocked(X('legpress'), { Tobillo: 'severe' }), null);
+  assert.equal(exBlocked(X('bench_bb'), { Tobillo: 'severe' }), null);
+});
+
+test('rodilla, muñeca, codo y cuello bloquean lo que cargan y dejan alternativas', () => {
+  assert.equal(exBlocked(X('leg_ext'), { Rodilla: 'mild' }), 'Rodilla');
+  assert.equal(exBlocked(X('squat_bb'), { Rodilla: 'moderate' }), 'Rodilla');
+  assert.equal(exBlocked(X('hip_thrust_machine'), { Rodilla: 'moderate' }), null);
+  assert.equal(exBlocked(X('pushup'), { Muñeca: 'mild' }), 'Muñeca');
+  assert.equal(exBlocked(X('bench_db'), { Muñeca: 'moderate' }), 'Muñeca');
+  assert.equal(exBlocked(X('chest_machine'), { Muñeca: 'moderate' }), null);
+  assert.equal(exBlocked(X('curl_db'), { Codo: 'mild' }), 'Codo');
+  assert.equal(exBlocked(X('ohp_bb'), { Cuello: 'mild' }), 'Cuello');
+});
+
+test('con una lesión de rodilla la semana entera queda sin ejercicios ni cardio que la carguen', () => {
+  const u = mkUser({ goal: 'fat', avail: [0, 1, 2, 3, 4, 5] });
+  addInjury(u, { muscle: 'Rodilla', pain: 5, mob: 1, infl: 1, rest: 0, flags: [] });
+  const map = injuryMap(u), JOINTS = c.get('JOINTS');
+  for (const e of weekSchedule(u, WS).filter((x) => x.type !== 'rest')) {
+    const s = buildSession(u, e, { ws: WS });
+    for (const it of s.items) assert.equal(exBlocked(X(it.ex), map), null, it.ex);
+    if (s.cond) assert.ok(!JOINTS.Rodilla.cardio(CARDIO_M[s.cond.machine], true), s.cond.machine);
+    for (const o of s.omitted) assert.ok(s.notes.some((n) => n.includes(`lesión en ${o.mus}`)));
+  }
+});

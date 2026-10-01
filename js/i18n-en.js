@@ -156,7 +156,8 @@ const dict={
  'Tu sesión de hoy te espera en Forja.':'Today’s session is waiting in Forja.','Graba el partido en vivo o regístralo al terminar.':'Record the match live or log it when you’re done.','Toca check-in biométrico':'Body check-in due','Pésate o hazte un escaneo para ajustar calorías y cargas.':'Weigh yourself or get a scan to adjust calories and loads.','Ya ha pasado el tiempo estimado de recuperación. Revisa si estás recuperado.':'The estimated recovery time has passed. Check whether you’ve recovered.',
  'Sin conexión. Conéctate a internet para abrir la app la primera vez.':'Offline. Connect to the internet to open the app the first time.','buscando pulsómetro…':'looking for heart rate monitor…','Recordatorios en este teléfono: sesión o partido del día, check-in pendiente y revisión de lesiones. Se programan en el propio teléfono: no necesitan cuenta ni internet.':'Reminders on this phone: today’s session or match, pending check-in and injury reviews. They’re scheduled on the phone itself: no account or internet needed.','Has bloqueado las notificaciones de Forja. Actívalas en Ajustes > Aplicaciones > Forja > Notificaciones.':'You’ve blocked Forja notifications. Turn them on in Settings > Apps > Forja > Notifications.','Recordatorios':'Reminders','sin pulsómetro':'no heart rate monitor'
 };
-const T=s=>{const d=dict[s];if(d!=null)return d;return typeof tr==='function'?tr(s):s};
+// Nombres en minúscula dentro de una frase ("en lugar de cinta: correr"): se traducen con la forma capitalizada.
+const T=s=>{const d=dict[s];if(d!=null)return d;const cap=s&&s[0].toUpperCase()+s.slice(1),dc=dict[cap];if(cap!==s&&dc!=null)return dc[0].toLowerCase()+dc.slice(1);return typeof tr==='function'?tr(s):s};
 const ok=(s,t)=>t!==s||!/[áéíóúñ¿¡]|\b(de|el|la|los|las|con|en|por|para|sin|semana|días?|hoy|serie|sesión)\b/i.test(s);
 // Traduce una lista de partes; null si alguna sigue en español.
 const all=(parts,join)=>{const out=parts.map(p=>T(p));return out.every((t,i)=>ok(parts[i],t))?out.join(join):null};
@@ -263,6 +264,7 @@ const patterns=[
  [/^Esta sesión dura unos (\d+) min, más que tu límite de (\d+)\. Sube el tiempo o añade un día\.$/,'This session takes about $1 min, more than your $2 limit. Increase the time or add a day.'],
  [/^(.+) en lugar de (.+) por molestia en (.+)\.$/,(_,a,b,m)=>`${T(a)} instead of ${T(b)} due to an issue in ${T(m)}.`],[/^Ejercicio omitido por molestia muscular en (.+): (.+)\.$/,(_,m,a)=>`Exercise skipped due to a muscle issue in ${T(m)}: ${T(a)}.`],
  [/^Ejercicio omitido por molestia muscular en (.+)$/,(_,m)=>`Exercise skipped due to a muscle issue in ${T(m)}`],[/^Bloque de cardio omitido por molestia muscular en (.+)\.$/,(_,m)=>`Cardio block skipped due to a muscle issue in ${T(m)}.`],
+ [/^Ejercicio omitido por lesión en (.+): (.+)\.$/,(_,m,a)=>`Exercise skipped due to an injury in ${T(m)}: ${T(a)}.`],[/^Ejercicio omitido por lesión en (.+)$/,(_,m)=>`Exercise skipped due to an injury in ${T(m)}`],[/^Bloque de cardio omitido por lesión en (.+)\.$/,(_,m)=>`Cardio block skipped due to an injury in ${T(m)}.`],
  [/^En lugar de (.+) por molestia en (.+)$/,(_,a,m)=>`Instead of ${T(a)} due to an issue in ${T(m)}`],[/^Sustituye a (.+) \(molestia en (.+)\)$/,(_,a,m)=>`Replaces ${T(a)} (issue in ${T(m)})`],[/^Molestia leve en (.+?)(: ve con cuidado)?$/,(_,m,x)=>`Mild issue in ${T(m)}${x?': go carefully':''}`],
  [/^HIIT cambiado a cardio suave por fatiga de piernas \((.+)\)\.$/,(_,s)=>`HIIT switched to easy cardio due to leg fatigue (${T(s)}).`],
  [/^Alternativas de (.+) que trabajan los mismos músculos\.$/,(_,s)=>`Alternatives for ${T(s)} that work the same muscles.`],
@@ -274,7 +276,7 @@ const patterns=[
  [/^No se pudo activar: (.+)$/,'Couldn’t turn on: $1'],
  [/^Siguiente protocolo: (.+)$/,'Next protocol: $1'],[/^Protocolo más suave: (.+)$/,'Easier protocol: $1'],
  [/^(.+) · (.+)$/,(_,a,b)=>all(_.split(' · '),' · ')],
- [/^(.+): (.+)$/,(_,a,b)=>{const x=T(a),y=T(b);return ok(a,x)&&ok(b,y)?`${x}: ${y}`:null}],
+ [/^(.+?): (.+)$/,(_,a,b)=>{const x=T(a),y=T(b);return ok(a,x)&&ok(b,y)?`${x}: ${y}`:null}],
  [/^([^,]+), ([^,]+)$/,(_,a,b)=>{const x=T(a),y=T(b);return ok(a,x)&&ok(b,y)?`${x}, ${y}`:null}],
  [/^(.+)\.$/,(_,a)=>{const x=T(a);return ok(a,x)?x+'.':null}]
 ];

@@ -176,24 +176,24 @@ details[open] .chev{transform:rotate(180deg)}
 <div id="seq"></div>
 <div id="toast"></div>
 
-<script src="js/i18n-en.js?v=202609281254"></script>
-<script src="js/i18n.js?v=202609281254"></script>
-<script src="js/catalog.js?v=202609281254"></script>
-<script src="js/figures.js?v=202609281254"></script>
-<script src="js/merge.js?v=202609281254"></script>
-<script src="js/plan.js?v=202609281254"></script>
-<script src="js/injuries.js?v=202609281254"></script>
-<script src="js/progress.js?v=202609281254"></script>
-<script src="js/nutrition.js?v=202609281254"></script>
-<script src="js/activities.js?v=202609281254"></script>
-<script src="js/bodymap.js?v=202609281254"></script>
-<script src="js/sync.js?v=202609281254"></script>
+<script src="js/i18n-en.js?v=202610011219"></script>
+<script src="js/i18n.js?v=202610011219"></script>
+<script src="js/catalog.js?v=202610011219"></script>
+<script src="js/figures.js?v=202610011219"></script>
+<script src="js/merge.js?v=202610011219"></script>
+<script src="js/plan.js?v=202610011219"></script>
+<script src="js/injuries.js?v=202610011219"></script>
+<script src="js/progress.js?v=202610011219"></script>
+<script src="js/nutrition.js?v=202610011219"></script>
+<script src="js/activities.js?v=202610011219"></script>
+<script src="js/bodymap.js?v=202610011219"></script>
+<script src="js/sync.js?v=202610011219"></script>
 <!-- Dentro de la app de Android (Capacitor) se cargan el núcleo y los plugins nativos -->
 <script>if(window.Capacitor&&Capacitor.isNativePlatform&&Capacitor.isNativePlatform())document.write('<script src="js/vendor/capacitor.js"><\/script><script src="js/vendor/ble.js"><\/script><script src="js/vendor/fgs.js"><\/script><script src="js/vendor/localnotif.js"><\/script>')</script>
-<script src="js/timer.js?v=202609281254"></script>
-<script src="js/push.js?v=202609281254"></script>
-<script src="js/hr.js?v=202609281254"></script>
-<script src="js/i18n-en-catalog.js?v=202609281254"></script>
+<script src="js/timer.js?v=202610011219"></script>
+<script src="js/push.js?v=202610011219"></script>
+<script src="js/hr.js?v=202610011219"></script>
+<script src="js/i18n-en-catalog.js?v=202610011219"></script>
 <script>
 
 
@@ -583,7 +583,7 @@ function render(){
 /* ============ Lesiones y Recuperación ============ */
 let injView='front',injRegion=null,injDraft=null,injAnim=null;
 const fmtDay=t=>new Date(t).toLocaleDateString(LOC(),{day:'numeric',month:'short'});
-function injCard(u,i){const L=INJ_LEVELS[i.level],d=daysSince(i.date),tot=Math.max(1,Math.round((i.reviewAt-i.date)/864e5)),pct=Math.min(100,d/tot*100),aff=affectedBy(u,i.muscle,i.level).length,col=i.level==='mild'?'var(--accent)':'var(--hard)';
+function injCard(u,i){const L=levelInfo(i.muscle,i.level),d=daysSince(i.date),tot=Math.max(1,Math.round((i.reviewAt-i.date)/864e5)),pct=Math.min(100,d/tot*100),aff=affectedBy(u,i.muscle,i.level).length,col=i.level==='mild'?'var(--accent)':'var(--hard)';
  return `<article class="card p-4" style="border-color:${col}"><div class="flex items-start gap-3"><span class="dot mt-2 flex-none" style="background:${col}"></span><span class="flex-1 min-w-0"><b class="block text-lg leading-tight">${esc(i.muscle)}</b><span class="block text-sm mt-0.5">${esc(L.label)}</span><span class="block text-sm text-dim">${esc(L.range)} · hace ${d} ${d===1?'día':'días'} · dolor ${i.pain}/10</span></span></div>
   <div class="h-2 rounded-full mt-3" style="background:var(--line)" role="img" aria-label="Recuperación estimada: ${Math.round(pct)} %"><div class="h-2 rounded-full" style="width:${pct}%;background:${col}"></div></div>
   <p class="text-sm text-dim mt-2">${aff} ${aff===1?'ejercicio adaptado':'ejercicios adaptados'} en tu plan.${i.level==='refer'?' Te recomendamos que lo valore un profesional.':''}</p>
@@ -599,20 +599,20 @@ function vInjuries(){const u=U(),act=activeInjuries(u),past=(u.injuries||[]).fil
   ${reg?'<button class="btn-ghost w-full mt-3" data-a="injback">Volver al cuerpo entero</button>':''}
   <div class="flex flex-wrap gap-2 mt-3" role="group" aria-label="${reg?'Músculos':'Zonas'}">${list.join('')}</div>
   <p class="hint">Rojo: lesión activa. Amarillo: sobrecarga leve.</p></section>
- ${past.length?`<details class="card mt-5"><summary class="p-4 flex items-center gap-3"><span class="flex-1 h2">Historial</span><span class="text-sm text-dim">${past.length}</span><span class="chev text-dim">${ic('chev')}</span></summary><div class="px-4 pb-4 flex flex-col gap-3">${past.map(i=>`<div class="flex items-center gap-3"><span class="flex-1 min-w-0"><b class="block">${esc(i.muscle)}</b><span class="text-sm text-dim">${esc(INJ_LEVELS[i.level].label)} · ${fmtDay(i.date)}${i.resolvedAt?` → alta el ${fmtDay(i.resolvedAt)}`:''}</span></span><button class="btn-text btn-danger" data-a="injdel" data-id="${i.id}" aria-label="Eliminar registro de ${esc(i.muscle)}">${ic('close',16)}</button></div>`).join('')}</div></details>`:''}
+ ${past.length?`<details class="card mt-5"><summary class="p-4 flex items-center gap-3"><span class="flex-1 h2">Historial</span><span class="text-sm text-dim">${past.length}</span><span class="chev text-dim">${ic('chev')}</span></summary><div class="px-4 pb-4 flex flex-col gap-3">${past.map(i=>`<div class="flex items-center gap-3"><span class="flex-1 min-w-0"><b class="block">${esc(i.muscle)}</b><span class="text-sm text-dim">${esc(levelInfo(i.muscle,i.level).label)} · ${fmtDay(i.date)}${i.resolvedAt?` → alta el ${fmtDay(i.resolvedAt)}`:''}</span></span><button class="btn-text btn-danger" data-a="injdel" data-id="${i.id}" aria-label="Eliminar registro de ${esc(i.muscle)}">${ic('close',16)}</button></div>`).join('')}</div></details>`:''}
  <p class="hint mt-5">Estimación orientativa basada en tus respuestas, no un diagnóstico médico. Si el dolor es intenso, empeora o no mejora, consulta a un fisioterapeuta o médico.</p>`}
 function openTriage(m,pre){const prev=pre||activeInjuries(U()).find(i=>i.muscle===m)||{};
- modal(`<h2 class="font-display text-3xl font-extrabold leading-none">${esc(m)}</h2><p class="text-dim mt-1">${esc((regionOf(m)||{}).n||'')} · Responde según cómo estás hoy.</p>
+ modal(`<h2 class="font-display text-3xl font-extrabold leading-none">${esc(m)}</h2><p class="text-dim mt-1">${esc(isJoint(m)?JOINTS[m].hint:(regionOf(m)||{}).n||'')} · Responde según cómo estás hoy.</p>
  <form data-inj="${esc(m)}" class="flex flex-col gap-5 mt-5">
   <div><span class="lbl">Dolor (1 = muy leve, 10 = insoportable)</span><div class="pain" role="radiogroup">${Array.from({length:10},(_,i)=>`<label><input type="radio" name="pain" value="${i+1}" ${(prev.pain||3)===i+1?'checked':''}><span>${i+1}</span></label>`).join('')}</div></div>
   ${TRIAGE_Q.map(([k,l,opts])=>`<div><span class="lbl">${l}</span>${seg(k,Object.fromEntries(opts.map((o,i)=>[i,o])),prev[k]??0)}</div>`).join('')}
-  <div><span class="lbl">Señales de alarma</span><div class="flex flex-col gap-2">${RED_FLAGS.map(([k,l])=>`<label class="check"><input type="checkbox" name="flags" value="${k}" ${(prev.flags||[]).includes(k)?'checked':''}><span>${l}</span></label>`).join('')}</div></div>
+  <div><span class="lbl">Señales de alarma</span><div class="flex flex-col gap-2">${flagsFor(m).map(([k,l])=>`<label class="check"><input type="checkbox" name="flags" value="${k}" ${(prev.flags||[]).includes(k)?'checked':''}><span>${l}</span></label>`).join('')}</div></div>
   <button class="btn-primary w-full" type="submit">Ver estimación</button></form>`,'Evaluar molestia')}
 function showTriage(){const d=injDraft,t=triage(d),aff=affectedBy(U(),d.muscle,t.level),refer=t.level==='refer';
  modal(`<p class="text-dim">${esc(d.muscle)} · estimación orientativa</p><h2 class="font-display text-3xl font-extrabold leading-none mt-1" style="color:${t.level==='mild'?'var(--accent)':'var(--hard)'}">${esc(t.label)}</h2>
  <div class="card p-4 mt-4" style="background:var(--bg)"><b>${refer?'Qué hacer':'Recuperación sugerida'}</b><p class="mt-1">${refer?'Acude a un fisioterapeuta o médico antes de volver a entrenar esta zona. Mientras tanto, la app la bloquea.':esc(t.range)+'.'}</p></div>
  <h3 class="h2 text-xl mt-5">Qué cambia en tu rutina</h3><p class="text-sm mt-1">${esc(t.block)}</p>
- ${aff.length?`<div class="flex flex-wrap gap-2 mt-2">${aff.map(x=>`<span class="chip">${esc(x.n)}</span>`).join('')}</div><p class="hint">Se sustituyen por alternativas seguras o se omiten con aviso.</p>`:'<p class="hint">Ningún ejercicio de tu plan actual usa este músculo.</p>'}
+ ${aff.length?`<div class="flex flex-wrap gap-2 mt-2">${aff.map(x=>`<span class="chip">${esc(x.n)}</span>`).join('')}</div><p class="hint">Se sustituyen por alternativas seguras o se omiten con aviso.</p>`:`<p class="hint">${isJoint(d.muscle)?'Ningún ejercicio de tu plan actual carga esta articulación.':'Ningún ejercicio de tu plan actual usa este músculo.'}</p>`}
  ${refer?'':`<h3 class="h2 text-xl mt-5">Consejos</h3><ul class="mt-2 flex flex-col gap-2 text-sm">${['Descanso relativo: evita lo que provoca dolor, pero sigue moviéndote.','Movimiento suave y sin dolor para mantener la movilidad.','Vuelve a cargar la zona poco a poco cuando el dolor baje.'].map(x=>`<li class="flex gap-2"><span class="dot d-easy mt-2 flex-none"></span><span>${x}</span></li>`).join('')}</ul>`}
  <p class="hint mt-4">No es un diagnóstico médico. Si el dolor empeora o no mejora, consulta a un profesional.</p>
  <button class="btn-primary w-full mt-5" data-a="injsave">Guardar lesión</button><button class="btn-text w-full mt-1 justify-center" data-a="injedit">Cambiar respuestas</button>`,'Resultado de la evaluación')}

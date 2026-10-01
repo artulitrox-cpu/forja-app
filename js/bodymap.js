@@ -3,7 +3,7 @@
 
 const BODY_FULL=[0,0,200,420];
 // Encuadre de cada región al hacer zoom: [x, y, ancho, alto].
-const REGION_BOX={shoulders:[26,52,148,64],arms:[16,86,168,176],chest:[52,62,96,64],back:[46,50,108,164],core:[58,106,84,118],legs:[52,196,96,218]};
+const REGION_BOX={shoulders:[26,38,148,78],arms:[16,86,168,176],chest:[52,62,96,64],back:[46,50,108,164],core:[58,106,84,118],legs:[52,196,96,218]};
 // Formas de cada músculo, dibujadas en el lado izquierdo de la figura (x < 100) y reflejadas.
 // e = elipse [cx,cy,rx,ry]; r = rectángulo centrado [x,y,w,h,rx]; p = polígono (sin reflejo).
 const BODY_SHAPES={
@@ -12,12 +12,14 @@ const BODY_SHAPES={
   ['Pectoral superior',{e:[85,82,14,6]}],['Pectoral',{e:[84,99,16,12]}],
   ['Bíceps',{e:[50,118,7,19]}],['Braquial',{e:[43,141,4,10]}],['Antebrazo',{e:[42,196,7,28]}],
   ['Abdomen',{r:[88,116,24,70,8],single:1}],['Oblicuos',{e:[77,152,7,26]}],['Flexores de cadera',{e:[85,208,7,9]}],
-  ['Cuádriceps',{e:[83,262,13,38]}],['Aductores',{e:[96,246,4,22]}],['Gemelos',{e:[81,352,7,26]}]],
+  ['Cuádriceps',{e:[83,262,13,38]}],['Aductores',{e:[96,246,4,22]}],['Gemelos',{e:[81,352,7,26]}],
+  ['Cuello',{r:[93,46,14,14,4],single:1}],['Codo',{e:[46,159,6,6]}],['Muñeca',{e:[37,236,5,6]}],['Rodilla',{e:[83.5,312,9,9]}],['Tobillo',{e:[83.5,394,8,6]}]],
  back:[
   ['Trapecio',{p:'100,54 126,72 100,112 74,72'}],['Deltoide posterior',{e:[65,82,10,12]}],['Deltoide lateral',{e:[53,86,6,12]}],
   ['Manguito rotador',{e:[79,96,9,8]}],['Romboides',{e:[92,100,5,12]}],['Dorsal ancho',{e:[80,136,13,28]}],['Lumbares',{r:[89,162,22,38,6],single:1}],
   ['Tríceps',{e:[50,118,7,19]}],['Antebrazo',{e:[42,196,7,28]}],
-  ['Glúteos',{e:[86,224,15,16]}],['Isquiotibiales',{e:[85,276,12,32]}],['Aductores',{e:[97,262,4,18]}],['Gemelos',{e:[85,340,10,22]}],['Sóleo',{e:[85,376,7,13]}]]};
+  ['Glúteos',{e:[86,224,15,16]}],['Isquiotibiales',{e:[85,276,12,32]}],['Aductores',{e:[97,262,4,18]}],['Gemelos',{e:[85,340,10,22]}],['Sóleo',{e:[85,374,7,12]}],
+  ['Cuello',{r:[93,46,14,14,4],single:1}],['Codo',{e:[46,159,6,6]}],['Muñeca',{e:[37,236,5,6]}],['Tendón de Aquiles',{e:[83.5,394,4,8]}]]};
 const BODY_SIL=`<circle cx="100" cy="30" r="18"/><rect x="92" y="46" width="16" height="16" rx="4"/>
  <path d="M58 70 Q100 58 142 70 L136 200 Q135 210 134 218 L66 218 Q65 210 64 200 Z"/>
  <rect x="42" y="70" width="18" height="100" rx="9" transform="rotate(6 51 70)"/><rect x="140" y="70" width="18" height="100" rx="9" transform="rotate(-6 149 70)"/>
