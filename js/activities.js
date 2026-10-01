@@ -1,14 +1,24 @@
 /* Forja: actividades y deportes extra (sin DOM). Script clásico: comparte variables globales con el resto de js/*.js e index.html.
    Calorías con MET orientativos (Compendium of Physical Activities) y fatiga de piernas para ajustar el gimnasio. */
 
-// met: equivalente metabólico con RPE 5. legs: carga de piernas (0–1,2).
+// met: equivalente metabólico con RPE 5. legs: carga de piernas (0–1,2). free: actividad libre (no cuenta como partido ni deporte habitual).
 const SPORTS={
  football:{n:'Fútbol',types:[{id:'gk',n:'Portero',met:5,legs:.5},{id:'def',n:'Defensa',met:9,legs:.9},{id:'mid',n:'Centrocampista',met:10,legs:1},{id:'fwd',n:'Delantero',met:9.5,legs:1},{id:'rec',n:'Partido recreativo',met:7,legs:.8}]},
  futsal:{n:'Futsal',types:[{id:'field',n:'Jugador de campo (alta intensidad discontinua)',met:10,legs:1.1},{id:'gk',n:'Portero',met:5,legs:.5},{id:'rec',n:'Recreativo',met:7.5,legs:.9}]},
  running:{n:'Running',km:true,types:[{id:'easy',n:'Rodaje suave',met:8,legs:.7},{id:'tempo',n:'Tempo',met:10.5,legs:.9},{id:'intervals',n:'Series o intervalos',met:11.5,legs:1},{id:'long',n:'Tirada larga',met:9,legs:.9},{id:'trail',n:'Trail',met:9.5,legs:1}]},
  cycling:{n:'Ciclismo',km:true,types:[{id:'easy',n:'Paseo',met:5,legs:.5},{id:'road',n:'Ruta moderada',met:8,legs:.8},{id:'intervals',n:'Intervalos',met:10,legs:.9},{id:'mtb',n:'Montaña (MTB)',met:8.5,legs:.9}]},
  padel:{n:'Pádel',types:[{id:'rec',n:'Recreativo',met:6,legs:.6},{id:'comp',n:'Competitivo',met:8,legs:.7}]},
+ cardio:{n:'Cardio libre',free:1,types:[{id:'any',n:'Cualquier cardio',met:7,legs:.6},{id:'treadmill',n:'Cinta',met:8,legs:.7},{id:'bike',n:'Bici',met:7,legs:.6},{id:'elliptical',n:'Elíptica',met:6.5,legs:.5},{id:'rower',n:'Remo',met:7.5,legs:.5},{id:'stair',n:'Escaladora',met:9,legs:.8},{id:'walk',n:'Caminata',met:4.5,legs:.4}]},
+ strength:{n:'Pesas o circuito',free:1,types:[{id:'weights',n:'Pesas',met:5,legs:.4},{id:'circuit',n:'Circuito o funcional',met:8,legs:.6},{id:'class',n:'Clase dirigida',met:7.5,legs:.6}]},
+ swimming:{n:'Natación',km:true,types:[{id:'easy',n:'Suave',met:6,legs:.2},{id:'hard',n:'Intenso',met:9.5,legs:.3}]},
+ tennis:{n:'Tenis',types:[{id:'rec',n:'Recreativo',met:7,legs:.6},{id:'comp',n:'Competitivo',met:8,legs:.7}]},
+ basketball:{n:'Baloncesto',types:[{id:'rec',n:'Recreativo',met:6.5,legs:.8},{id:'game',n:'Partido',met:8,legs:.9}]},
+ combat:{n:'Boxeo o artes marciales',types:[{id:'bag',n:'Saco y técnica',met:7,legs:.4},{id:'spar',n:'Sparring o combate',met:10,legs:.6}]},
+ hiking:{n:'Senderismo',km:true,free:1,types:[{id:'flat',n:'Llano',met:5,legs:.5},{id:'hills',n:'Con desnivel',met:7,legs:.8}]},
+ yoga:{n:'Yoga o movilidad',free:1,types:[{id:'soft',n:'Suave',met:2.5,legs:.1},{id:'power',n:'Dinámico',met:4,legs:.2}]},
  other:{n:'Otro',types:[{id:'steady',n:'Continuo moderado',met:6,legs:.6},{id:'hiit',n:'Intermitente intenso',met:8,legs:.8},{id:'skill',n:'Técnico o de baja intensidad',met:4,legs:.3}]}};
+// Deportes que se pueden marcar como partido o deporte habitual de la semana.
+const MATCH_SPORTS=()=>Object.entries(SPORTS).filter(([k,v])=>k!=='other'&&!v.free);
 const FATIGUE_LVL=v=>v>=60?'high':v>=30?'moderate':'low';
 const FATIGUE_LBL={low:'Baja',moderate:'Moderada',high:'Alta'};
 const sportType=a=>{const s=SPORTS[a.sport]||SPORTS.other;return s.types.find(t=>t.id===a.type)||s.types[0]};

@@ -177,24 +177,24 @@ details[open] .chev{transform:rotate(180deg)}
 <div id="seq"></div>
 <div id="toast"></div>
 
-<script src="js/i18n-en.js?v=202610011237"></script>
-<script src="js/i18n.js?v=202610011237"></script>
-<script src="js/catalog.js?v=202610011237"></script>
-<script src="js/figures.js?v=202610011237"></script>
-<script src="js/merge.js?v=202610011237"></script>
-<script src="js/plan.js?v=202610011237"></script>
-<script src="js/injuries.js?v=202610011237"></script>
-<script src="js/progress.js?v=202610011237"></script>
-<script src="js/nutrition.js?v=202610011237"></script>
-<script src="js/activities.js?v=202610011237"></script>
-<script src="js/bodymap.js?v=202610011237"></script>
-<script src="js/sync.js?v=202610011237"></script>
+<script src="js/i18n-en.js?v=202610011240"></script>
+<script src="js/i18n.js?v=202610011240"></script>
+<script src="js/catalog.js?v=202610011240"></script>
+<script src="js/figures.js?v=202610011240"></script>
+<script src="js/merge.js?v=202610011240"></script>
+<script src="js/plan.js?v=202610011240"></script>
+<script src="js/injuries.js?v=202610011240"></script>
+<script src="js/progress.js?v=202610011240"></script>
+<script src="js/nutrition.js?v=202610011240"></script>
+<script src="js/activities.js?v=202610011240"></script>
+<script src="js/bodymap.js?v=202610011240"></script>
+<script src="js/sync.js?v=202610011240"></script>
 <!-- Dentro de la app de Android (Capacitor) se cargan el núcleo y los plugins nativos -->
 <script>if(window.Capacitor&&Capacitor.isNativePlatform&&Capacitor.isNativePlatform())document.write('<script src="js/vendor/capacitor.js"><\/script><script src="js/vendor/ble.js"><\/script><script src="js/vendor/fgs.js"><\/script><script src="js/vendor/localnotif.js"><\/script>')</script>
-<script src="js/timer.js?v=202610011237"></script>
-<script src="js/push.js?v=202610011237"></script>
-<script src="js/hr.js?v=202610011237"></script>
-<script src="js/i18n-en-catalog.js?v=202610011237"></script>
+<script src="js/timer.js?v=202610011240"></script>
+<script src="js/push.js?v=202610011240"></script>
+<script src="js/hr.js?v=202610011240"></script>
+<script src="js/i18n-en-catalog.js?v=202610011240"></script>
 <script>
 
 
@@ -398,17 +398,17 @@ function openDayActions(wd){const u=U(),ws=weekStart(),s=weekSchedule(u,ws),e=s.
   else if(e&&(e.type==='strength'||e.type==='cardio')&&!e.done)acts.push(`<button class="btn-ghost w-full" data-a="wkskip" data-n="${wd}">No voy este día</button>`);
   if(e&&e.type==='skip')acts.push(`<button class="btn-ghost w-full" data-a="wkunskip" data-n="${wd}">Sí voy este día</button>`);
   if(!e&&!inDays)acts.push(`<button class="btn-ghost w-full" data-a="wkextra" data-n="${wd}">Agregar día de entrenamiento extra</button>`);
-  acts.push(`<span class="lbl mt-3">Marcar partido o deporte</span><div class="flex flex-wrap gap-2">${Object.entries(SPORTS).filter(([k])=>k!=='other').map(([k,v])=>`<button class="chip" data-a="wkmatch" data-n="${wd}" data-s="${k}">${v.n}</button>`).join('')}</div>`)}
+  acts.push(`<span class="lbl mt-3">Marcar partido o deporte</span><div class="flex flex-wrap gap-2">${MATCH_SPORTS().map(([k,v])=>`<button class="chip" data-a="wkmatch" data-n="${wd}" data-s="${k}">${v.n}</button>`).join('')}</div>`)}
  const L=DAY_LONG[wd];
  modal(`<h2 class="font-display text-3xl font-extrabold leading-none">${L[0].toUpperCase()+L.slice(1)}</h2><p class="text-dim mt-1">${esc(e?entryTitle(e):'Día libre')}${wd<weekday(Date.now())?' · ya pasó':''}</p>
   <div class="flex flex-col gap-2 mt-4">${acts.join('')}</div><p class="hint">Los cambios solo afectan a esta semana. Tus deportes fijos se configuran en Mi perfil.</p>`,'Cambiar día')}
 function openMatchToday(){const td=weekday(Date.now());
  modal(`<h2 class="font-display text-3xl font-extrabold leading-none">Tengo partido hoy</h2><p class="text-dim mt-2">Hoy no habrá gimnasio y la sesión pasa al siguiente día disponible. Al terminar podrás registrar el partido.</p>
-  <div class="flex flex-wrap gap-2 mt-4">${Object.entries(SPORTS).filter(([k])=>k!=='other').map(([k,v])=>`<button class="btn-ghost" data-a="wkmatch" data-n="${td}" data-s="${k}">${v.n}</button>`).join('')}</div>`,'Partido hoy')}
+  <div class="flex flex-wrap gap-2 mt-4">${MATCH_SPORTS().map(([k,v])=>`<button class="btn-ghost" data-a="wkmatch" data-n="${td}" data-s="${k}">${v.n}</button>`).join('')}</div>`,'Partido hoy')}
 function sportsCard(u){const sp=u.profile.sports||[];
  return `<section class="card p-5 mt-6"><h2 class="h2">Deportes habituales</h2><p class="text-sm text-dim mt-2">Partidos o deportes fijos cada semana. Ese día no hay gimnasio y la víspera se evita la pierna pesada y el HIIT.</p>
   ${sp.length?`<div class="flex flex-col gap-2 mt-3">${sp.map((x,i)=>`<div class="flex items-center gap-3 p-3 rounded-2xl" style="background:var(--surface2)"><span class="flex-1 font-semibold">${esc(sportLbl(x.sport))} · ${DAY_LONG[x.wd]}</span><button class="btn-text btn-danger" data-a="sportdel" data-i="${i}" aria-label="Quitar ${esc(sportLbl(x.sport))} del ${DAY_LONG[x.wd]}">${ic('close',16)}</button></div>`).join('')}</div>`:''}
-  <form data-sport class="grid grid-cols-2 gap-2 mt-3"><label class="sr-only" for="sp-sport">Deporte</label><select id="sp-sport" name="sport" class="field">${Object.entries(SPORTS).filter(([k])=>k!=='other').map(([k,v])=>`<option value="${k}">${v.n}</option>`).join('')}</select><label class="sr-only" for="sp-wd">Día</label><select id="sp-wd" name="wd" class="field">${DAY_LONG.map((d,i)=>`<option value="${i}">${d}</option>`).join('')}</select><button class="btn-ghost col-span-2" type="submit">Añadir deporte habitual</button></form></section>`}
+  <form data-sport class="grid grid-cols-2 gap-2 mt-3"><label class="sr-only" for="sp-sport">Deporte</label><select id="sp-sport" name="sport" class="field">${MATCH_SPORTS().map(([k,v])=>`<option value="${k}">${v.n}</option>`).join('')}</select><label class="sr-only" for="sp-wd">Día</label><select id="sp-wd" name="wd" class="field">${DAY_LONG.map((d,i)=>`<option value="${i}">${d}</option>`).join('')}</select><button class="btn-ghost col-span-2" type="submit">Añadir deporte habitual</button></form></section>`}
 function vPlan(){const u=U(),pl=u.plan,pr=u.profile,nx=u.next%pl.days.length;
  return `<section class="pt-6"><h1 class="h1">Tu plan</h1>
   <p class="text-dim mt-2">${daysOf(pr)} sesiones por semana, ${pl.split==='ppl'?'Empuje / Tirón / Pierna':'Cuerpo completo'} en fuerza. ${LEVELS[pr.level]}, objetivo: ${GOALS[pr.goal].toLowerCase()}. Máximo ${pr.sessionMin||60} min por sesión.</p></section>
@@ -639,11 +639,14 @@ function actCard(u,ss){const rec=recentActivities(u);
  return `<section class="card p-4 mt-8"><div class="flex items-center gap-3"><span class="flex-1"><b class="block">Actividad reciente</b><span class="block text-sm text-dim">${rec.length?'Deporte de las últimas 48 h':'¿Hiciste deporte fuera del gimnasio?'}</span></span><button class="btn-ghost" data-a="actopen">Registrar actividad</button></div>
   <button class="btn-ghost w-full mt-3" data-a="livepick">${ic('play',18)}Iniciar actividad en vivo</button>
   ${rec.length?`<div class="flex flex-col gap-2 mt-3">${rec.map(a=>actRow(a,false)).join('')}</div>`:''}</section>`}
+// Desplegable de deportes y actividades (los libres aparte).
+function sportSelect(id,cur){const opt=([k,v])=>`<option value="${k}" ${k===cur?'selected':''}>${esc(v.n)}</option>`,all=Object.entries(SPORTS);
+ return `<select id="${id}" name="sport" class="field"><optgroup label="Entrenamiento libre">${all.filter(([,v])=>v.free).map(opt).join('')}</optgroup><optgroup label="Deportes">${all.filter(([,v])=>!v.free).map(opt).join('')}</optgroup></select>`}
 function openActivity(d){d=Object.assign({sport:'futsal',min:60,rpe:7,date:Date.now()},d||{});const sp=SPORTS[d.sport]||SPORTS.other,type=sportType(d).id;
  modal(`<h2 class="font-display text-3xl font-extrabold leading-none">Registrar actividad</h2><p class="text-dim mt-2">Cuestionario después del deporte. Calculamos calorías y fatiga de piernas.</p>
  <form data-act class="flex flex-col gap-5 mt-5">
-  <div><span class="lbl">Deporte</span>${seg('sport',Object.fromEntries(Object.entries(SPORTS).map(([k,v])=>[k,v.n])),d.sport)}</div>
-  ${d.sport==='other'?`<div><label class="lbl" for="act-name">¿Qué deporte?</label><input id="act-name" name="name" class="field" maxlength="40" value="${esc(d.name||'')}" placeholder="Ej.: baloncesto, natación"></div>`:''}
+  <div><label class="lbl" for="act-sport">Actividad</label>${sportSelect('act-sport',d.sport)}</div>
+  ${d.sport==='other'?`<div><label class="lbl" for="act-name">¿Qué actividad?</label><input id="act-name" name="name" class="field" maxlength="40" value="${esc(d.name||'')}" placeholder="Ej.: escalada, baile"></div>`:''}
   <div><span class="lbl">${d.sport==='football'||d.sport==='futsal'?'Posición / tipo de juego':'Tipo de sesión'}</span>${seg('type',Object.fromEntries(sp.types.map(t=>[t.id,t.n])),type)}</div>
   <div class="grid grid-cols-2 gap-3"><div><label class="lbl" for="act-min">Duración</label><div class="relative"><input id="act-min" name="min" type="number" inputmode="numeric" min="5" max="600" class="field pr-14" value="${d.min}" required><span class="absolute right-4 top-1/2 -translate-y-1/2 text-dim text-sm">min</span></div></div>
    ${sp.km?`<div><label class="lbl" for="act-km">Distancia</label><div class="relative"><input id="act-km" name="km" type="number" inputmode="decimal" min="0" max="500" step=".1" class="field pr-12" value="${d.km||''}" placeholder="opcional"><span class="absolute right-4 top-1/2 -translate-y-1/2 text-dim text-sm">km</span></div></div>`:''}</div>
@@ -693,10 +696,11 @@ function hrCard(){const u=U(),sv=hrSaved(),on=HR.state==='on',z=on?hrZoneOf(HR.b
 const LIVE_KEY='forja.live.samples';
 function liveSamples(){try{return JSON.parse(localStorage.getItem(LIVE_KEY)||'[]')}catch(e){return []}}
 function liveStore(){const u=U();if(!u||!u.live)return;try{localStorage.setItem(LIVE_KEY,JSON.stringify(HR.samples.filter(s=>s.t>=u.live.start)))}catch(e){}}
-function openLivePick(sport,type){const sp=SPORTS[sport]?sport:'futsal',tp=type||SPORTS[sp].types[0].id;
+function openLivePick(sport,type,name){const sp=SPORTS[sport]?sport:(U().lastLive||'cardio'),tp=type||SPORTS[sp].types[0].id;
  modal(`<h2 class="font-display text-3xl font-extrabold leading-none">Iniciar actividad en vivo</h2><p class="text-dim mt-2">Cronómetro con pulso en tiempo real. Si la banda se desconecta, la grabación sigue.</p>
- <form data-live class="flex flex-col gap-5 mt-5"><div><span class="lbl">Deporte</span>${seg('sport',Object.fromEntries(Object.entries(SPORTS).filter(([k])=>k!=='other').map(([k,v])=>[k,v.n])),sp)}</div>
-  <div><span class="lbl">${sp==='football'||sp==='futsal'?'Posición / tipo de juego':'Tipo de sesión'}</span>${seg('type',Object.fromEntries(SPORTS[sp].types.map(t=>[t.id,t.n])),tp)}</div>
+ <form data-live class="flex flex-col gap-5 mt-5"><div><label class="lbl" for="lv-sport">Actividad</label>${sportSelect('lv-sport',sp)}</div>
+  ${sp==='other'?`<div><label class="lbl" for="lv-name">¿Qué vas a hacer?</label><input id="lv-name" name="name" class="field" maxlength="40" value="${esc(name||'')}" placeholder="Ej.: escalada, baile"></div>`:''}
+  <div><span class="lbl">${sp==='football'||sp==='futsal'?'Posición / tipo de juego':sp==='cardio'?'Máquina o actividad':'Tipo de sesión'}</span>${seg('type',Object.fromEntries(SPORTS[sp].types.map(t=>[t.id,t.n])),tp)}</div>
   ${hrSaved()?'':'<p class="hint">Sin pulsómetro emparejado: se guardarán el tiempo y las kcal estimadas. Puedes conectarlo en Mi perfil.</p>'}
   <button class="btn-primary w-full" type="submit">${ic('play',20)}Empezar a grabar</button></form>`,'Actividad en vivo')}
 const restDayToday=u=>{const e=weekSchedule(u).find(x=>x.wd===weekday(Date.now()));return !e||e.type==='rest'||e.type==='skip'};
@@ -731,7 +735,7 @@ function openLiveFinish(){const u=U(),L=u.live,s=liveSummary(L,HR.samples,u.prof
   <div><span class="lbl">Esfuerzo percibido (RPE)</span><div class="pain rpe" role="radiogroup">${Array.from({length:10},(_,i)=>`<label><input type="radio" name="rpe" value="${i+1}" ${s.rpe===i+1?'checked':''}><span>${i+1}</span></label>`).join('')}</div><p class="hint">${s.hr?'Propuesto según tu pulso medio. Ajústalo si no encaja.':'1 = muy suave · 5 = moderado · 8 = muy duro · 10 = máximo.'}</p></div>
   <button class="btn-primary w-full" type="submit">Guardar y aplicar a mi rutina</button></form>`,'Finalizar actividad')}
 function finishLive(f){const u=U(),L=u.live,fd=new FormData(f),rpe=+fd.get('rpe')||6,type=String(fd.get('type')||L.type),now=Date.now();
- const s=liveSummary({...L,type},HR.samples,u.profile,now,rpe),a=addActivity(u,{sport:L.sport,type,min:s.min,rpe,date:L.start});
+ const s=liveSummary({...L,type},HR.samples,u.profile,now,rpe),a=addActivity(u,{sport:L.sport,type,name:L.name,min:s.min,rpe,date:L.start});
  Object.assign(a,{kcal:s.kcal,kcalReal:s.kcalReal,hr:s.hr,reconnects:[...(L.reconnects||[])],live:true});
  delete u.live;try{localStorage.removeItem(LIVE_KEY)}catch(e){}keepAwake(false);liveServiceStop();save();closeModal();view='home';render();scrollTo(0,0);showActivityResult(a)}
 let hrPrevState=HR.state,liveBuf=0;
@@ -967,7 +971,7 @@ const A={
 };
 document.addEventListener('click',e=>{const el=e.target.closest('[data-a]');if(!el)return;const fn=A[el.dataset.a];if(fn)fn(el.dataset,el,e)});
 document.addEventListener('submit',e=>{const ck=e.target.closest('form[data-ck]');if(ck){e.preventDefault();saveCheckin(ck);return}
- const lf=e.target.closest('form[data-live]');if(lf){e.preventDefault();const u=U(),fd=new FormData(lf);u.live={sport:String(fd.get('sport')),type:String(fd.get('type')),start:Date.now(),reconnects:[],hadHr:HR.state==='on'};save();closeModal();view='live';render();keepAwake(true);liveServiceStart(liveTitle(u.live),liveBody(u.live));if(hrSaved()&&HR.state!=='on')hrResume();return}
+ const lf=e.target.closest('form[data-live]');if(lf){e.preventDefault();const u=U(),fd=new FormData(lf);const sport=String(fd.get('sport')),name=String(fd.get('name')||'').trim().slice(0,40);u.live={sport,type:String(fd.get('type')),name:sport==='other'&&name?name:undefined,start:Date.now(),reconnects:[],hadHr:HR.state==='on'};u.lastLive=sport;save();closeModal();view='live';render();keepAwake(true);liveServiceStart(liveTitle(u.live),liveBody(u.live));if(hrSaved()&&HR.state!=='on')hrResume();return}
  const lfin=e.target.closest('form[data-livefin]');if(lfin){e.preventDefault();finishLive(lfin);return}
  const sf=e.target.closest('form[data-sport]');if(sf){e.preventDefault();const u=U(),fd=new FormData(sf),x={sport:String(fd.get('sport')),wd:+fd.get('wd')};u.profile.sports=(u.profile.sports||[]).filter(y=>y.wd!==x.wd);u.profile.sports.push(x);u.profile.sports.sort((a,b)=>a.wd-b.wd);save();render();toast(`${sportLbl(x.sport)} los ${DAY_LONG[x.wd]} añadido.`);return}
  const af=e.target.closest('form[data-act]');if(af){e.preventDefault();const u=U(),a=addActivity(u,readActivity(af));save();closeModal();render();showActivityResult(a);return}
@@ -980,7 +984,7 @@ const f=e.target.closest('form[data-form]');if(!f)return;e.preventDefault();cons
 document.addEventListener('input',e=>{const el=e.target.closest('[data-in]');if(!el)return;const a=U()&&U().active;if(!a)return;const v=el.value.replace(',','.').trim();const n=v===''?null:parseFloat(v);if(v!==''&&isNaN(n))return;
  const s=a.items[a.cur].sets[+el.dataset.k];if(el.dataset.in==='w')s.w=n;else s.r=n==null?0:Math.round(n);saveSoon()});
 ['input','change'].forEach(t=>document.addEventListener(t,e=>{const f=e.target.closest&&e.target.closest('form[data-form]');if(f)updatePreview(f)}));
-document.addEventListener('change',e=>{const lp=e.target.closest&&e.target.closest('form[data-live]');if(lp&&e.target.name==='sport'){openLivePick(e.target.value);return}
+document.addEventListener('change',e=>{const lp=e.target.closest&&e.target.closest('form[data-live]');if(lp&&e.target.name==='sport'){openLivePick(e.target.value,'',(lp.querySelector('[name=name]')||{}).value);return}
  const f=e.target.closest&&e.target.closest('form[data-act]');if(f&&e.target.name==='sport'){const d=readActivity(f);d.type='';openActivity(d)}});
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){if($('#layer').innerHTML)closeModal()}});
 setInterval(()=>{const el=$('#elapsed'),u=U();if(el&&u&&u.active)el.textContent=fmtDur(Date.now()-u.active.start);updClock();updLive()},1000);

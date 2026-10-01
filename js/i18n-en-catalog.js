@@ -153,6 +153,14 @@ const SPORT_EN={football:['Football',{gk:'Goalkeeper',def:'Defender',mid:'Midfie
  running:['Running',{easy:'Easy run',tempo:'Tempo',intervals:'Intervals',long:'Long run',trail:'Trail'}],
  cycling:['Cycling',{easy:'Leisure ride',road:'Moderate ride',intervals:'Intervals',mtb:'Mountain bike (MTB)'}],
  padel:['Padel',{rec:'Casual',comp:'Competitive'}],
+ cardio:['Free cardio',{any:'Any cardio',treadmill:'Treadmill',bike:'Bike',elliptical:'Elliptical',rower:'Rower',stair:'Stair climber',walk:'Walk'}],
+ strength:['Weights or circuit',{weights:'Weights',circuit:'Circuit or functional',class:'Group class'}],
+ swimming:['Swimming',{easy:'Easy',hard:'Hard'}],
+ tennis:['Tennis',{rec:'Casual',comp:'Competitive'}],
+ basketball:['Basketball',{rec:'Casual',game:'Game'}],
+ combat:['Boxing or martial arts',{bag:'Bag work and technique',spar:'Sparring or fight'}],
+ hiking:['Hiking',{flat:'Flat',hills:'Hilly'}],
+ yoga:['Yoga or mobility',{soft:'Gentle',power:'Dynamic'}],
  other:['Other',{steady:'Steady moderate',hiit:'High-intensity intermittent',skill:'Skill-based or low intensity'}]};
 Object.entries(SPORTS).forEach(([k,s])=>{const t=SPORT_EN[k];if(!t)return;add(s.n,t[0]);s.types.forEach(x=>add(x.n,t[1][x.id]))});
 // Músculos, regiones y grupos

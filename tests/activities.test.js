@@ -105,3 +105,19 @@ test('balance calórico: el deporte de hoy se suma al gasto antes del factor del
   // la actividad de ayer no cuenta hoy
   assert.equal(dayKcal(u, NOW + DAY).sport, 0);
 });
+
+test('actividades libres: cardio y demás tienen tipos válidos y no cuentan como partido', () => {
+  const SPORTS = c.get('SPORTS');
+  const MATCH_SPORTS = c.get('MATCH_SPORTS');
+  for (const [k, s] of Object.entries(SPORTS)) {
+    assert.ok(s.types.length, k);
+    for (const t of s.types) assert.ok(t.met > 0 && t.legs >= 0, `${k}.${t.id}`);
+  }
+  const ids = MATCH_SPORTS().map(([k]) => k);
+  for (const k of ['cardio', 'strength', 'yoga', 'hiking', 'other']) assert.ok(!ids.includes(k), k);
+  for (const k of ['futsal', 'football', 'tennis', 'basketball']) assert.ok(ids.includes(k), k);
+  const pr = sampleProfile({ weight: 80 });
+  const yoga = activityCalc({ sport: 'yoga', type: 'soft', min: 60, rpe: 4 }, pr);
+  const bike = activityCalc({ sport: 'cardio', type: 'bike', min: 60, rpe: 4 }, pr);
+  assert.ok(yoga.kcal < bike.kcal && yoga.fatigue < bike.fatigue);
+});
