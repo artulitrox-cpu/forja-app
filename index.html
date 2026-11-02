@@ -188,24 +188,24 @@ details[open] .chev{transform:rotate(180deg)}
 <div id="seq"></div>
 <div id="toast"></div>
 
-<script src="js/i18n-en.js?v=202611020447"></script>
-<script src="js/i18n.js?v=202611020447"></script>
-<script src="js/catalog.js?v=202611020447"></script>
-<script src="js/figures.js?v=202611020447"></script>
-<script src="js/merge.js?v=202611020447"></script>
-<script src="js/plan.js?v=202611020447"></script>
-<script src="js/injuries.js?v=202611020447"></script>
-<script src="js/progress.js?v=202611020447"></script>
-<script src="js/nutrition.js?v=202611020447"></script>
-<script src="js/activities.js?v=202611020447"></script>
-<script src="js/bodymap.js?v=202611020447"></script>
-<script src="js/sync.js?v=202611020447"></script>
+<script src="js/i18n-en.js?v=202611020532"></script>
+<script src="js/i18n.js?v=202611020532"></script>
+<script src="js/catalog.js?v=202611020532"></script>
+<script src="js/figures.js?v=202611020532"></script>
+<script src="js/merge.js?v=202611020532"></script>
+<script src="js/plan.js?v=202611020532"></script>
+<script src="js/injuries.js?v=202611020532"></script>
+<script src="js/progress.js?v=202611020532"></script>
+<script src="js/nutrition.js?v=202611020532"></script>
+<script src="js/activities.js?v=202611020532"></script>
+<script src="js/bodymap.js?v=202611020532"></script>
+<script src="js/sync.js?v=202611020532"></script>
 <!-- Dentro de la app de Android (Capacitor) se cargan el núcleo y los plugins nativos -->
 <script>if(window.Capacitor&&Capacitor.isNativePlatform&&Capacitor.isNativePlatform())document.write('<script src="js/vendor/capacitor.js"><\/script><script src="js/vendor/ble.js"><\/script><script src="js/vendor/fgs.js"><\/script><script src="js/vendor/localnotif.js"><\/script>')</script>
-<script src="js/timer.js?v=202611020447"></script>
-<script src="js/push.js?v=202611020447"></script>
-<script src="js/hr.js?v=202611020447"></script>
-<script src="js/i18n-en-catalog.js?v=202611020447"></script>
+<script src="js/timer.js?v=202611020532"></script>
+<script src="js/push.js?v=202611020532"></script>
+<script src="js/hr.js?v=202611020532"></script>
+<script src="js/i18n-en-catalog.js?v=202611020532"></script>
 <script>
 
 
@@ -907,7 +907,8 @@ function finish(){const u=U(),a=u.active;normActive(a);seqStop(false);
  const changes=[];let vol=0,sets=0;const h={date:Date.now(),dur:Date.now()-a.start,day:activeName(u,a),kind:a.kind||'strength',items:[]};
  a.items.forEach(it=>{const ex=X(it.ex),done=it.sets.filter(s=>s.rt);if(!done.length)return;sets+=done.length;
   done.forEach(s=>{if(!ex.time)vol+=(+s.w||0)*(+s.r||0)});
-  h.items.push({ex:it.ex,sets:done.map(({w,r,rt})=>({w,r,rt}))});changes.push({ex,...(a.deload?{note:'Sin cambios (descarga)',avg:0,next:loadTxt(ex,prog(u,ex,it.p),u.profile)}:progress(u,ex,it,done))})});
+  h.items.push({ex:it.ex,sets:done.map(({w,r,rt})=>({w,r,rt}))});// Con descarga o con la pierna rebajada por fatiga, los pesos no eran los habituales: no cambian la referencia.
+  changes.push({ex,...(a.deload||it.leg?{note:a.deload?'Sin cambios (descarga)':`Sin cambios (pierna al ${100-it.leg} % por fatiga)`,avg:0,next:loadTxt(ex,prog(u,ex,it.p),u.profile)}:progress(u,ex,it,done))})});
  const c=a.cond&&a.cond.done?a.cond:null,cNote=c?(a.deload?'Sin cambios (descarga)':condProgress(u,c,c.rt||'ok')):'';
  h.blocks={mob:!!a.mob.done,stretch:!!a.stretch.done,cond:c?{kind:c.kind,machine:c.machine,min:c.min,rt:c.rt||'ok'}:null};h.cardioMin=c?c.min:0;
  h.vol=vol;h.sets=sets;h.est=a.est||itemsEst(a);const prs=newRecords(u.history,h);if(prs.length)h.prs=prs.map(x=>x.ex);const hr=typeof hrStats==='function'?hrStats(a.start):null;if(hr)h.hr=hr;{const ks=HR.samples.filter(x=>x.t>=a.start);if(ks.length>1){const r=kcalFromSamples(ks,u.profile);if(r.coveredMs>=60000)h.kcalReal=Math.round(r.kcal)}}u.history.unshift(h);
