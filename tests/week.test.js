@@ -46,9 +46,9 @@ test('el partido cuenta como día de cardio', () => {
 });
 
 test('víspera de partido: la sesión de pierna se intercambia con una sin pierna', () => {
-  // PPL (int, fat, 4 días): lun Empuje, mar Tirón, jue Pierna, vie Empuje B. Partido el viernes → jueves es víspera.
+  // Torso/pierna (int, fat, 4 días de fuerza). Partido el viernes → el jueves es víspera y no puede ser de pierna.
   const u = mkUser({ avail: [0, 1, 3, 4, 5], sports: [{ sport: 'futsal', wd: 4 }] });
-  assert.equal(u.plan.split, 'ppl');
+  assert.equal(u.plan.split, 'ul');
   const s = weekSchedule(u, WS);
   const eve = at(s, 3);
   assert.equal(eve.type, 'strength');

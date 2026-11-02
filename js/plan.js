@@ -41,7 +41,7 @@ const GOAL_KCAL={fat:.8,hyp:1.1,maint:1};
 function kcalTarget(pr){const t=tdee(pr);return t?Math.round(t*((GOAL_KCAL[pr.goal]||1)+(pr.kcalAdj||0))/10)*10:null}
 const nf=n=>Number(n).toLocaleString(LOC(),{maximumFractionDigits:1});
 function adjNotes(pr){const n=[],b=bmi(pr),a=pr.age||0;
- n.push({fat:'Perder grasa: rangos de 10 a 15 reps y descansos cortos para más gasto por sesión.',hyp:'Masa muscular: básicos en 8 a 12 reps a RPE 8 y aislamientos en 10 a 15.',maint:'Mantenimiento: volumen moderado a RPE 7,5 para salud y constancia.'}[pr.goal]||'');
+ n.push({fat:'Perder grasa: básicos en 8 a 12 reps a RPE 7,5 para conservar el músculo; el gasto extra lo pone el cardio.',hyp:'Masa muscular: básicos en 8 a 12 reps a RPE 8 con 2 min de descanso y aislamientos en 10 a 15.',maint:'Mantenimiento: volumen moderado a RPE 7,5 para salud y constancia.'}[pr.goal]||'');
  if(pr.level==='beg')n.push('Principiante: una serie menos y RPE un punto más bajo para aprender la técnica.');
  if(pr.level==='adv')n.push('Avanzado: una serie extra en los ejercicios básicos.');
  if(a>=50)n.push('50 años o más: RPE medio punto más bajo y 15 s más de descanso.');
@@ -61,6 +61,8 @@ function startW(ex,pr){if(!hasBio(pr)||ex.eq==='body')return null;const r=(RATIO
  const st=ex.eq==='db'?1:2.5;w=Math.max(st,Math.round(w/st)*st);if(ex.eq==='bar')w=Math.max(20,w);return w}
 /* ---- Periodización por mesociclos ---- */
 const WMS=7*864e5;
+// Semanas por bloque (la última es de descarga): 6 para principiantes e intermedios, 5 para avanzados.
+const cycleLen=pr=>pr&&pr.level==='adv'?5:6;
 function wk(u,ws=weekStart()){const c=u.cycle;let abs=Math.round((ws-c.start)/WMS);if(abs<0){c.start=ws;abs=0}
  const week=abs%c.len+1;return {abs,week,len:c.len,cyc:Math.floor(abs/c.len),deload:week===c.len}}
 const curWeek=()=>{const u=typeof U==='function'?U():null;return u&&u.cycle?wk(u):null};
@@ -76,15 +78,25 @@ const WEEK={2:['Lun','Jue'],3:['Lun','Mié','Vie'],4:['Lun','Mar','Jue','Vie'],5
 
 /* ============ Generador de planes ============ */
 const TPL={
- push:{name:'Empuje',focus:'Pecho, hombro y tríceps',slots:['chest_press','shoulder_press','incline_press','lateral','triceps']},
+ push:{name:'Empuje',focus:'Pecho, hombro y tríceps',slots:['chest_press','incline_press','lateral','triceps','chest_fly']},
  pull:{name:'Tirón',focus:'Espalda y bíceps',slots:['vertical_pull','horizontal_row','rear_delt','biceps','horizontal_row']},
  legs:{name:'Pierna',focus:'Cuádriceps, glúteos e isquios',slots:['squat','hinge','lunge','hamstring_curl','calves']},
  fbA:{name:'Cuerpo completo A',focus:'Sentadilla, empuje y remo',slots:['squat','chest_press','horizontal_row','shoulder_press','biceps']},
  fbB:{name:'Cuerpo completo B',focus:'Bisagra, tirón y zancada',slots:['hinge','incline_press','vertical_pull','lunge','triceps']},
- fbC:{name:'Cuerpo completo C',focus:'Pierna, hombro y espalda',slots:['squat','shoulder_press','horizontal_row','hamstring_curl','lateral']}
+ fbC:{name:'Cuerpo completo C',focus:'Pierna, hombro y espalda',slots:['squat','shoulder_press','horizontal_row','hamstring_curl','lateral']},
+ // Torso/pierna (4 días) y torso/pierna + empuje/tirón/pierna (5 días): cada músculo 2 veces por semana.
+ upA:{name:'Torso A',focus:'Pecho, espalda y hombro',slots:['chest_press','horizontal_row','shoulder_press','vertical_pull','biceps']},
+ upB:{name:'Torso B',focus:'Pecho superior, espalda y brazos',slots:['incline_press','vertical_pull','horizontal_row','chest_fly','lateral']},
+ loA:{name:'Pierna A',focus:'Cuádriceps, isquios y gemelos',slots:['squat','hamstring_curl','lunge','calves','quad_iso']},
+ loB:{name:'Pierna B',focus:'Glúteos, isquios y cuádriceps',slots:['hinge','squat','hamstring_curl','calves','glute_iso'],offs:{squat:1}}
 };
+// Días de cada reparto y nombres propios dentro de él.
+const SPLITS={fb:['fbA','fbB','fbC'],ul:['upA','loA','upB','loB'],ulppl:['upA','loA','push','pull','legs'],ppl:['push','pull','legs']};
+const SPLIT_NAMES={ulppl:{upA:'Torso',legs:'Pierna B'}};
+// Principiantes y 3 días o menos: cuerpo completo. 4 días: torso/pierna. 5: torso/pierna + empuje/tirón/pierna. 6: empuje/tirón/pierna ×2.
+const splitFor=(pr,nd)=>pr.level==='beg'||nd<=3?'fb':nd===4?'ul':nd===5?'ulppl':'ppl';
 // Accesorios extra al final de cada plantilla cuando el objetivo es ganar músculo (los primeros que quita el recorte por tiempo).
-const TPL_HYP={push:['chest_fly'],legs:['quad_iso','glute_iso'],fbA:['quad_iso'],fbB:['glute_iso'],fbC:['chest_fly']};
+const TPL_HYP={push:['triceps'],legs:['quad_iso','glute_iso'],fbA:['quad_iso'],fbB:['glute_iso'],fbC:['chest_fly'],upA:['triceps','lateral'],upB:['triceps','biceps'],loA:['glute_iso'],loB:['quad_iso']};
 // Ejercicios principales: se mantienen entre bloques para medir el progreso.
 const MAIN_SLOTS=new Set(['squat','hinge','chest_press','incline_press','shoulder_press','horizontal_row','vertical_pull']);
 // Preferencia de material por nivel (más alto = preferido). El avanzado distingue principales y accesorios.
@@ -102,28 +114,30 @@ function pickEx(slot,pr,{off=0,cyc=0,exclude=[]}={}){
  if(tier.length<2&&shift>0)tier=scored.filter(x=>x.sc>=top-1);
  return tier[shift%tier.length].e}
 function genPlan(pr,{swaps={},cyc=0,split=null,nd=strengthDays(pr,daysOf(pr))}={}){
- const ppl=split?split==='ppl':pr.level!=='beg'&&nd>=4;
- const keys=ppl?['push','pull','legs']:['fbA','fbB','fbC'];
+ const sp=split||splitFor(pr,nd),ppl=sp==='ppl',keys=SPLITS[sp]||SPLITS.fb;
  const count={beg:4,int:5,adv:5}[pr.level]||4;
  const days=[];
  for(let i=0;i<Math.max(1,nd);i++){
-  const k=keys[i%3],tpl=TPL[k],round=Math.floor(i/3),tag=k+(ppl&&round?'B':''),used={},items=[];
+  const k=keys[i%keys.length],tpl=TPL[k],round=Math.floor(i/keys.length),tag=k+(ppl&&round?'B':''),used={},items=[];
   const slots=[...tpl.slots.slice(0,count),...(pr.goal==='hyp'&&TPL_HYP[k]||[]),'core'];
-  slots.forEach((sl,pos)=>{const key=`${tag}:${sl}:${pos}`,off=(used[sl]||0)+(ppl?round:0);used[sl]=(used[sl]||0)+1;
+  slots.forEach((sl,pos)=>{const key=`${tag}:${sl}:${pos}`,off=(used[sl]||0)+(ppl?round:0)+((tpl.offs||{})[sl]||0);used[sl]=(used[sl]||0)+1;
    const exclude=items.map(x=>x.ex),sw=swaps[key]&&X(swaps[key]);
    const ex=sw&&!exclude.includes(sw.id)?sw:pickEx(sl,pr,{off,cyc,exclude});
    if(ex)items.push({slot:sl,ex:ex.id,key})});
-  days.push({key:k,name:ppl?`${tpl.name} ${round?'B':'A'}`:tpl.name,focus:tpl.focus,items});
+  days.push({key:k,name:ppl?`${tpl.name} ${round?'B':'A'}`:(SPLIT_NAMES[sp]||{})[k]||tpl.name,focus:tpl.focus,items});
  }
- return {split:ppl?'ppl':'fb',days,weekdays:WEEK[Math.max(2,Math.min(6,nd))]};
+ return {split:sp,days,weekdays:WEEK[Math.max(2,Math.min(6,nd))]};
 }
 function presc(ex,pr,wi=curWeek()){
- const B={str:{c:[4,4,6,8,150],i:[3,8,10,8,90]},hyp:{c:[3,8,12,8,90],i:[3,10,15,8.5,60]},fat:{c:[3,10,12,7,60],i:[3,12,15,7,45]},maint:{c:[3,8,12,7.5,90],i:[2,10,15,7.5,60]},end:{c:[3,15,20,7,45],i:[2,15,20,7,30]}}[pr.goal];
+ // Perder grasa usa los mismos rangos que masa muscular: en déficit, lo que conserva el músculo es seguir entrenando con carga.
+ const B={str:{c:[4,4,6,8,150],i:[3,8,10,8,90]},hyp:{c:[3,8,12,8,120],i:[3,10,15,8.5,60]},fat:{c:[3,8,12,7.5,90],i:[3,10,15,7.5,60]},maint:{c:[3,8,12,7.5,90],i:[2,10,15,7.5,60]},end:{c:[3,15,20,7,45],i:[2,15,20,7,30]}}[pr.goal];
  let [sets,min,max,rpe,rest]=ex.iso?B.i:B.c;
  if(pr.level==='beg'){sets=Math.max(2,sets-1);rpe-=1}
  if(pr.level==='adv'&&!ex.iso){sets+=1;rpe=Math.min(9,rpe+.5)}
  const age=pr.age||0,b=bmi(pr);
  if(age>=50){rpe-=.5;rest+=15}
+ // Sesiones de 45 min o menos: descansos de básicos de 90 s como máximo para que quepa el trabajo.
+ if((pr.sessionMin||60)<=45&&!ex.iso)rest=Math.min(rest,90);
  if(age>=65&&!ex.iso)sets=Math.max(2,sets-1);
  if(b&&b>=30&&LOWER.has(ex.slot)&&!ex.iso){min+=2;max+=2;rpe-=.5}
  if(ex.time){min={beg:20,int:30,adv:40}[pr.level];max=min+20;rest=Math.min(rest,60)}
@@ -172,7 +186,8 @@ function weekSchedule(u,ws=weekStart()){
  let act=all.filter(d=>matches[d]==null&&!skips.has(d));
  const rest7=act.length>MAX_SESSIONS;if(rest7)act=act.filter(d=>d!==6);
  const n=act.length,F=strengthDays(pr,n),pos=spread(n,F);
- const fallback=u.plan.split==='ppl'&&F<3;
+ // Con pocos días de fuerza esa semana, el reparto dividido no cubre todo el cuerpo: se usa cuerpo completo.
+ const sp=u.plan.split,fallback=((sp==='ppl'||sp==='ulppl')&&F<3)||(sp==='ul'&&F<2);
  const tpls=fallback?genPlan(pr,{swaps:u.swaps||{},cyc:u.cycle?wk(u).cyc:0,split:'fb',nd:Math.max(1,F)}).days:u.plan.days;
  const end=ws+7*DAY_MS,hist=(u.history||[]).filter(h=>h.date>=ws&&h.date<end).sort((a,b)=>a.date-b.date);
  const doneS=hist.filter(h=>h.kind!=='cardio'),doneC=hist.filter(h=>h.kind==='cardio');
@@ -192,13 +207,32 @@ function weekSchedule(u,ws=weekStart()){
  if(rest7)out.push({wd:6,type:'rest',done:false,name:'Descanso'});
  out.sort((a,b)=>a.wd-b.wd);
  preMatch(u,out,matches);
+ assignPrehab(u,out,matches);
  assignConditioning(u,out,ws);
  return out}
-// Víspera de partido: sin pierna principal. Se intercambia con una sesión posterior sin pierna o queda en tren superior.
-function preMatch(u,out,matches){out.forEach(e=>{if(e.type!=='strength'||e.done||!e.tpl||matches[e.wd+1]==null||!isLegTpl(e.tpl))return;
- const swap=out.find(o=>o.wd>e.wd&&o.type==='strength'&&!o.done&&o.tpl&&!isLegTpl(o.tpl)&&matches[o.wd+1]==null);
- if(swap){[e.tpl,swap.tpl]=[swap.tpl,e.tpl];[e.dayIdx,swap.dayIdx]=[swap.dayIdx,e.dayIdx];e.name=e.tpl.name;swap.name=swap.tpl.name}
- else{e.tpl=upperTpl(u,e.tpl);e.name=e.tpl.name;e.dayIdx=null}})}
+// Orden de las sesiones pendientes de la semana. Nunca pierna la víspera de un partido; además se evita pierna el día después
+// del partido y dos días seguidos del mismo tipo, respetando en lo posible la rotación. Se prueban todas las ordenaciones (≤ 5 sesiones).
+function weekCost(seq,matches){let c=0;seq.forEach((x,i)=>{const leg=isLegTpl(x.tpl),p=seq[i-1];
+ if(leg&&matches[x.wd+1]!=null)c+=100;if(leg&&matches[x.wd-1]!=null)c+=3;
+ if(p&&p.wd===x.wd-1){const pl=isLegTpl(p.tpl);if(pl&&leg)c+=4;else if(!pl&&!leg)c+=1}
+ c+=.01*Math.abs(x.k-i)});return c}
+function perms(a){if(a.length<=1)return [a];return a.flatMap((x,i)=>perms([...a.slice(0,i),...a.slice(i+1)]).map(p=>[x,...p]))}
+// Víspera de partido: sin pierna principal. Si no hay otra sesión con la que cambiarla, queda en tren superior.
+function preMatch(u,out,matches){const open=out.filter(e=>e.type==='strength'&&!e.done&&e.tpl);
+ if(open.length>=2&&open.length<=5&&open.some(e=>!isLegTpl(e.tpl))){
+  const slots=open.map((e,k)=>({tpl:e.tpl,dayIdx:e.dayIdx,k}));let best=null,bc=Infinity;
+  for(const p of perms(slots)){const cost=weekCost(p.map((s,i)=>({wd:open[i].wd,tpl:s.tpl,k:s.k})),matches);if(cost<bc-1e-9){bc=cost;best=p}}
+  best.forEach((s,i)=>{const e=open[i];e.tpl=s.tpl;e.dayIdx=s.dayIdx;e.name=s.tpl.name})}
+ open.forEach(e=>{if(matches[e.wd+1]!=null&&isLegTpl(e.tpl)){e.tpl=upperTpl(u,e.tpl);e.name=e.tpl.name;e.dayIdx=null}})}
+/* ---- Prevención de lesiones para deportistas ----
+   Con un deporte habitual (o partidos esa semana): curl nórdico (isquios), plancha Copenhague (ingle) y gemelo a una pierna
+   en 2 sesiones de fuerza separadas, nunca la víspera ni el día de un partido. */
+const PREHAB=[{ex:'nordic',min:3,max:6},{ex:'copenhagen',min:20,max:30},{ex:'calf_body',min:12,max:15}];
+function assignPrehab(u,out,matches){if(!(u.profile.sports||[]).length&&!Object.keys(matches).length)return;
+ const at=wd=>out.find(x=>x.wd===wd),legNext=e=>{const n=at(e.wd+1);return !!n&&n.type==='strength'&&!!n.tpl&&isLegTpl(n.tpl)};
+ const cand=out.filter(e=>e.type==='strength'&&!e.done&&e.tpl&&matches[e.wd+1]==null).sort((a,b)=>legNext(a)-legNext(b)||a.wd-b.wd),pick=[];
+ for(const e of cand){if(pick.length>=2)break;if(pick.every(p=>Math.abs(p.wd-e.wd)>=2))pick.push(e)}
+ pick.forEach(e=>{e.prehab=true})}
 // Días libres de la semana después de "desde": sin gimnasio, partido ni "no voy".
 function freeDays(u,ws,from){const w=weekObj(u,ws),m=weekMatches(u,ws),used=new Set([...weekDaysFor(u,ws),...w.extras,...w.skips]);
  return [0,1,2,3,4,5,6].filter(d=>d>from&&!used.has(d)&&m[d]==null)}
@@ -243,6 +277,18 @@ function migrateUser(u){if(u.v>=2)return false;const pr=u.profile;
    const t=nd.items.find(x=>x.slot===it.slot&&!u.swaps[x.key]);if(t)u.swaps[t.key]=it.ex})});
  u.v=2;regenPlan(u);
  u.notice='Tu plan se ha actualizado con cardio, movilidad y tu límite de tiempo. Revísalo en Perfil.';
+ u.updatedAt=Date.now();return true}
+// Plan v3: torso/pierna con 4–5 días, empuje con un press menos y bloques de 5–6 semanas.
+// Los ejercicios que el usuario había cambiado se conservan en los huecos equivalentes del plan nuevo.
+const PLAN_V=3;
+function upgradePlan(u){if(!u||!u.profile||!u.plan||(u.planV||0)>=PLAN_V)return false;const pr=u.profile;
+ const bySlot={};Object.entries(u.swaps||{}).forEach(([k,id])=>{const sl=k.split(':')[1];if(sl&&X(id))bySlot[sl]=id});
+ const before=u.plan.split;
+ if(u.cycle){Object.assign(u.cycle,{len:cycleLen(pr),start:weekStart(),applied:0,seen:-1,boostMsg:''})}
+ u.swaps=u.swaps||{};const fresh=genPlan(pr,{swaps:u.swaps,cyc:0});
+ fresh.days.forEach(d=>d.items.forEach(it=>{const id=bySlot[it.slot];if(id&&!u.swaps[it.key]&&!d.items.some(x=>x.ex===id))u.swaps[it.key]=id}));
+ regenPlan(u);u.next=0;u.planV=PLAN_V;
+ u.notice=u.plan.split!==before&&u.plan.split!=='fb'?'Plan mejorado: ahora entrenas cada músculo 2 veces por semana (torso y pierna), con bloques más largos y calentamiento en los básicos. Tus cambios de ejercicio se mantienen.':'Plan mejorado: bloques más largos, calentamiento en los básicos y descansos ajustados a tu objetivo.';
  u.updatedAt=Date.now();return true}
 // Solo se guardan las 8 semanas editadas más recientes.
 function pruneWeeks(u){const ks=Object.keys(u.weeks||{}).sort().reverse();ks.slice(8).forEach(k=>delete u.weeks[k])}
@@ -302,7 +348,7 @@ function condProgress(u,c,rt){u.cprog=u.cprog||{};
  return 'Se mantiene'}
 
 /* ============ Movilidad y estiramientos (spec §6) ============ */
-const LOWER_SLOTS=new Set([...LOWER,'quad_iso','glute_iso']);
+const LOWER_SLOTS=new Set([...LOWER,'quad_iso','glute_iso','prehab']);
 function mobFor(slots,kind,short=false){const low=slots.some(s=>LOWER_SLOTS.has(s)),up=slots.some(s=>!LOWER_SLOTS.has(s)&&s!=='core');
  const zones=kind==='cardio'?['general','cadera','tobillo']:[...(low?['cadera','tobillo']:[]),...(up?['hombro','toracica']:[]),'general'];
  const n=kind==='cardio'||short?4:6,lists=zones.map(z=>MOB.filter(m=>m.zone===z)),out=[];
@@ -330,8 +376,11 @@ function buildSession(u,e,{ws=weekStart(),now=Date.now()}={}){const pr=u.profile
  if(legAdj.pct>=15&&cond&&cond.kind!=='liss'){const g=FINISH_MIN[pr.goal]?pr.goal:'maint';
   cond={kind:'liss',slot:cond.slot,machine:cond.machine,min:lissMin(u,cond.slot==='day'?CARDIO_DAY_MIN[g]:FINISH_MIN[g])};
   notes.push(`HIIT cambiado a cardio suave por fatiga de piernas (${legAdj.sport}).`)}
+ if(e.prehab&&kind==='strength'&&!(legAdj.pct>=15)){const have=new Set(raw.map(it=>it.ex)),hasCalf=raw.some(it=>it.slot==='calves');
+  const pre=PREHAB.filter(p=>!have.has(p.ex)&&!(p.ex==='calf_body'&&hasCalf)&&!(inj&&exBlocked(X(p.ex),map))).map(p=>({slot:'prehab',ex:p.ex,key:'prehab:'+p.ex,pre:p}));
+  const ci=raw.findIndex(it=>it.slot==='core');raw=ci<0?[...raw,...pre]:[...raw.slice(0,ci),...pre,...raw.slice(ci)]}
  const s={kind,name:kind==='cardio'?'Cardio':e.tpl.name,focus:kind==='cardio'?'':e.tpl.focus,dayIdx:e.dayIdx??null,deload:!!(wi&&wi.deload),
-  items:raw.map(it=>{const p=presc(X(it.ex),pr,wi);return {slot:it.slot,ex:it.ex,key:it.key,sub:it.sub,warn:it.warn,fat:it.fat,p:it.fat&&it.fat.less?{...p,sets:Math.max(2,p.sets-1)}:p}}),cond,omitted,notes,legAdj};
+  items:raw.map(it=>{const p=it.pre?{sets:2,min:it.pre.min,max:it.pre.max,rpe:7,rest:60}:presc(X(it.ex),pr,wi);return {slot:it.slot,ex:it.ex,key:it.key,sub:it.sub,warn:it.warn,fat:it.fat,pre:!!it.pre,p:it.fat&&it.fat.less?{...p,sets:Math.max(2,p.sets-1)}:p}}),cond,omitted,notes,legAdj};
  if(s.cond)s.focus=condLabel(s.cond);
  s.mob=mobFor(s.items.map(it=>it.slot),kind,short);
  const mus=new Set();s.items.forEach(it=>X(it.ex).m.forEach(m=>mus.add(m)));if(s.cond&&CARDIO_M[s.cond.machine])CARDIO_M[s.cond.machine].mus.forEach(m=>mus.add(m));
@@ -365,12 +414,15 @@ function fitSession(s,limit){const over=()=>(s.est=estSession(s)).total>limit,no
  if(over()&&s.cond){const c=s.cond,before=c.min;
   while(over()&&c.min>8){if(c.rounds){if(c.rounds<=2)break;c.rounds--;c.min=Math.max(8,protoMin(c.rounds,c.work,c.rest))}else c.min--}
   if(c.min<before)note(`Cardio acortado a ${c.min} min para caber en tu tiempo.`)}
- const iso=it=>!MAIN_SLOTS.has(it.slot);
+ // La prevención de lesiones no se recorta: antes salen los accesorios.
+ const iso=it=>!MAIN_SLOTS.has(it.slot)&&it.slot!=='prehab';
  // Quita el último accesorio; el core, al final.
  const removeOne=()=>{let i=-1;for(let k=s.items.length-1;k>=0;k--)if(iso(s.items[k])&&s.items[k].slot!=='core'){i=k;break}
   if(i<0)i=s.items.findIndex(it=>it.slot==='core');if(i<0)return false;
   const [r]=s.items.splice(i,1);note(`Sin ${X(r.ex).n} para caber en tu tiempo.`);return true};
- // 2) Un aislamiento menos · 3) una serie menos en aislamientos · 4) descansos de 45 s · y vuelta a 2).
+ // 2) Descansos de los básicos a 90 s: antes que quitar ejercicios, se acorta el descanso extra de 2 min.
+ if(over()){let ch=0;s.items.forEach(it=>{if(!iso(it)&&it.p.rest>90){it.p={...it.p,rest:90};ch=1}});if(ch)note('Descansos de 90 s en los básicos para que quepa todo.')}
+ // 3) Un aislamiento menos · 4) una serie menos en aislamientos · 5) descansos de 45 s · y vuelta a 3).
  if(over())removeOne();
  if(over()){let ch=0;s.items.forEach(it=>{if(iso(it)&&it.p.sets>2){it.p={...it.p,sets:it.p.sets-1};ch=1}});if(ch)note('Una serie menos en los aislamientos.')}
  if(over()){let ch=0;s.items.forEach(it=>{if(iso(it)&&it.p.rest>45){it.p={...it.p,rest:45};ch=1}});if(ch)note('Descansos de 45 s en los aislamientos.')}

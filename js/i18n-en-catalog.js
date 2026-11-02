@@ -92,6 +92,7 @@ const EX_EN={
  cable_kick:['Cable glute kickback','With the ankle strap on the low pulley, drive your leg back and up by extending your hip.','Torso still and core braced.'],
  sl_bridge:['Single-leg glute bridge','Lying on your back with one leg straight, lift your hips pushing through the other heel.','Hips rise level, without rotating.'],
  crunch_machine:['Machine crunch','Seated with your feet anchored, crunch toward your knees and return under control.','Exhale on the way down and don’t pull with your arms.'],
+ copenhagen:['Copenhagen plank','Side-on with your forearm on the floor and your top leg resting on a bench, lift your hips and keep your body straight. The bottom leg hangs free.','Start with your knee on the bench (easy version); with your ankle it’s harder. No groin pain.'],
  woodchop:['Cable woodchop','Side-on to the high pulley, pull the handle diagonally to the opposite hip rotating your torso.','Arms almost straight: the rotation comes from your torso.']};
 EX.forEach(e=>{const t=EX_EN[e.id];if(t){add(e.n,t[0]);add(e.d,t[1]);add(e.t,t[2])}});
 // Máquinas de cardio: [nombre, descripción, ajustes]
@@ -123,6 +124,7 @@ const MOB_EN={
  m_lunge_rot:['Lunge with rotation','6 per side','Long lunge, place your hand on the floor and rotate your torso opening the other arm.'],
  m_glute_br:['Glute bridges','12 reps','Lying down, lift your hips squeezing your glutes and lower slowly.'],
  m_leg_swing:['Leg swings','10 per side','Holding the wall, swing your leg forward and back, then side to side.'],
+ m_sl_balance:['Single-leg balance','30 s per leg','Stand on one leg with your knee slightly bent. To make it harder, close your eyes or stand on a soft surface.'],
  m_ankle:['Knee to wall','10 per side','Foot a hand’s width from the wall, bring your knee to touch it without lifting your heel.'],
  m_calf_pump:['Calf raises','15 reps','Raise and lower your heels under control.'],
  m_squat_hold:['Deep squat hold','30 s','Sink into a deep squat and push your knees out with your elbows.'],
@@ -184,6 +186,7 @@ const LBL={
  '3 a 7 días de descarga local':'3 to 7 days of local unloading','1 a 2 semanas de descarga local':'1 to 2 weeks of local unloading','2 a 4 semanas de descarga local':'2 to 4 weeks of local unloading','Hasta valoración profesional':'Until assessed by a professional',
  'Solo se bloquean los ejercicios donde es el músculo principal.':'Only exercises where it is the primary muscle are blocked.','Se bloquean los ejercicios que lo usan como músculo principal o secundario.':'Exercises that use it as a primary or secondary muscle are blocked.',
  'Empuje':'Push','Tirón':'Pull','Pierna':'Legs','Cuerpo completo A':'Full body A','Cuerpo completo B':'Full body B','Cuerpo completo C':'Full body C','Cuerpo completo':'Full body',
+ 'Torso A':'Upper A','Torso B':'Upper B','Torso':'Upper','Pecho, espalda y hombro':'Chest, back and shoulders','Pecho superior, espalda y brazos':'Upper chest, back and arms','Cuádriceps, isquios y gemelos':'Quads, hamstrings and calves','Glúteos, isquios y cuádriceps':'Glutes, hamstrings and quads','prevención de lesiones':'injury prevention',
  'Empuje A':'Push A','Empuje B':'Push B','Tirón A':'Pull A','Tirón B':'Pull B','Pierna A':'Legs A','Pierna B':'Legs B',
  'Pecho, hombro y tríceps':'Chest, shoulders and triceps','Espalda y bíceps':'Back and biceps','Cuádriceps, glúteos e isquios':'Quads, glutes and hamstrings','Sentadilla, empuje y remo':'Squat, push and row','Bisagra, tirón y zancada':'Hinge, pull and lunge','Pierna, hombro y espalda':'Legs, shoulders and back','Solo tren superior: mañana hay partido':'Upper body only: match tomorrow'};
 Object.entries(LBL).forEach(([es,en])=>add(es,en));

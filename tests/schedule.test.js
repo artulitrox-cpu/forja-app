@@ -79,9 +79,9 @@ test('sesiones hechas esta semana se marcan como hechas', () => {
   assert.equal(s[1].tpl.key, 'fbB');
 });
 
-test('Empuje/Tirón/Pierna con menos de 3 días de fuerza esa semana → cuerpo completo', () => {
-  const u = mkUser({ level: 'int', goal: 'hyp', avail: [0, 1, 3, 4] }, {});
-  assert.equal(u.plan.split, 'ppl');
+test('torso/pierna + empuje/tirón/pierna con menos de 3 días de fuerza esa semana → cuerpo completo', () => {
+  const u = mkUser({ level: 'int', goal: 'hyp', avail: [0, 1, 2, 3, 4] }, {});
+  assert.equal(u.plan.split, 'ulppl');
   u.weeks[weekKey(WS)] = [0, 3];
   const s = weekSchedule(u, WS).filter((e) => e.type === 'strength');
   assert.equal(s.length, 2);

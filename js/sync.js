@@ -31,7 +31,7 @@ function mergeState(r){if(!r||!r.users)return false;let changed=false;const del=
  Object.keys(S.users).forEach(id=>{if(del[id]>=(S.users[id].updatedAt||0)){delete S.users[id];changed=true}});
  S.deleted=del;
  if(!S.users[S.activeUser]){S.activeUser=S.users[r.activeUser]?r.activeUser:(Object.keys(S.users)[0]||null);changed=true}
- Object.values(S.users).forEach(u=>{if(migrateUser(u))changed=true});
+ Object.values(S.users).forEach(u=>{if(migrateUser(u))changed=true;if(upgradePlan(u))changed=true});
  return changed}
 function schedulePush(){if(!sb||!sbUser)return;clearTimeout(pushT);sync.state='pending';updSyncDot();pushT=setTimeout(push,1500)}
 async function push(){if(!sb||!sbUser)return;clearTimeout(pushT);sync.state='syncing';updSyncDot();

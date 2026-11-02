@@ -188,24 +188,24 @@ details[open] .chev{transform:rotate(180deg)}
 <div id="seq"></div>
 <div id="toast"></div>
 
-<script src="js/i18n-en.js?v=202611020532"></script>
-<script src="js/i18n.js?v=202611020532"></script>
-<script src="js/catalog.js?v=202611020532"></script>
-<script src="js/figures.js?v=202611020532"></script>
-<script src="js/merge.js?v=202611020532"></script>
-<script src="js/plan.js?v=202611020532"></script>
-<script src="js/injuries.js?v=202611020532"></script>
-<script src="js/progress.js?v=202611020532"></script>
-<script src="js/nutrition.js?v=202611020532"></script>
-<script src="js/activities.js?v=202611020532"></script>
-<script src="js/bodymap.js?v=202611020532"></script>
-<script src="js/sync.js?v=202611020532"></script>
+<script src="js/i18n-en.js?v=202611020545"></script>
+<script src="js/i18n.js?v=202611020545"></script>
+<script src="js/catalog.js?v=202611020545"></script>
+<script src="js/figures.js?v=202611020545"></script>
+<script src="js/merge.js?v=202611020545"></script>
+<script src="js/plan.js?v=202611020545"></script>
+<script src="js/injuries.js?v=202611020545"></script>
+<script src="js/progress.js?v=202611020545"></script>
+<script src="js/nutrition.js?v=202611020545"></script>
+<script src="js/activities.js?v=202611020545"></script>
+<script src="js/bodymap.js?v=202611020545"></script>
+<script src="js/sync.js?v=202611020545"></script>
 <!-- Dentro de la app de Android (Capacitor) se cargan el núcleo y los plugins nativos -->
 <script>if(window.Capacitor&&Capacitor.isNativePlatform&&Capacitor.isNativePlatform())document.write('<script src="js/vendor/capacitor.js"><\/script><script src="js/vendor/ble.js"><\/script><script src="js/vendor/fgs.js"><\/script><script src="js/vendor/localnotif.js"><\/script>')</script>
-<script src="js/timer.js?v=202611020532"></script>
-<script src="js/push.js?v=202611020532"></script>
-<script src="js/hr.js?v=202611020532"></script>
-<script src="js/i18n-en-catalog.js?v=202611020532"></script>
+<script src="js/timer.js?v=202611020545"></script>
+<script src="js/push.js?v=202611020545"></script>
+<script src="js/hr.js?v=202611020545"></script>
+<script src="js/i18n-en-catalog.js?v=202611020545"></script>
 <script>
 
 
@@ -213,7 +213,7 @@ details[open] .chev{transform:rotate(180deg)}
 const KEY='forja.v1';
 let S={version:2,activeUser:null,users:{},deleted:{}};
 try{const raw=localStorage.getItem(KEY);if(raw){const d=JSON.parse(raw);if(d&&d.users)S=d}}catch(e){}
-Object.values(S.users).forEach(migrateUser);S.version=2;
+Object.values(S.users).forEach(u=>{migrateUser(u);upgradePlan(u)});S.version=2;
 function saveLocal(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
 function save(){const u=S.users[S.activeUser];if(u)u.updatedAt=Date.now();saveLocal();schedulePush();
  // Los avisos se recalculan tras cualquier cambio (en la app de Android se reprograman en el teléfono).
@@ -261,7 +261,7 @@ function updClock(){const u=U();if(!u||!u.active||!$('#cd'))return;const c=clock
  $('#eta').textContent=hhmm(Date.now()+c.remPlan*1000)}
 
 /* ============ Usuarios ============ */
-function createUser(pr){if(!pr.avail||!pr.avail.length)pr.avail=AVAIL_DEFAULT[suggestDays(pr)];const id='u'+Date.now().toString(36);S.users[id]={id,v:2,profile:pr,plan:genPlan(pr),swaps:{},weeks:{},cprog:{},injuries:[],activities:[],prog:{},history:[],next:0,active:null,created:Date.now(),cycle:{start:weekStart(),len:4,seen:-1,applied:0,nextBoost:1},checkins:[],checkinEvery:14};S.activeUser=id;save();view='home';render();toast(`Plan creado para ${pr.name}`)}
+function createUser(pr){if(!pr.avail||!pr.avail.length)pr.avail=AVAIL_DEFAULT[suggestDays(pr)];const id='u'+Date.now().toString(36);S.users[id]={id,v:2,profile:pr,plan:genPlan(pr),swaps:{},weeks:{},cprog:{},injuries:[],activities:[],prog:{},history:[],next:0,active:null,created:Date.now(),cycle:{start:weekStart(),len:cycleLen(pr),seen:-1,applied:0,nextBoost:1},planV:PLAN_V,checkins:[],checkinEvery:14};S.activeUser=id;save();view='home';render();toast(`Plan creado para ${pr.name}`)}
 function readProfile(f){const fd=new FormData(f),n=(k,a,b)=>{const v=parseFloat(String(fd.get(k)||'').replace(',','.'));return v>=a&&v<=b?v:null};
  return {name:(fd.get('name')||'').toString().trim().slice(0,40)||'Atleta',age:n('age',14,99)&&Math.round(n('age',14,99)),sex:fd.get('sex')||'m',height:n('height',120,230),weight:n('weight',30,300),level:fd.get('level')||'beg',goal:fd.get('goal')||'hyp',avail:fd.getAll('avail').map(Number).filter(x=>x>=0&&x<=6),sessionMin:+fd.get('sessionMin')||60,equip:fd.get('equip')||'gym'}}
 
@@ -365,8 +365,13 @@ const weekBlock=u=>`<section class="mt-8"><div class="flex items-baseline justif
 // Contexto del día en una línea: bloque del ciclo y calorías de hoy.
 function heroMeta(u){const wi=wk(u),d=dayKcal(u);return `<p class="text-sm text-dim mt-1">Bloque ${wi.cyc+1} · semana ${wi.week} de ${wi.len}${wi.deload?' (descarga)':''}${d.total?` · hoy ${nf(d.total)} kcal${d.sport?` (+${nf(d.sport)} deporte)`:''}`:''}${(m=>m?` · ${m.protein} g proteína`:'')(macros(u))}</p>`}
 // Avisos agrupados: el más importante a la vista y el resto plegado.
+// Dos sesiones de fuerza seguidas (últimos 10 días) con la mitad o más de las series "difícil": se propone adelantar la descarga.
+function deloadSuggest(u){if(!u.cycle)return '';const wi=wk(u),wkk=weekKey(weekStart());if(wi.deload||wi.week===1||u.cycle.dlNo===wkk)return '';
+ const rec=(u.history||[]).filter(h=>h.kind!=='cardio'&&Date.now()-h.date<10*864e5).slice(0,2);if(rec.length<2)return '';
+ const hard=h=>{const s=(h.items||[]).flatMap(it=>it.sets||[]);return s.length?s.filter(x=>x.rt==='hard').length/s.length:0};if(!rec.every(h=>hard(h)>=.5))return '';
+ return `<section class="card p-4 mt-3" style="border-color:var(--normal)"><b class="block">Tus dos últimas sesiones fueron muy duras</b><span class="block text-sm mt-1">Puede ser fatiga acumulada. Una semana de descarga ahora (menos series y pesos al 85 %) suele traer mejores marcas después.</span><span class="flex flex-wrap gap-2 mt-3"><button class="btn-ghost" data-a="deloadnow" style="border-color:var(--normal)">Descargar esta semana</button><button class="btn-text" data-a="deloadno">Seguir con el bloque</button></span></section>`}
 function homeAlerts(u,ss){const split=h=>h.split(/(?=<section)/).map(x=>x.trim()).filter(Boolean);
- const list=[fatigueAlert(u,ss),...split(injBanners(u)),...split(banners(u))].filter(Boolean);if(!list.length)return '';
+ const list=[deloadSuggest(u),fatigueAlert(u,ss),...split(injBanners(u)),...split(banners(u))].filter(Boolean);if(!list.length)return '';
  return `<div class="mt-6">${list[0]}${list.length>1?`<details class="mt-2"><summary class="btn-text" style="padding:0">${list.length-1} ${list.length===2?'aviso más':'avisos más'}</summary>${list.slice(1).join('')}</details>`:''}</div>`}
 function liveBanner(u){return u.live?`<section class="card p-4 mt-4 flex items-center gap-3" style="border-color:var(--hard)"><span style="color:var(--hard)">●</span><span class="flex-1"><b class="block">Grabando: ${esc(sportName(u.live))}</b><span class="text-sm text-dim tabular-nums" id="lv-mini">${fmtDur(Date.now()-u.live.start)}</span></span><button class="btn-primary" style="min-height:44px" data-a="livego">Volver</button></section>`:''}
 function vHome(){const u=U(),a=u.active;
@@ -554,6 +559,11 @@ function vStageList(a,k){const isM=k==='mob',b=a[k],map=isM?MOBM:STRM,list=b.lis
   <div class="flex gap-2 mt-2"><button class="btn-ghost flex-1" data-a="blockdone" data-v="${k}">Hecho</button><button class="btn-text flex-1 justify-center" data-a="blockskip" data-v="${k}">Saltar</button></div></section>`}
 function openGuide(k,id){const isM=k==='mob',x=(isM?MOBM:STRM)[id];if(!x)return;
  modal(`${guidePhoto(id,'gph',x.n)}<h2 class="font-display text-3xl font-extrabold leading-none mt-4">${esc(x.n)}</h2><p class="text-dim mt-1">${esc(isM?x.dose:x.sec>30?'30 s por lado':'30 s')}</p><p class="mt-3 text-lg leading-snug">${esc(x.d)}</p><p class="hint">Fotos: Free Exercise DB (dominio público).</p>`,x.n)}
+// Calentamiento del primer básico de cada mitad del cuerpo (torso / pierna): 2 series al 50 % y al 75 % (no se anotan).
+function warmTip(a,it,ex){if(a.deload||ex.eq==='body'||!MAIN_SLOTS.has(ex.slot))return '';const w=it.sets[0]&&+it.sets[0].w;if(!(w>0))return '';
+ const half=x=>LOWER_SLOTS.has(X(x.ex).slot),first=a.items.findIndex(x=>MAIN_SLOTS.has(X(x.ex).slot)&&X(x.ex).eq!=='body'&&half(x)===half(it));if(a.items[first]!==it)return '';
+ const st=stepOf(ex),min=ex.eq==='bar'?20:st,r=f=>Math.max(min,Math.round(w*f/st)*st),ws=[[r(.5),8],[r(.75),4]].filter(([x])=>x<w);if(!ws.length)return '';
+ return `<div class="tip mt-3 text-sm" style="border-color:var(--normal)"><b>Calentamiento antes de la 1.ª serie:</b> ${ws.map(([x,n])=>`${n} × ${fmtKg(x)} kg`).join(' y ')}. No se anotan.</div>`}
 function vStageStr(u,a){const it=a.items[a.cur],ex=X(it.ex),p=it.p,cur=it.sets.findIndex(s=>!s.rt),body=ex.eq==='body';
  const segs=a.items.map((x,i)=>{const all=x.sets.every(s=>s.rt);return `<button class="sb ${i===a.cur?'cur':all?'done':''}" data-a="goto" data-i="${i}" aria-label="Ir al ejercicio ${i+1}: ${esc(X(x.ex).n)}"></button>`}).join('');
  const rows=it.sets.map((s,k)=>{const done=!!s.rt;
@@ -564,9 +574,10 @@ function vStageStr(u,a){const it=a.items[a.cur],ex=X(it.ex),p=it.p,cur=it.sets.f
  return `<div class="segs mt-3">${segs}</div>
   <section class="card p-4 mt-4">
    <div class="flex gap-4 items-start"><button class="fig-lg" data-a="info" data-ex="${ex.id}" data-s="1" data-i="${a.cur}" aria-label="Ver técnica">${animSvg(ex)}</button>
-    <div class="min-w-0 flex-1">${a.deload?'<span class="chip mb-2" style="border-color:var(--normal);color:var(--normal)">Semana de descarga: pesos al 85 %</span>':''}${it.sub?`<span class="chip mb-2" style="border-color:var(--accent);color:var(--accent)">Sustituye a ${esc(X(it.sub.from).n)} (molestia en ${esc(it.sub.mus)})</span>`:''}${it.warn?`<span class="chip mb-2" style="border-color:var(--accent);color:var(--accent)">Molestia leve en ${esc(it.warn)}</span>`:''}${it.leg?`<span class="chip mb-2" style="border-color:var(--hard);color:var(--hard)">Piernas −${it.leg} % por fatiga de ${esc(a.legAdj?a.legAdj.sport:'deporte')}</span>`:''}${it.fat?`<span class="chip mb-2" style="border-color:var(--accent);color:var(--accent)">${it.fat.less?'Una serie menos':'Alternativa'}: ${esc(it.fat.mus)} entrenado hace menos de 2 días</span>`:''}<p class="text-sm text-dim">Ejercicio ${a.cur+1} de ${a.items.length}</p><h1 class="font-display text-3xl font-extrabold leading-none mt-1">${esc(ex.n)}</h1>${exEn(ex.id)?`<p class="text-sm mt-1">${exEn(ex.id)}</p>`:''}<p class="text-sm text-dim mt-1">${esc(ex.m.join(', '))}</p>
+    <div class="min-w-0 flex-1">${a.deload?'<span class="chip mb-2" style="border-color:var(--normal);color:var(--normal)">Semana de descarga: pesos al 85 %</span>':''}${it.sub?`<span class="chip mb-2" style="border-color:var(--accent);color:var(--accent)">Sustituye a ${esc(X(it.sub.from).n)} (molestia en ${esc(it.sub.mus)})</span>`:''}${it.warn?`<span class="chip mb-2" style="border-color:var(--accent);color:var(--accent)">Molestia leve en ${esc(it.warn)}</span>`:''}${it.leg?`<span class="chip mb-2" style="border-color:var(--hard);color:var(--hard)">Piernas −${it.leg} % por fatiga de ${esc(a.legAdj?a.legAdj.sport:'deporte')}</span>`:''}${it.fat?`<span class="chip mb-2" style="border-color:var(--accent);color:var(--accent)">${it.fat.less?'Una serie menos':'Alternativa'}: ${esc(it.fat.mus)} entrenado hace menos de 2 días</span>`:''}${it.pre?'<span class="chip mb-2" style="border-color:var(--easy);color:var(--easy)">Prevención de lesiones para tu deporte</span>':''}<p class="text-sm text-dim">Ejercicio ${a.cur+1} de ${a.items.length}</p><h1 class="font-display text-3xl font-extrabold leading-none mt-1">${esc(ex.n)}</h1>${exEn(ex.id)?`<p class="text-sm mt-1">${exEn(ex.id)}</p>`:''}<p class="text-sm text-dim mt-1">${esc(ex.m.join(', '))}</p>
      <button data-a="swap" data-s="1" data-i="${a.cur}" class="btn-ghost mt-3">${ic('swap',18)}Cambiar ejercicio</button></div></div>
    <div class="tip mt-4 text-sm"><b>${presTxt(p,ex)}</b> a RPE ${dec(p.rpe)}: ${rirTxt(p.rpe)}. Descanso ${p.rest} s.${!body&&!(u.prog[ex.id]&&u.prog[ex.id].w)?(startW(ex,u.profile)?' Peso sugerido según tu perfil: ajústalo si la primera serie no encaja con ese RPE.':' Primera vez: elige un peso con el que llegues al rango con ese margen.'):''}</div>
+   ${warmTip(a,it,ex)}
    <div class="flex flex-col gap-2 mt-4">${rows}</div>
   </section>
   <div class="flex gap-2 mt-4"><button data-a="prev" class="btn-ghost flex-1" ${a.cur===0?'disabled':''}>Anterior</button>${last?`<button data-a="stagenext" class="btn-primary flex-[2]">${nxt?`Pasar a ${(nxt==='cond'&&a.cond.kind!=='liss'?'HIIT':STAGE_LBL[nxt]).toLowerCase()}`:'Terminar sesión'}</button>`:`<button data-a="next" class="btn-ghost flex-[2]">Siguiente ejercicio</button>`}</div>`}
@@ -876,7 +887,7 @@ function mkItem(u,exId,p0){const ex=X(exId),p=p0||presc(ex,u.profile),g=prog(u,e
 function startSession(e){const u=U();if(!u.active){if(!e||(e.type!=='cardio'&&!e.tpl))return;
  const s=buildSession(u,e);
  u.active={kind:s.kind,dayIdx:s.dayIdx,name:s.name,focus:s.focus,start:Date.now(),stage:'mob',cur:0,
-  items:s.items.map(it=>{const m=mkItem(u,it.ex,it.p),ex=X(it.ex);if(s.legAdj&&s.legAdj.pct&&LOWER_SLOTS.has(ex.slot))m.sets.forEach(x=>{x.w=legScaledWeight(ex,x.w,s.legAdj)});return {...m,sub:it.sub,warn:it.warn,fat:it.fat,leg:s.legAdj&&s.legAdj.pct&&LOWER_SLOTS.has(ex.slot)?s.legAdj.pct:0}}),legAdj:s.legAdj&&s.legAdj.pct?s.legAdj:null,cond:s.cond?{...s.cond,done:false,rt:null}:null,
+  items:s.items.map(it=>{const m=mkItem(u,it.ex,it.p),ex=X(it.ex);if(s.legAdj&&s.legAdj.pct&&LOWER_SLOTS.has(ex.slot))m.sets.forEach(x=>{x.w=legScaledWeight(ex,x.w,s.legAdj)});return {...m,sub:it.sub,warn:it.warn,fat:it.fat,pre:!!it.pre,leg:s.legAdj&&s.legAdj.pct&&LOWER_SLOTS.has(ex.slot)?s.legAdj.pct:0}}),legAdj:s.legAdj&&s.legAdj.pct?s.legAdj:null,cond:s.cond?{...s.cond,done:false,rt:null}:null,
   mob:{list:s.mob.map(m=>m.id),done:false},stretch:{list:s.stretch.map(x=>x.id),done:false},deload:s.deload,est:s.est.total,notes:s.notes};save()}
  view='session';render();scrollTo(0,0)}
 // Nombre de la sesión activa (las sesiones de la v1 solo guardaban dayIdx).
@@ -899,6 +910,8 @@ function progress(u,ex,it,done){const p=it.p,g=prog(u,ex,p),sc={easy:-1,ok:0,har
  if(avg<=-.5){if(weighted){g.w=rnd(g.w+I);g.r=Math.min(Math.max(g.r,p.min),p.max);note=`+${fmtKg(I)} kg`}else{g.r+=2*step;note=`+${2*step} ${un}`}}
  else if(avg<.5){if(weighted&&g.r+step>p.max){g.w=rnd(g.w+I);g.r=p.min;note=`+${fmtKg(I)} kg, vuelves a ${p.min} ${un}`}else{g.r+=step;note=`+${step} ${un}`}}
  else{if(avg>=1&&weighted){g.w=rnd(Math.max(0,g.w-I));g.r=p.min;note=`−${fmtKg(I)} kg`}else{g.r=Math.max(ex.time?10:1,g.r-step);note=`−${step} ${un}`}}
+ // Peso corporal: a partir de 20 reps (o 90 s) toca una variante más difícil, no seguir sumando.
+ if(!weighted){const cap=ex.time?90:20;if(g.r>=cap){g.r=cap;note=ex.time?`Tope de ${cap} s: prueba una variante más difícil`:`Tope de ${cap} reps: prueba una variante más difícil o añade peso`}}
  return {note,avg,next:loadTxt(ex,g,u.profile)}}
 function finish(){const u=U(),a=u.active;normActive(a);seqStop(false);
  const setsDone=a.items.some(it=>it.sets.some(s=>s.rt)),any=setsDone||(a.cond&&a.cond.done)||a.mob.done||a.stretch.done;
@@ -945,6 +958,9 @@ const A={
  sportdel:d=>{const u=U();u.profile.sports=(u.profile.sports||[]).filter((_,i)=>i!==+d.i);save();render()},
  wkreset:()=>{const u=U();if(u.weeks)delete u.weeks[weekKey(weekStart())];save();render()},
  dismissnotice:()=>{const u=U();delete u.notice;save();render()},
+ // Adelanta la descarga: esta semana pasa a ser la última del bloque actual.
+ deloadnow:()=>{const u=U(),c=u.cycle,wi=wk(u);c.start=weekStart()-(wi.cyc*c.len+c.len-1)*WMS;c.seen=-1;save();render();toast('Esta semana pasa a ser de descarga. El siguiente bloque empieza el lunes.')},
+ deloadno:()=>{const u=U();u.cycle.dlNo=weekKey(weekStart());save();render()},
  info:d=>{const ctx=d.from==='swap'?'pick':d.s?{s:1,i:+d.i}:d.d!=null?{d:+d.d,i:+d.i}:null;openInfo(d.ex,ctx)},
  swap:d=>openSwap(d.s?{s:1,i:+d.i}:{d:+d.d,i:+d.i}),
  swapall:()=>openSwapAll(),
