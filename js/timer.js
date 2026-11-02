@@ -1,24 +1,23 @@
 /* Forja: temporizadores (descanso, secuencias guiadas) y pantalla encendida. Script clásico: comparte variables globales con el resto de js/*.js e index.html. */
 
 /* ============ Temporizador de descanso ============ */
-let T=null,tInt=null,actx=null;const C=2*Math.PI*90;
+let T=null,tInt=null,actx=null;const C=2*Math.PI*19;
 function ensureAudio(){try{actx=actx||new (window.AudioContext||window.webkitAudioContext)();if(actx.state==='suspended')actx.resume()}catch(e){}}
 function beep(){try{ensureAudio();[0,.25,.5].forEach((d,i)=>{const o=actx.createOscillator(),g=actx.createGain();o.frequency.value=i===2?1320:880;o.connect(g);g.connect(actx.destination);const t=actx.currentTime+d;g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(.3,t+.02);g.gain.exponentialRampToValueAtTime(.0001,t+.2);o.start(t);o.stop(t+.22)})}catch(e){}}
+// Barra fija abajo: no tapa el ejercicio ni impide hacer scroll o anotar las series mientras corre.
 function startTimer(sec,next){T={end:Date.now()+sec*1000,dur:sec*1000,next,start:Date.now()};
- const bolts=Array.from({length:8},(_,i)=>{const an=i*Math.PI/4;return `<circle cx="${110+100*Math.cos(an)}" cy="${110+100*Math.sin(an)}" r="2.5" class="pl-bolt"/>`}).join('');
- $('#timer').innerHTML=`<div class="tlayer"><div class="tsheet" role="dialog" aria-modal="true" aria-label="Descanso"><p class="text-dim font-semibold">Descanso</p>
-  <svg viewBox="0 0 220 220" class="plate" aria-hidden="true"><circle cx="110" cy="110" r="108" class="pl-body"/>${bolts}<circle cx="110" cy="110" r="90" class="pl-track"/><circle id="tprog" cx="110" cy="110" r="90" class="pl-prog" stroke-dasharray="${C}" stroke-dashoffset="0" transform="rotate(-90 110 110)"/><circle cx="110" cy="110" r="76" class="pl-face"/><text id="tt" x="110" y="130" text-anchor="middle" class="pl-time">${fmtDur(sec*1000)}</text></svg>
-  <p class="mt-3 font-semibold" aria-live="polite">${esc(next)}</p><p id="trh" class="text-sm mt-1" style="color:var(--hard)"></p>
-  <div class="flex gap-2 mt-5"><button class="btn-ghost flex-1" data-a="tadd" data-n="-15">−15 s</button><button class="btn-ghost flex-1" data-a="tadd" data-n="15">+15 s</button></div>
-  <button class="btn-primary w-full mt-3" data-a="tskip">Saltar descanso</button></div></div>`;
- clearInterval(tInt);tInt=setInterval(tickTimer,200);tickTimer()}
+ $('#timer').innerHTML=`<div class="rdock" role="status" aria-label="Descanso">
+  <svg viewBox="0 0 44 44" class="rd-ring" aria-hidden="true"><circle cx="22" cy="22" r="19" class="rd-track"/><circle id="tprog" cx="22" cy="22" r="19" class="rd-prog" stroke-dasharray="${C}" stroke-dashoffset="0" transform="rotate(-90 22 22)"/></svg>
+  <span class="flex-1 min-w-0"><span class="block text-xs text-dim font-semibold">Descanso</span><span id="tt" class="rd-time tabular-nums">${fmtDur(sec*1000)}</span><span class="block text-xs truncate">${esc(next)}</span><span id="trh" class="block text-xs truncate" style="color:var(--hard)"></span></span>
+  <button class="rd-btn" data-a="tadd" data-n="-15" aria-label="Quitar 15 segundos">−15</button><button class="rd-btn" data-a="tadd" data-n="15" aria-label="Añadir 15 segundos">+15</button><button class="rd-btn rd-skip" data-a="tskip" aria-label="Saltar descanso">${typeof ic==='function'?ic('close',18):'×'}</button></div>`;
+ document.body.classList.add('has-dock');clearInterval(tInt);tInt=setInterval(tickTimer,200);tickTimer()}
 // Descanso inteligente: con pulsómetro, la siguiente serie empieza cuando el pulso baja de 115 ppm (mínimo 30 s).
 function smartRestOn(){const u=typeof U==='function'?U():null;return typeof HR!=='undefined'&&HR.state==='on'&&!(u&&u.settings&&u.settings.smartRest===false)}
 function tickTimer(){if(!T)return;const rem=T.end-Date.now();if(rem<=0){endTimer(true);return}
- const sm=smartRestOn(),rh=$('#trh');if(rh)rh.textContent=sm?`♥ ${HR.bpm||'--'} ppm · siguiente serie al bajar de ${SMART_REST_BPM}`:'';
+ const sm=smartRestOn(),rh=$('#trh');if(rh)rh.textContent=sm?`♥ ${HR.bpm||'--'} ppm · sigue al bajar de ${SMART_REST_BPM}`:'';
  if(sm&&restReady(HR.bpm,(Date.now()-T.start)/1000)){endTimer(true,'Pulso recuperado: siguiente serie.');return}
  const tt=$('#tt'),tp=$('#tprog');if(tt)tt.textContent=fmtDur(rem+999);if(tp)tp.setAttribute('stroke-dashoffset',C*(1-rem/T.dur))}
-function endTimer(done,msg){clearInterval(tInt);if(done&&T){beep();try{navigator.vibrate&&navigator.vibrate([200,100,200])}catch(e){}toast(msg||'Descanso terminado. A por la siguiente serie.')}T=null;$('#timer').innerHTML=''}
+function endTimer(done,msg){clearInterval(tInt);if(done&&T){beep();try{navigator.vibrate&&navigator.vibrate([200,100,200])}catch(e){}toast(msg||'Descanso terminado. A por la siguiente serie.')}T=null;$('#timer').innerHTML='';document.body.classList.remove('has-dock')}
 // Aviso de zona (cardio suave o día de descanso): como mucho una vez por minuto.
 let lastZoneAlert=0;
 function zoneAlert(z){if(Date.now()-lastZoneAlert<60000)return;lastZoneAlert=Date.now();beep();try{navigator.vibrate&&navigator.vibrate([300,150,300])}catch(e){}toast(`Vas en Z${z}: baja el ritmo para quedarte en Z2.`)}
@@ -51,7 +50,7 @@ function seqRender(){const ph=SEQ.phases[SEQ.i],n=SEQ.phases.length,nx=SEQ.phase
  const bg=ph.kind==='work'?'var(--hard)':ph.kind==='rest'?'var(--easy)':'var(--bg)',ink=ph.kind==='neutral'?'var(--fg)':'#0b0f16';
  $('#seq').innerHTML=`<div class="seq" style="background:${bg};color:${ink}" role="dialog" aria-modal="true" aria-label="${esc(SEQ.title)}">
   <p class="font-semibold" style="opacity:.8">${esc(SEQ.title)} · ${SEQ.i+1} de ${n}</p>
-  <p class="seq-lbl" aria-live="assertive">${esc(ph.label)}</p>${ph.sub?`<p class="text-lg font-semibold mt-1">${esc(ph.sub)}</p>`:''}
+  <p class="seq-lbl" aria-live="assertive">${esc(ph.label)}</p>${ph.sub?`<p class="text-lg font-semibold mt-1">${esc(ph.sub)}</p>`:''}${ph.img&&typeof guidePhoto==='function'&&GUIDE_PHOTO[ph.img]?guidePhoto(ph.img,'seq-ph',ph.label):''}
   <p id="sq-t" class="seq-time tabular-nums">${fmtDur((SEQ.paused??(SEQ.end-Date.now()))+999)}</p>
   <p id="sq-hr" class="font-semibold mt-1"></p>
   <div class="seq-track"><div id="sq-bar" class="seq-bar"></div></div>

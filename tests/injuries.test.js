@@ -178,3 +178,27 @@ test('con una lesión de rodilla la semana entera queda sin ejercicios ni cardio
     for (const o of s.omitted) assert.ok(s.notes.some((n) => n.includes(`lesión en ${o.mus}`)));
   }
 });
+
+test('fatiga reciente: un músculo cargado hace menos de 40 h se cambia o pierde una serie en la siguiente sesión', () => {
+  const fatiguedMuscles = c.get('fatiguedMuscles');
+  const u = mkUser({ goal: 'hyp', avail: [0, 1, 2, 3, 4, 5] });
+  const e = weekSchedule(u, WS).find((x) => x.type === 'strength' && x.tpl.items.some((it) => X(it.ex).m.includes('Cuádriceps')));
+  assert.ok(e, 'hay un día con cuádriceps');
+  const now = WS + 3 * DAY;
+  const base = buildSession(u, e, { ws: WS, now });
+  u.history = [{ date: now - 20 * 36e5, kind: 'strength', items: [{ ex: 'legpress', sets: [{}, {}, {}] }] }];
+  assert.ok(fatiguedMuscles(u, now)['Cuádriceps'] >= 3);
+  const s = buildSession(u, e, { ws: WS, now });
+  const quad = s.items.filter((it) => it.fat && it.fat.mus === 'Cuádriceps');
+  assert.ok(quad.length, 'algún ejercicio de cuádriceps se ajusta');
+  for (const it of quad) {
+    if (it.fat.less) {
+      const b = base.items.find((x) => x.ex === it.ex);
+      if (b) assert.equal(it.p.sets, Math.max(2, b.p.sets - 1));
+    } else assert.ok(!X(it.ex).m.includes('Cuádriceps'));
+  }
+  assert.ok(s.notes.some((n) => n.includes('hace menos de 2 días')));
+  // Pasadas 40 h, sin ajuste.
+  u.history[0].date = now - 50 * 36e5;
+  assert.ok(!buildSession(u, e, { ws: WS, now }).items.some((it) => it.fat));
+});

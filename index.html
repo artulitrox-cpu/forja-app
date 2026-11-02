@@ -103,6 +103,14 @@ img,svg{max-width:100%}
 @keyframes up{from{transform:translateY(28px);opacity:0}}
 .alt{display:flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:16px;padding:6px;background:var(--surface2)}
 .alt.is-cur{border-color:var(--accent)}
+.rdock{position:fixed;left:10px;right:10px;bottom:calc(10px + env(safe-area-inset-bottom,0px));max-width:560px;margin:0 auto;z-index:55;display:flex;align-items:center;gap:8px;padding:8px 8px 8px 10px;border-radius:20px;background:var(--surface);border:1px solid var(--accent);box-shadow:0 10px 30px rgba(0,0,0,.45)}
+.rd-ring{width:46px;height:46px;flex:none}.rd-track{fill:none;stroke:var(--line);stroke-width:5}.rd-prog{fill:none;stroke:var(--accent);stroke-width:5;stroke-linecap:round;transition:stroke-dashoffset .2s linear}
+.rd-time{display:block;font-family:"Barlow Condensed","Arial Narrow",sans-serif;font-weight:800;font-size:28px;line-height:1}
+.rd-btn{min-width:44px;height:44px;border-radius:14px;background:var(--surface2);border:1px solid var(--line);color:var(--fg);font-weight:700;display:grid;place-items:center;flex:none}.rd-skip{color:var(--accent)}
+body.has-dock main{padding-bottom:110px}body.has-dock .toast{bottom:calc(104px + env(safe-area-inset-bottom,0px))}
+.en{font-weight:500;color:var(--dim);font-size:.82em;white-space:nowrap}
+.gph{width:100%;aspect-ratio:3/2;border-radius:16px;overflow:hidden}.gmini{width:54px;height:54px;border-radius:12px;overflow:hidden;flex:none}
+.seq-ph{width:min(100%,22rem);aspect-ratio:3/2;border-radius:18px;overflow:hidden;margin-top:12px}
 .tlayer{position:fixed;inset:0;z-index:60;display:flex;align-items:flex-end;justify-content:center;background:rgba(5,8,14,.8)}
 @media (min-width:640px){.tlayer{align-items:center}}
 .tsheet{width:100%;max-width:440px;background:var(--surface);border:1px solid var(--line);border-radius:28px 28px 0 0;padding:22px 20px calc(24px + env(safe-area-inset-bottom,0px));text-align:center;animation:up .22s ease-out}
@@ -180,24 +188,24 @@ details[open] .chev{transform:rotate(180deg)}
 <div id="seq"></div>
 <div id="toast"></div>
 
-<script src="js/i18n-en.js?v=202610011246"></script>
-<script src="js/i18n.js?v=202610011246"></script>
-<script src="js/catalog.js?v=202610011246"></script>
-<script src="js/figures.js?v=202610011246"></script>
-<script src="js/merge.js?v=202610011246"></script>
-<script src="js/plan.js?v=202610011246"></script>
-<script src="js/injuries.js?v=202610011246"></script>
-<script src="js/progress.js?v=202610011246"></script>
-<script src="js/nutrition.js?v=202610011246"></script>
-<script src="js/activities.js?v=202610011246"></script>
-<script src="js/bodymap.js?v=202610011246"></script>
-<script src="js/sync.js?v=202610011246"></script>
+<script src="js/i18n-en.js?v=202611020447"></script>
+<script src="js/i18n.js?v=202611020447"></script>
+<script src="js/catalog.js?v=202611020447"></script>
+<script src="js/figures.js?v=202611020447"></script>
+<script src="js/merge.js?v=202611020447"></script>
+<script src="js/plan.js?v=202611020447"></script>
+<script src="js/injuries.js?v=202611020447"></script>
+<script src="js/progress.js?v=202611020447"></script>
+<script src="js/nutrition.js?v=202611020447"></script>
+<script src="js/activities.js?v=202611020447"></script>
+<script src="js/bodymap.js?v=202611020447"></script>
+<script src="js/sync.js?v=202611020447"></script>
 <!-- Dentro de la app de Android (Capacitor) se cargan el núcleo y los plugins nativos -->
 <script>if(window.Capacitor&&Capacitor.isNativePlatform&&Capacitor.isNativePlatform())document.write('<script src="js/vendor/capacitor.js"><\/script><script src="js/vendor/ble.js"><\/script><script src="js/vendor/fgs.js"><\/script><script src="js/vendor/localnotif.js"><\/script>')</script>
-<script src="js/timer.js?v=202610011246"></script>
-<script src="js/push.js?v=202610011246"></script>
-<script src="js/hr.js?v=202610011246"></script>
-<script src="js/i18n-en-catalog.js?v=202610011246"></script>
+<script src="js/timer.js?v=202611020447"></script>
+<script src="js/push.js?v=202611020447"></script>
+<script src="js/hr.js?v=202611020447"></script>
+<script src="js/i18n-en-catalog.js?v=202611020447"></script>
 <script>
 
 
@@ -303,8 +311,15 @@ function vOnboard(){
 function header(){return `<header class="appbar"><div class="max-w-xl mx-auto px-4 h-14 flex items-center justify-between"><div class="flex items-center gap-2"><div class="brand">For<b>ja</b></div><span id="syncdot" class="dot" role="img" aria-label="${SYNC_TXT[sync.state]}" title="${SYNC_TXT[sync.state]}" style="background:${SYNC_COL[sync.state]}"></span>${hrPill()}</div><span class="flex items-center gap-2">${updBtn()}${langSelect()}</span></div></header>`}
 function nav(){const t=[['home','today','Hoy'],['plan','plan','Plan'],['body','body','Cuerpo'],['injuries','cross','Lesiones'],['history','hist','Progreso'],['profile','user','Perfil']];
  return `<nav class="tabbar" aria-label="Secciones"><div class="max-w-xl mx-auto flex">${t.map(([v,i,l])=>`<button class="tab" data-a="tab" data-v="${v}" ${view===v?'aria-current="page"':''}>${ic(i)}<span>${l}</span></button>`).join('')}</div></nav>`}
+// Nombre en inglés entre paréntesis cuando la app está en español (así se llaman las máquinas en el gimnasio).
+const enName=(map,id)=>LANG==='es'&&map&&map[id]?(Array.isArray(map[id])?map[id][0]:map[id]):'';
+const enTag=(map,id)=>{const n=enName(map,id);return n?` <span class="en">(${esc(n)})</span>`:''};
+const exEn=id=>enTag(globalThis.CAT_EN&&CAT_EN.EX,id);
+const cardioEn=id=>enTag(CARDIO_GYM,id)||enTag(globalThis.CAT_EN&&CAT_EN.CARDIO,id);
+// Foto de guía (dos imágenes que se alternan) para cardio, movilidad y estiramientos.
+const guidePhoto=(id,cls,label)=>GUIDE_PHOTO[id]?`<span class="exph ${cls}" role="img" aria-label="${esc(label||'Foto de guía')}"><img src="img/ex/${GUIDE_PHOTO[id]}-0.webp" alt="" loading="lazy" decoding="async"><img class="b" src="img/ex/${GUIDE_PHOTO[id]}-1.webp" alt="" loading="lazy" decoding="async"></span>`:'';
 function exRow(u,it,di,i){const ex=X(it.ex),p=it.p||presc(ex,u.profile),g=prog(u,ex,p);
- return `<div class="row"><button class="row-main" data-a="info" data-ex="${ex.id}" data-d="${di}" data-i="${i}" aria-label="Ver técnica de ${esc(ex.n)}">${mini(ex)}<span class="min-w-0 flex-1"><span class="block font-semibold leading-tight">${esc(ex.n)}</span><span class="block text-sm text-dim mt-0.5">${presTxt(p,ex)}, RPE ${dec(p.rpe)}</span><span class="block text-sm ${g.w||ex.eq==='body'?'text-fg':'text-accent'}">${loadTxt(ex,g,u.profile)}</span>${it.sub?`<span class="block text-xs mt-0.5" style="color:var(--accent)">En lugar de ${esc(X(it.sub.from).n)} por molestia en ${esc(it.sub.mus)}</span>`:''}${it.warn?`<span class="block text-xs mt-0.5" style="color:var(--accent)">Molestia leve en ${esc(it.warn)}: ve con cuidado</span>`:''}</span></button>${di==null?'':`<button class="btn-ghost" data-a="swap" data-d="${di}" data-i="${i}" aria-label="Cambiar ${esc(ex.n)}">${ic('swap',18)}<span>Cambiar</span></button>`}</div>`}
+ return `<div class="row"><button class="row-main" data-a="info" data-ex="${ex.id}" data-d="${di}" data-i="${i}" aria-label="Ver técnica de ${esc(ex.n)}">${mini(ex)}<span class="min-w-0 flex-1"><span class="block font-semibold leading-tight">${esc(ex.n)}${exEn(ex.id)}</span><span class="block text-sm text-dim mt-0.5">${presTxt(p,ex)}, RPE ${dec(p.rpe)}</span><span class="block text-sm ${g.w||ex.eq==='body'?'text-fg':'text-accent'}">${loadTxt(ex,g,u.profile)}</span>${it.sub?`<span class="block text-xs mt-0.5" style="color:var(--accent)">En lugar de ${esc(X(it.sub.from).n)} por molestia en ${esc(it.sub.mus)}</span>`:''}${it.warn?`<span class="block text-xs mt-0.5" style="color:var(--accent)">Molestia leve en ${esc(it.warn)}: ve con cuidado</span>`:''}</span></button>${di==null?'':`<button class="btn-ghost" data-a="swap" data-d="${di}" data-i="${i}" aria-label="Cambiar ${esc(ex.n)}">${ic('swap',18)}<span>Cambiar</span></button>`}</div>`}
 function weekStrip(u){const s=weekSchedule(u),td=weekday(Date.now());
  if(!s.length)return '<p class="text-dim">Sin días marcados esta semana. Puedes editarla en Plan.</p>';
  return `<div class="wk">${s.map(e=>`<div class="wk-d ${e.done?'is-done':''} ${e.type==='match'?'is-match':''} ${e.wd===td&&!e.done&&e.type!=='rest'&&e.type!=='skip'?'is-next':''}"><div class="text-sm text-dim">${DAY_SHORT[e.wd]}</div><div class="font-semibold leading-tight mt-1">${esc(entryTitle(e))}</div><div class="text-xs mt-1 ${e.done?'text-easy':'text-dim'}">${e.done?'Hecho':e.type==='rest'||e.type==='skip'?'—':e.type==='match'?(e.wd===td?'Hoy':'Partido'):e.wd<td?'Pendiente':e.wd===td?'Hoy':'Previsto'}</div></div>`).join('')}</div>`}
@@ -335,7 +350,7 @@ function estCard(u,s){const e=s.est,pc=v=>(v/Math.max(1,e.total)*100).toFixed(1)
   <p class="text-sm text-dim mt-3">Si empiezas ahora, terminas hacia las ${hhmm(Date.now()+e.total*1000)}.</p>
   ${s.overTime?`<p class="mt-2 text-sm" style="color:var(--hard)">Esta sesión dura unos ${m(e.total)} min, más que tu límite de ${lim}. Sube el tiempo o añade un día.</p>`:''}
   ${s.notes.length?`<ul class="mt-2 text-sm text-dim flex flex-col gap-1">${s.notes.map(n=>`<li>· ${esc(n)}</li>`).join('')}</ul>`:''}</div>`}
-function condRow(c){const m=CARDIO_M[c.machine];return `<div class="row"><span class="row-main"><span class="mini grid place-items-center" style="color:var(--normal)">${ic('today',26)}</span><span class="min-w-0 flex-1"><span class="block font-semibold leading-tight">${esc(condKindLbl(c))}: ${esc(m?m.n:'')}</span><span class="block text-sm text-dim mt-0.5">${c.kind==='liss'?`${c.min} min continuos`:`${c.rounds} × ${c.work} s fuerte / ${c.rest} s suave · ${c.min} min`}</span></span></span></div>`}
+function condRow(c){const m=CARDIO_M[c.machine];return `<div class="row"><span class="row-main"><span class="mini grid place-items-center" style="color:var(--normal)">${ic('today',26)}</span><span class="min-w-0 flex-1"><span class="block font-semibold leading-tight">${esc(condKindLbl(c))}: ${esc(m?m.n:'')}${m?cardioEn(m.id):''}</span><span class="block text-sm text-dim mt-0.5">${c.kind==='liss'?`${c.min} min continuos`:`${c.rounds} × ${c.work} s fuerte / ${c.rest} s suave · ${c.min} min`}</span></span></span></div>`}
 function blockRow(title,sub,icon){return `<div class="row"><span class="row-main"><span class="mini grid place-items-center text-dim">${ic(icon,26)}</span><span class="min-w-0 flex-1"><span class="block font-semibold leading-tight">${esc(title)}</span><span class="block text-sm text-dim mt-0.5">${esc(sub)}</span></span></span></div>`}
 // Qué ofrecer hoy: la sesión de hoy si está pendiente; si no, el estado del día y la siguiente sesión.
 function todayPick(u){const s=weekSchedule(u),td=weekday(Date.now()),e=s.find(x=>x.wd===td);
@@ -533,10 +548,12 @@ function vSession(){const u=U(),a=u.active;normActive(a);const st=stagesOf(a);if
 function vStageList(a,k){const isM=k==='mob',b=a[k],map=isM?MOBM:STRM,list=b.list.map(id=>map[id]).filter(Boolean),tot=list.reduce((t,x)=>t+x.sec,0);
  return `<section class="card p-4 mt-4"><div class="flex items-baseline justify-between gap-2"><h1 class="font-display text-3xl font-extrabold leading-none">${isM?'Movilidad':'Estiramientos'}</h1><span class="text-sm text-dim">~${Math.max(1,Math.round(tot/60))} min</span></div>
   <p class="text-sm text-dim mt-2">${isM?'Prepara las articulaciones que vas a usar hoy. Movimientos suaves y sin dolor.':'Estira los músculos que has trabajado. Sin rebotes y respirando lento.'}</p>
-  <ol class="mt-4 flex flex-col gap-2">${list.map((x,i)=>`<li class="flex gap-3 p-3 rounded-2xl" style="background:var(--surface2)"><span class="set-n">${i+1}</span><span class="flex-1 min-w-0"><span class="block font-semibold">${esc(x.n)}</span><span class="block text-sm text-dim">${esc(x.d)}</span></span><span class="text-sm font-semibold whitespace-nowrap">${esc(isM?x.dose:x.sec>30?'30 s por lado':'30 s')}</span></li>`).join('')}</ol>
+  <ol class="mt-4 flex flex-col gap-2">${list.map((x,i)=>`<li class="flex gap-3 p-3 rounded-2xl" style="background:var(--surface2)">${GUIDE_PHOTO[x.id]?`<button class="gmini" data-a="guide" data-k="${k}" data-id="${x.id}" aria-label="Ver guía: ${esc(x.n)}">${guidePhoto(x.id,'fig',x.n)}</button>`:`<span class="set-n">${i+1}</span>`}<span class="flex-1 min-w-0"><span class="block font-semibold">${esc(x.n)}</span><span class="block text-sm text-dim">${esc(x.d)}</span></span><span class="text-sm font-semibold whitespace-nowrap">${esc(isM?x.dose:x.sec>30?'30 s por lado':'30 s')}</span></li>`).join('')}</ol>
   ${b.done?'<p class="mt-4 font-semibold" style="color:var(--easy)">Bloque hecho.</p>':''}
   <button class="btn-primary w-full mt-4" data-a="blockgo" data-v="${k}">${ic('play',20)}Empezar guiado</button>
   <div class="flex gap-2 mt-2"><button class="btn-ghost flex-1" data-a="blockdone" data-v="${k}">Hecho</button><button class="btn-text flex-1 justify-center" data-a="blockskip" data-v="${k}">Saltar</button></div></section>`}
+function openGuide(k,id){const isM=k==='mob',x=(isM?MOBM:STRM)[id];if(!x)return;
+ modal(`${guidePhoto(id,'gph',x.n)}<h2 class="font-display text-3xl font-extrabold leading-none mt-4">${esc(x.n)}</h2><p class="text-dim mt-1">${esc(isM?x.dose:x.sec>30?'30 s por lado':'30 s')}</p><p class="mt-3 text-lg leading-snug">${esc(x.d)}</p><p class="hint">Fotos: Free Exercise DB (dominio público).</p>`,x.n)}
 function vStageStr(u,a){const it=a.items[a.cur],ex=X(it.ex),p=it.p,cur=it.sets.findIndex(s=>!s.rt),body=ex.eq==='body';
  const segs=a.items.map((x,i)=>{const all=x.sets.every(s=>s.rt);return `<button class="sb ${i===a.cur?'cur':all?'done':''}" data-a="goto" data-i="${i}" aria-label="Ir al ejercicio ${i+1}: ${esc(X(x.ex).n)}"></button>`}).join('');
  const rows=it.sets.map((s,k)=>{const done=!!s.rt;
@@ -547,7 +564,7 @@ function vStageStr(u,a){const it=a.items[a.cur],ex=X(it.ex),p=it.p,cur=it.sets.f
  return `<div class="segs mt-3">${segs}</div>
   <section class="card p-4 mt-4">
    <div class="flex gap-4 items-start"><button class="fig-lg" data-a="info" data-ex="${ex.id}" data-s="1" data-i="${a.cur}" aria-label="Ver técnica">${animSvg(ex)}</button>
-    <div class="min-w-0 flex-1">${a.deload?'<span class="chip mb-2" style="border-color:var(--normal);color:var(--normal)">Semana de descarga: pesos al 85 %</span>':''}${it.sub?`<span class="chip mb-2" style="border-color:var(--accent);color:var(--accent)">Sustituye a ${esc(X(it.sub.from).n)} (molestia en ${esc(it.sub.mus)})</span>`:''}${it.warn?`<span class="chip mb-2" style="border-color:var(--accent);color:var(--accent)">Molestia leve en ${esc(it.warn)}</span>`:''}${it.leg?`<span class="chip mb-2" style="border-color:var(--hard);color:var(--hard)">Piernas −${it.leg} % por fatiga de ${esc(a.legAdj?a.legAdj.sport:'deporte')}</span>`:''}<p class="text-sm text-dim">Ejercicio ${a.cur+1} de ${a.items.length}</p><h1 class="font-display text-3xl font-extrabold leading-none mt-1">${esc(ex.n)}</h1><p class="text-sm text-dim mt-1">${esc(ex.m.join(', '))}</p>
+    <div class="min-w-0 flex-1">${a.deload?'<span class="chip mb-2" style="border-color:var(--normal);color:var(--normal)">Semana de descarga: pesos al 85 %</span>':''}${it.sub?`<span class="chip mb-2" style="border-color:var(--accent);color:var(--accent)">Sustituye a ${esc(X(it.sub.from).n)} (molestia en ${esc(it.sub.mus)})</span>`:''}${it.warn?`<span class="chip mb-2" style="border-color:var(--accent);color:var(--accent)">Molestia leve en ${esc(it.warn)}</span>`:''}${it.leg?`<span class="chip mb-2" style="border-color:var(--hard);color:var(--hard)">Piernas −${it.leg} % por fatiga de ${esc(a.legAdj?a.legAdj.sport:'deporte')}</span>`:''}${it.fat?`<span class="chip mb-2" style="border-color:var(--accent);color:var(--accent)">${it.fat.less?'Una serie menos':'Alternativa'}: ${esc(it.fat.mus)} entrenado hace menos de 2 días</span>`:''}<p class="text-sm text-dim">Ejercicio ${a.cur+1} de ${a.items.length}</p><h1 class="font-display text-3xl font-extrabold leading-none mt-1">${esc(ex.n)}</h1>${exEn(ex.id)?`<p class="text-sm mt-1">${exEn(ex.id)}</p>`:''}<p class="text-sm text-dim mt-1">${esc(ex.m.join(', '))}</p>
      <button data-a="swap" data-s="1" data-i="${a.cur}" class="btn-ghost mt-3">${ic('swap',18)}Cambiar ejercicio</button></div></div>
    <div class="tip mt-4 text-sm"><b>${presTxt(p,ex)}</b> a RPE ${dec(p.rpe)}: ${rirTxt(p.rpe)}. Descanso ${p.rest} s.${!body&&!(u.prog[ex.id]&&u.prog[ex.id].w)?(startW(ex,u.profile)?' Peso sugerido según tu perfil: ajústalo si la primera serie no encaja con ese RPE.':' Primera vez: elige un peso con el que llegues al rango con ese margen.'):''}</div>
    <div class="flex flex-col gap-2 mt-4">${rows}</div>
@@ -556,7 +573,7 @@ function vStageStr(u,a){const it=a.items[a.cur],ex=X(it.ex),p=it.p,cur=it.sets.f
 function vStageCond(u,a){const c=a.cond,m=CARDIO_M[c.machine]||{n:'Cardio',d:'',set:''},hr=hrZone(u.profile);
  const what=c.kind==='liss'?`${c.min} min continuos`:`${c.rounds} rondas de ${c.work} s ${c.kind==='mod'?'a ritmo moderado-alto':'a tope'} y ${c.rest} s suave (con 3 min de calentamiento y 2 de vuelta a la calma)`;
  const inten=c.kind==='liss'?`Ritmo al que puedes hablar pero no cantar.${hr?` Pulso orientativo: ${hr.lo}–${hr.hi} ppm.`:''}`:c.kind==='mod'?'En los intervalos, esfuerzo de 7 sobre 10: respiras fuerte pero controlado.':'En los intervalos fuertes, esfuerzo de 9 sobre 10. En los suaves, sigue moviéndote despacio.';
- return `<section class="card p-4 mt-4"><p class="text-sm text-dim">${condKindLbl(c)}</p><h1 class="font-display text-3xl font-extrabold leading-none mt-1">${esc(m.n)}</h1>
+ return `<section class="card p-4 mt-4">${guidePhoto(c.machine,'gph mb-4',m.n)}<p class="text-sm text-dim">${condKindLbl(c)}</p><h1 class="font-display text-3xl font-extrabold leading-none mt-1">${esc(m.n)}</h1>${cardioEn(c.machine)?`<p class="text-sm mt-1">${cardioEn(c.machine)}</p>`:''}
   <p class="mt-3">${esc(m.d)}</p><div class="tip mt-3 text-sm"><b>${esc(what)}.</b> ${esc(inten)}</div>${m.set?`<p class="hint">${esc(m.set)}</p>`:''}
   ${c.done?`<p class="mt-4 font-semibold" style="color:var(--easy)">Bloque hecho${c.rt?`: ${RT[c.rt].toLowerCase()}`:''}.</p>`:''}
   <button class="btn-primary w-full mt-4" data-a="condgo">${ic('play',20)}Empezar temporizador</button>
@@ -564,10 +581,10 @@ function vStageCond(u,a){const c=a.cond,m=CARDIO_M[c.machine]||{n:'Cardio',d:'',
   <p class="hint">Con el temporizador en marcha la pantalla se mantiene encendida. Si bloqueas el teléfono, los pitidos pueden no sonar.</p></section>`}
 // Tramos del temporizador para movilidad/estiramientos (los de "por lado" se parten en dos).
 function listPhases(k,a){const isM=k==='mob',map=isM?MOBM:STRM;
- return a[k].list.map(id=>map[id]).filter(Boolean).flatMap(x=>isM?[{label:x.n,sub:x.dose,sec:x.sec,kind:'neutral'}]:x.sec>30?[{label:x.n,sub:'Lado 1',sec:30,kind:'neutral'},{label:x.n,sub:'Lado 2',sec:30,kind:'neutral'}]:[{label:x.n,sub:'',sec:x.sec,kind:'neutral'}])}
+ return a[k].list.map(id=>map[id]).filter(Boolean).flatMap(x=>isM?[{label:x.n,sub:x.dose,sec:x.sec,kind:'neutral',img:x.id}]:x.sec>30?[{label:x.n,sub:'Lado 1',sec:30,kind:'neutral',img:x.id},{label:x.n,sub:'Lado 2',sec:30,kind:'neutral',img:x.id}]:[{label:x.n,sub:'',sec:x.sec,kind:'neutral',img:x.id}])}
 function condPhases(c){const m=(CARDIO_M[c.machine]||{n:'Cardio'}).n;
- if(c.kind==='liss')return [{label:m,sub:'Ritmo cómodo: puedes hablar',sec:c.min*60,kind:'neutral'}];
- const ph=[{label:'Calentamiento',sub:m,sec:HIIT_WARM,kind:'neutral'}];
+ if(c.kind==='liss')return [{label:m,sub:'Ritmo cómodo: puedes hablar',sec:c.min*60,kind:'neutral',img:c.machine}];
+ const ph=[{label:'Calentamiento',sub:m,sec:HIIT_WARM,kind:'neutral',img:c.machine}];
  for(let i=1;i<=c.rounds;i++){ph.push({label:c.kind==='mod'?'¡Ritmo alto!':'¡Fuerte!',sub:`Ronda ${i} de ${c.rounds}`,sec:c.work,kind:'work'});ph.push({label:'Suave',sub:`Ronda ${i} de ${c.rounds}`,sec:c.rest,kind:'rest'})}
  ph.push({label:'Vuelta a la calma',sub:m,sec:HIIT_COOL,kind:'neutral'});return ph}
 function openCondRate(){modal(`<h2 class="font-display text-3xl font-extrabold leading-none">¿Cómo fue el ${condKindLbl(U().active.cond).toLowerCase()}?</h2><p class="text-dim mt-2">Con tu respuesta ajustamos la próxima vez.</p>
@@ -810,7 +827,7 @@ function closeModal(){$('#layer').innerHTML=''}
 function openInfo(exId,ctx){const u=U(),ex=X(exId),p=presc(ex,u.profile);infoCtx=ctx;
  const act=ctx==='pick'?`<button class="btn-primary w-full mt-6" data-a="pick" data-ex="${ex.id}">Usar este ejercicio</button>`:ctx?`<button class="btn-ghost w-full mt-6" data-a="swap-from-info">${ic('swap',18)}Cambiar ejercicio</button>`:'';
  modal(`<div class="fig-xl ${PHOTO[ex.id]?'has-photo':''}">${animSvg(ex)}</div>
-  <h2 class="font-display text-4xl font-extrabold leading-none mt-4">${esc(ex.n)}</h2>
+  <h2 class="font-display text-4xl font-extrabold leading-none mt-4">${esc(ex.n)}</h2>${exEn(ex.id)?`<p class="mt-1">${exEn(ex.id)}</p>`:''}
   <p class="text-dim mt-1">${EQ_LABEL[ex.eq]}, ${SLOT_LABEL[ex.slot]}</p>
   <p class="mt-4 text-lg leading-snug">${esc(ex.d)}</p>
   <div class="tip mt-4"><b>Clave técnica.</b> ${esc(ex.t)}</div>
@@ -821,19 +838,36 @@ function openInfo(exId,ctx){const u=U(),ex=X(exId),p=presc(ex,u.profile);infoCtx
   ${PHOTO[ex.id]?'<p class="hint">Fotos: Free Exercise DB (dominio público).</p>':''}
   <h3 class="h2 mt-6 text-xl">Tu prescripción</h3>
   <p class="mt-2">${presTxt(p,ex)} a RPE ${dec(p.rpe)} (${rirTxt(p.rpe)}), descanso ${p.rest} s.</p>${act}`,ex.n)}
-function openSwap(ctx){const u=U();swapCtx=ctx;let curId,slot;
- if(ctx.s){curId=u.active.items[ctx.i].ex;slot=X(curId).slot}else{const it=u.plan.days[ctx.d].items[ctx.i];curId=it.ex;slot=it.slot}
+function swapRow(e,curId,allow){return `<div class="alt ${e.id===curId?'is-cur':''}"><button class="row-main" data-a="pick" data-ex="${e.id}" ${e.id===curId?'aria-current="true"':''}>${mini(e)}<span class="min-w-0 flex-1"><span class="block font-semibold leading-tight">${esc(e.n)}${exEn(e.id)}${e.id===curId?' <span class="text-accent text-sm">(actual)</span>':''}</span><span class="block text-sm text-dim">${esc(e.m.join(', '))}</span><span class="block text-sm ${allow.includes(e.eq)?'text-dim':'text-hard'}">${EQ_LABEL[e.eq]}${allow.includes(e.eq)?'':': fuera de tu equipamiento'}</span></span></button><button class="btn-ghost" data-a="info" data-ex="${e.id}" data-from="swap" aria-label="Ver técnica de ${esc(e.n)}">Técnica</button></div>`}
+function swapCur(u,ctx){return ctx.s?u.active.items[ctx.i].ex:u.plan.days[ctx.d].items[ctx.i].ex}
+// Sugeridos: mismo hueco (mismos músculos). Debajo, botón a la lista completa por zona.
+function openSwap(ctx){const u=U();swapCtx=ctx;const curId=swapCur(u,ctx),slot=ctx.s?X(curId).slot:u.plan.days[ctx.d].items[ctx.i].slot;
  const allow=ALLOW[u.profile.equip],alts=EX.filter(e=>e.slot===slot).sort((a,b)=>allow.includes(b.eq)-allow.includes(a.eq));
- modal(`<h2 class="font-display text-3xl font-extrabold leading-none">Cambiar ejercicio</h2><p class="text-dim mt-2">Alternativas de ${SLOT_LABEL[slot]} que trabajan los mismos músculos.</p>
- <div class="flex flex-col gap-2 mt-4">${alts.map(e=>`<div class="alt ${e.id===curId?'is-cur':''}"><button class="row-main" data-a="pick" data-ex="${e.id}" ${e.id===curId?'aria-current="true"':''}>${mini(e)}<span class="min-w-0 flex-1"><span class="block font-semibold leading-tight">${esc(e.n)}${e.id===curId?' <span class="text-accent text-sm">(actual)</span>':''}</span><span class="block text-sm text-dim">${esc(e.m.join(', '))}</span><span class="block text-sm ${allow.includes(e.eq)?'text-dim':'text-hard'}">${EQ_LABEL[e.eq]}${allow.includes(e.eq)?'':': fuera de tu equipamiento'}</span></span></button><button class="btn-ghost" data-a="info" data-ex="${e.id}" data-from="swap" aria-label="Ver técnica de ${esc(e.n)}">Técnica</button></div>`).join('')}</div>`,'Cambiar ejercicio')}
+ modal(`<h2 class="font-display text-3xl font-extrabold leading-none">Cambiar ejercicio</h2><p class="text-dim mt-2">Sugeridos: ${SLOT_LABEL[slot]}, trabajan los mismos músculos.</p>
+ <div class="flex flex-col gap-2 mt-4">${alts.map(e=>swapRow(e,curId,allow)).join('')}</div>
+ <button class="btn-ghost w-full mt-4" data-a="swapall">Ver todos los ejercicios por zona</button>`,'Cambiar ejercicio')}
+// Lista completa agrupada por la zona del músculo principal (máquinas primero).
+function swapZone(e){const m=e.m.flatMap(expandMus)[0],r=regionOf(m);return r?r.id:'core'}
+function openSwapAll(){const u=U(),ctx=swapCtx;if(!ctx)return;const curId=swapCur(u,ctx),allow=ALLOW[u.profile.equip],ord={machine:0,cable:1,bar:2,db:3,body:4};
+ const groups=REGIONS.map(r=>({r,list:EX.filter(e=>swapZone(e)===r.id).sort((a,b)=>allow.includes(b.eq)-allow.includes(a.eq)||ord[a.eq]-ord[b.eq])})).filter(g=>g.list.length);
+ modal(`<h2 class="font-display text-3xl font-extrabold leading-none">Todos los ejercicios</h2><p class="text-dim mt-2">Por zona del músculo principal. Si eliges uno que carga un músculo que entrenas en los próximos días, esa sesión se ajusta sola.</p>
+ <div class="flex flex-wrap gap-2 mt-3">${groups.map(g=>`<a class="chip" href="#sz-${g.r.id}">${esc(g.r.n)}</a>`).join('')}</div>
+ ${groups.map(g=>`<h3 class="h2 text-xl mt-5" id="sz-${g.r.id}">${esc(g.r.n)}</h3><div class="flex flex-col gap-2 mt-2">${g.list.map(e=>swapRow(e,curId,allow)).join('')}</div>`).join('')}
+ <button class="btn-text w-full mt-4 justify-center" data-a="swapback">Volver a los sugeridos</button>`,'Todos los ejercicios')}
+// Sesión de fuerza de mañana (dentro de las 40 h de fatiga) que entrena como principal algún músculo nuevo del ejercicio elegido.
+function swapImpact(u,oldId,newId){const was=new Set(X(oldId).m.flatMap(expandMus)),add=X(newId).m.flatMap(expandMus).filter(m=>!was.has(m)&&!FAT_SKIP.has(m));if(!add.length)return null;
+ const td=weekday(Date.now()),nx=weekSchedule(u).find(e=>e.type==='strength'&&!e.done&&e.wd===td+1&&e.tpl);if(!nx)return null;
+ const mus=add.find(m=>nx.tpl.items.some(it=>X(it.ex).m.flatMap(expandMus).includes(m)));return mus?{wd:nx.wd,mus}:null}
 // Guarda el cambio de ejercicio en el plan y en u.swaps para que sobreviva a la regeneración.
 function setSwap(u,it,exId){it.ex=exId;if(it.key){u.swaps=u.swaps||{};u.swaps[it.key]=exId}}
 function pick(exId){const u=U(),c=swapCtx;if(!c)return;
- if(c.s){const a=u.active,old=a.items[c.i];if(old.ex===exId){closeModal();return}
+ if(c.s){const a=u.active,old=a.items[c.i];if(old.ex===exId){closeModal();return}c.old=old.ex;
   if(old.sets.some(s=>s.rt)&&!confirm('Perderás las series ya registradas de este ejercicio. ¿Cambiar igualmente?'))return;
   a.items[c.i]=mkItem(u,exId);const dIt=a.dayIdx!=null&&u.plan.days[a.dayIdx]?u.plan.days[a.dayIdx].items.find(x=>x.ex===old.ex):null;if(dIt)setSwap(u,dIt,exId)}
  else setSwap(u,u.plan.days[c.d].items[c.i],exId);
- save();closeModal();render();toast(`Cambiado a ${X(exId).n}`)}
+ // Cambio en plena sesión: avisa si la próxima sesión (en 48 h) se ajustará por fatiga de ese músculo.
+ const imp=c.s?swapImpact(u,c.old,exId):null;
+ save();closeModal();render();toast(imp?`Cambiado a ${X(exId).n}. Mañana ajustaremos ${imp.mus} para que no llegues cansado.`:`Cambiado a ${X(exId).n}`)}
 
 /* ============ Sesión en vivo ============ */
 function mkItem(u,exId,p0){const ex=X(exId),p=p0||presc(ex,u.profile),g=prog(u,ex,p),wi=wk(u);let w=ex.eq==='body'?null:(g.w??startW(ex,u.profile));
@@ -842,7 +876,7 @@ function mkItem(u,exId,p0){const ex=X(exId),p=p0||presc(ex,u.profile),g=prog(u,e
 function startSession(e){const u=U();if(!u.active){if(!e||(e.type!=='cardio'&&!e.tpl))return;
  const s=buildSession(u,e);
  u.active={kind:s.kind,dayIdx:s.dayIdx,name:s.name,focus:s.focus,start:Date.now(),stage:'mob',cur:0,
-  items:s.items.map(it=>{const m=mkItem(u,it.ex,it.p),ex=X(it.ex);if(s.legAdj&&s.legAdj.pct&&LOWER_SLOTS.has(ex.slot))m.sets.forEach(x=>{x.w=legScaledWeight(ex,x.w,s.legAdj)});return {...m,sub:it.sub,warn:it.warn,leg:s.legAdj&&s.legAdj.pct&&LOWER_SLOTS.has(ex.slot)?s.legAdj.pct:0}}),legAdj:s.legAdj&&s.legAdj.pct?s.legAdj:null,cond:s.cond?{...s.cond,done:false,rt:null}:null,
+  items:s.items.map(it=>{const m=mkItem(u,it.ex,it.p),ex=X(it.ex);if(s.legAdj&&s.legAdj.pct&&LOWER_SLOTS.has(ex.slot))m.sets.forEach(x=>{x.w=legScaledWeight(ex,x.w,s.legAdj)});return {...m,sub:it.sub,warn:it.warn,fat:it.fat,leg:s.legAdj&&s.legAdj.pct&&LOWER_SLOTS.has(ex.slot)?s.legAdj.pct:0}}),legAdj:s.legAdj&&s.legAdj.pct?s.legAdj:null,cond:s.cond?{...s.cond,done:false,rt:null}:null,
   mob:{list:s.mob.map(m=>m.id),done:false},stretch:{list:s.stretch.map(x=>x.id),done:false},deload:s.deload,est:s.est.total,notes:s.notes};save()}
  view='session';render();scrollTo(0,0)}
 // Nombre de la sesión activa (las sesiones de la v1 solo guardaban dayIdx).
@@ -912,6 +946,9 @@ const A={
  dismissnotice:()=>{const u=U();delete u.notice;save();render()},
  info:d=>{const ctx=d.from==='swap'?'pick':d.s?{s:1,i:+d.i}:d.d!=null?{d:+d.d,i:+d.i}:null;openInfo(d.ex,ctx)},
  swap:d=>openSwap(d.s?{s:1,i:+d.i}:{d:+d.d,i:+d.i}),
+ swapall:()=>openSwapAll(),
+ swapback:()=>{if(swapCtx)openSwap(swapCtx)},
+ guide:d=>openGuide(d.k,d.id),
  'swap-from-info':()=>{if(infoCtx&&infoCtx!=='pick')openSwap(infoCtx)},
  pick:d=>pick(d.ex),
  close:()=>closeModal(),

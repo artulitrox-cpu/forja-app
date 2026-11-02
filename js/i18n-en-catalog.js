@@ -141,7 +141,7 @@ const STR_EN={
  s_cobra:['Gentle cobra','Face down, lift your chest on your forearms or hands.'],
  s_side:['Side bend','Standing with one arm up, lean to the opposite side. 30 s per side.'],
  s_quad:['Quad stretch','Standing, hold your ankle and bring your heel to your glute. 30 s per side.'],
- s_ham:['Hamstring stretch','Leg straight on a low bench, lean your torso forward with a flat back. 30 s per side.'],
+ s_ham:['Hamstring stretch','Sitting on the floor with one leg straight and the other bent, lean towards your foot with a straight back. 30 s per side.'],
  s_glute:['Figure 4','Lying down, cross one ankle over the opposite knee and pull your legs in. 30 s per side.'],
  s_hipflex:['Low lunge','Back knee on the floor, push your hips forward. 30 s per side.'],
  s_add:['Butterfly','Seated, bring the soles of your feet together and let your knees drop.'],
@@ -189,4 +189,6 @@ const LBL={
 Object.entries(LBL).forEach(([es,en])=>add(es,en));
 ['lunes','martes','miércoles','jueves','viernes','sábado','domingo'].forEach((d,i)=>{add(d,['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'][i]);add(d[0].toUpperCase()+d.slice(1),['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'][i])});
 ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'].forEach((d,i)=>add(d,['Mon','Tue','Wed','Thu','Fri','Sat','Sun'][i]));
+// Nombres en inglés por id, para mostrarlos entre paréntesis con la app en español.
+globalThis.CAT_EN={EX:EX_EN,CARDIO:CARDIO_EN};
 })();

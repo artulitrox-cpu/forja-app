@@ -323,13 +323,15 @@ function buildSession(u,e,{ws=weekStart(),now=Date.now()}={}){const pr=u.profile
  let raw=kind==='strength'?e.tpl.items:[],omitted=[],notes=[],cond=e.cond?{...e.cond}:null;
  if(inj){const r=safeItems(u,raw,map);raw=r.items;omitted=r.omitted;notes=r.notes;
   if(cond){const c=safeCond(u,cond,map);cond=c.cond;if(c.note)notes.push(c.note)}}
+ // Músculos cargados en las últimas 40 h (por ejemplo, tras cambiar un ejercicio): alternativa o una serie menos.
+ if(kind==='strength'){const f=fatigueItems(u,raw,fatiguedMuscles(u,now),map);raw=f.items;notes.push(...f.notes)}
  // Fatiga de piernas por deporte reciente (js/activities.js): con fatiga alta, el HIIT pasa a cardio suave.
  const legAdj=typeof legAdjust==='function'?legAdjust(u,now):{pct:0};
  if(legAdj.pct>=15&&cond&&cond.kind!=='liss'){const g=FINISH_MIN[pr.goal]?pr.goal:'maint';
   cond={kind:'liss',slot:cond.slot,machine:cond.machine,min:lissMin(u,cond.slot==='day'?CARDIO_DAY_MIN[g]:FINISH_MIN[g])};
   notes.push(`HIIT cambiado a cardio suave por fatiga de piernas (${legAdj.sport}).`)}
  const s={kind,name:kind==='cardio'?'Cardio':e.tpl.name,focus:kind==='cardio'?'':e.tpl.focus,dayIdx:e.dayIdx??null,deload:!!(wi&&wi.deload),
-  items:raw.map(it=>({slot:it.slot,ex:it.ex,key:it.key,sub:it.sub,warn:it.warn,p:presc(X(it.ex),pr,wi)})),cond,omitted,notes,legAdj};
+  items:raw.map(it=>{const p=presc(X(it.ex),pr,wi);return {slot:it.slot,ex:it.ex,key:it.key,sub:it.sub,warn:it.warn,fat:it.fat,p:it.fat&&it.fat.less?{...p,sets:Math.max(2,p.sets-1)}:p}}),cond,omitted,notes,legAdj};
  if(s.cond)s.focus=condLabel(s.cond);
  s.mob=mobFor(s.items.map(it=>it.slot),kind,short);
  const mus=new Set();s.items.forEach(it=>X(it.ex).m.forEach(m=>mus.add(m)));if(s.cond&&CARDIO_M[s.cond.machine])CARDIO_M[s.cond.machine].mus.forEach(m=>mus.add(m));
@@ -338,6 +340,23 @@ function buildSession(u,e,{ws=weekStart(),now=Date.now()}={}){const pr=u.profile
   s.mob=fill(safeMobility(s.mob,map),safeMobility(MOB.filter(m=>m.zone==='general'),map),3);
   s.stretch=fill(safeStretch(s.stretch,map),safeStretch(STRETCH,map),3)}
  return fitSession(s,(pr.sessionMin||60)*60-(kind==='cardio'?600:0))}
+/* ---- Fatiga muscular reciente ----
+   Series hechas como músculo principal en las últimas 40 h. Si un músculo acumula 3 o más (por ejemplo, porque cambiaste
+   un ejercicio y ahora lo entrenas un día antes), la siguiente sesión busca una alternativa que no lo cargue o quita una serie. */
+const FAT_H=40,FAT_SETS=3,FAT_SKIP=new Set(['Abdomen','Oblicuos']);
+function recentLoad(u,now=Date.now()){const m={};
+ (u.history||[]).forEach(h=>{const dh=(now-h.date)/36e5;if(dh<0||dh>=FAT_H)return;
+  (h.items||[]).forEach(it=>{const ex=X(it.ex);if(!ex)return;ex.m.flatMap(expandMus).forEach(x=>{if(!FAT_SKIP.has(x))m[x]=(m[x]||0)+((it.sets||[]).length)})})});return m}
+function fatiguedMuscles(u,now=Date.now()){const L=recentLoad(u,now),out={};for(const k in L)if(L[k]>=FAT_SETS)out[k]=L[k];return out}
+// Cambia cada ejercicio cuyo músculo principal está cansado por uno del mismo hueco que no lo cargue; si no hay, marca una serie menos.
+function fatigueItems(u,items,fat,inj={}){const notes=[];if(!Object.keys(fat).length)return {items,notes};
+ const hit=ex=>ex.m.flatMap(expandMus).find(m=>fat[m]),blocked=ex=>typeof exBlocked==='function'&&exBlocked(ex,inj);
+ const out=items.map(it=>{const ex=X(it.ex),mus=hit(ex);if(!mus)return it;
+  const exclude=items.map(x=>x.ex);let alt=null;
+  for(let n=0;n<EX.length;n++){const c=pickEx(it.slot,u.profile,{exclude});if(!c)break;if(!hit(c)&&!blocked(c)){alt=c;break}exclude.push(c.id)}
+  if(alt){notes.push(`${alt.n} en lugar de ${ex.n}: entrenaste ${mus} hace menos de 2 días.`);return {...it,ex:alt.id,fat:{mus,from:it.ex}}}
+  notes.push(`${ex.n}: una serie menos porque entrenaste ${mus} hace menos de 2 días.`);return {...it,fat:{mus,less:1}}});
+ return {items:out,notes}}
 function condLabel(c){const m=CARDIO_M[c.machine];return `${c.kind==='liss'?'Cardio suave':c.kind==='mod'?'Intervalos moderados':'HIIT'}: ${m?m.n.toLowerCase():''}, ${c.min} min`}
 function estSession(s){const mob=s.mob.reduce((t,m)=>t+m.sec+10,0),str=s.items.reduce((t,it)=>t+it.p.sets*(WORK+it.p.rest),0),
  cond=s.cond?s.cond.min*60:0,stretch=s.stretch.reduce((t,x)=>t+x.sec,0);return {mob,str,cond,stretch,total:mob+str+cond+stretch}}
