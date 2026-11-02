@@ -86,3 +86,39 @@ test('actualizar el plan: torso/pierna, bloque de 6 semanas y conserva los cambi
   assert.ok(u.plan.days.some((d) => d.items.some((it) => it.slot === 'chest_press' && it.ex === 'chest_machine')));
   assert.ok(!upgradePlan(u), 'idempotente');
 });
+
+test('torso/pierna: el día B usa otra variante de remo, jalón, sentadilla, curl femoral y gemelos', () => {
+  const days = genPlan(sampleProfile({ level: 'int', goal: 'hyp', avail: AV[4] })).days;
+  const ex = (name, slot) => days.find((d) => d.name === name).items.find((it) => it.slot === slot).ex;
+  for (const slot of ['horizontal_row', 'vertical_pull', 'biceps', 'triceps']) assert.notEqual(ex('Torso A', slot), ex('Torso B', slot), slot);
+  for (const slot of ['squat', 'hamstring_curl', 'calves']) assert.notEqual(ex('Pierna A', slot), ex('Pierna B', slot), slot);
+  // Los principiantes repiten los básicos para aprender la técnica.
+  const fb = genPlan(sampleProfile({ level: 'beg', avail: AV[3] })).days;
+  assert.equal(fb[0].items.find((it) => it.slot === 'squat').ex, fb[2].items.find((it) => it.slot === 'squat').ex);
+});
+
+test('gimnasio: accesorios de pierna en máquina, sin isométricos ni sentadilla goblet en intermedios y avanzados', () => {
+  for (const level of ['int', 'adv']) for (const goal of ['fat', 'hyp']) for (let cyc = 0; cyc < 6; cyc++) {
+    for (const d of genPlan(sampleProfile({ level, goal, avail: AV[4] }), { cyc }).days) for (const it of d.items) {
+      const e = X(it.ex), where = `${level}/${goal} bloque ${cyc + 1} ${d.name}: ${e.n}`;
+      if (['hamstring_curl', 'quad_iso', 'calves'].includes(it.slot)) assert.equal(e.eq, 'machine', where);
+      if (it.slot !== 'core') assert.ok(!e.time, where);
+      assert.notEqual(e.id, 'goblet', where);
+    }
+  }
+  // Con mancuernas en casa la goblet sigue siendo la sentadilla.
+  assert.equal(genPlan(sampleProfile({ level: 'int', equip: 'db', avail: AV[4] })).days[1].items[0].ex, 'goblet');
+});
+
+test('plan v3 → v4: nuevas variantes sin reiniciar el bloque ni la rotación', () => {
+  const u = mkUser({ avail: AV[4] }, { planV: 3, next: 2, swaps: { 'upB:horizontal_row:2': 'row_cable' } });
+  const cycle = plain(u.cycle);
+  assert.ok(upgradePlan(u));
+  assert.equal(u.next, 2);
+  assert.deepEqual(plain(u.cycle), cycle);
+  const upB = u.plan.days.find((d) => d.key === 'upB');
+  assert.equal(upB.items.find((it) => it.slot === 'horizontal_row').ex, 'row_cable', 'conserva el cambio del usuario');
+  assert.equal(upB.items.find((it) => it.slot === 'vertical_pull').ex, 'latpull_n');
+  assert.ok(u.notice);
+  assert.ok(!upgradePlan(u), 'idempotente');
+});

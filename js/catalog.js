@@ -12,7 +12,7 @@ const LOWER=new Set(['squat','hinge','lunge','hamstring_curl','calves']);
 const RT={easy:'Fácil',ok:'Normal',hard:'Difícil'};
 
 const EX=[];
-function E(id,n,slot,eq,anim,m,s,d,t,o={}){EX.push({id,n,slot,eq,anim,m,s,d,t,iso:!!o.iso,time:!!o.time,spine:!!o.spine,impact:!!o.impact})}
+function E(id,n,slot,eq,anim,m,s,d,t,o={}){EX.push({id,n,slot,eq,anim,m,s,d,t,iso:!!o.iso,time:!!o.time,light:!!o.light,spine:!!o.spine,impact:!!o.impact})}
 // Pecho
 E('bench_bb','Press de banca con barra','chest_press','bar','bench',['Pectoral'],['Tríceps','Deltoide anterior'],'Tumbado en el banco, baja la barra controlada hasta el esternón y empuja hasta extender los brazos.','Junta las escápulas, apoya bien los pies y lleva los codos a unos 45° del torso.');
 E('bench_db','Press de banca con mancuernas','chest_press','db','bench',['Pectoral'],['Tríceps','Deltoide anterior'],'Con una mancuerna en cada mano, baja hasta notar estiramiento en el pecho y empuja juntándolas arriba.','Más recorrido que con barra: controla la bajada durante 2 segundos.');
@@ -57,7 +57,7 @@ E('curl_cable','Curl en polea','biceps','cable','curl',['Bíceps'],['Antebrazo']
 E('chinup','Dominadas supinas','biceps','body','pull',['Bíceps','Dorsal ancho'],['Braquial'],'Palmas hacia ti y manos al ancho de hombros. Sube hasta pasar la barbilla.','Baja por completo en cada repetición.');
 // Pierna
 E('squat_bb','Sentadilla con barra','squat','bar','squat',['Cuádriceps','Glúteos'],['Aductores','Core'],'Con la barra sobre los trapecios, baja la cadera hasta que los muslos queden paralelos y sube.','Rodillas en la dirección de los pies y talones en el suelo.',{spine:1});
-E('goblet','Sentadilla goblet','squat','db','squat',['Cuádriceps','Glúteos'],['Core'],'Sujeta una mancuerna frente al pecho y baja entre las piernas con el torso erguido.','Codos por dentro de las rodillas abajo.');
+E('goblet','Sentadilla goblet','squat','db','squat',['Cuádriceps','Glúteos'],['Core'],'Sujeta una mancuerna frente al pecho y baja entre las piernas con el torso erguido.','Codos por dentro de las rodillas abajo.',{light:1});
 E('legpress','Prensa de piernas','squat','machine','squat',['Cuádriceps','Glúteos'],['Isquiotibiales'],'Empuja la plataforma con los pies al ancho de caderas sin bloquear las rodillas.','La zona lumbar no debe despegarse del respaldo.');
 E('air_squat','Sentadilla con peso corporal','squat','body','squat',['Cuádriceps','Glúteos'],['Core'],'Brazos al frente, baja la cadera atrás y abajo hasta la paralela y sube.','Controla 3 segundos la bajada para hacerla más dura.');
 E('rdl','Peso muerto rumano','hinge','bar','hinge',['Isquiotibiales','Glúteos'],['Lumbares'],'Con las rodillas semiflexionadas, lleva la cadera atrás bajando la barra pegada a las piernas.','Baja hasta notar estiramiento en los isquios, no hasta el suelo.',{spine:1});

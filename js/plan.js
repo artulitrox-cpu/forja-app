@@ -88,7 +88,7 @@ const TPL={
  upA:{name:'Torso A',focus:'Pecho, espalda y hombro',slots:['chest_press','horizontal_row','shoulder_press','vertical_pull','biceps']},
  upB:{name:'Torso B',focus:'Pecho superior, espalda y brazos',slots:['incline_press','vertical_pull','horizontal_row','chest_fly','lateral']},
  loA:{name:'Pierna A',focus:'Cuádriceps, isquios y gemelos',slots:['squat','hamstring_curl','lunge','calves','quad_iso']},
- loB:{name:'Pierna B',focus:'Glúteos, isquios y cuádriceps',slots:['hinge','squat','hamstring_curl','calves','glute_iso'],offs:{squat:1}}
+ loB:{name:'Pierna B',focus:'Glúteos, isquios y cuádriceps',slots:['hinge','squat','hamstring_curl','calves','glute_iso']}
 };
 // Días de cada reparto y nombres propios dentro de él.
 const SPLITS={fb:['fbA','fbB','fbC'],ul:['upA','loA','upB','loB'],ulppl:['upA','loA','push','pull','legs'],ppl:['push','pull','legs']};
@@ -101,29 +101,39 @@ const TPL_HYP={push:['triceps'],legs:['quad_iso','glute_iso'],fbA:['quad_iso'],f
 const MAIN_SLOTS=new Set(['squat','hinge','chest_press','incline_press','shoulder_press','horizontal_row','vertical_pull']);
 // Preferencia de material por nivel (más alto = preferido). El avanzado distingue principales y accesorios.
 const LEVEL_PREF={beg:{machine:3,cable:3,db:2,bar:1,body:1},int:{machine:2,cable:2,db:3,bar:3,body:1},advMain:{machine:1,cable:1,db:2,bar:3,body:1},advAcc:{machine:3,cable:3,db:2,bar:1,body:1}};
+// Accesorios de pierna: máquina primero en todos los niveles (carga estable y fácil de subir).
+const LEG_ACC=new Set(['hamstring_curl','quad_iso','glute_iso','calves']);
 // 60 años o más, o IMC de 35 o más: sin carga axial alta ni impacto.
 const lowImpact=pr=>(pr.age||0)>=60||(bmi(pr)||0)>=35;
 function pickEx(slot,pr,{off=0,cyc=0,exclude=[]}={}){
  let list=EX.filter(e=>e.slot===slot&&ALLOW[pr.equip||'gym'].includes(e.eq)&&!exclude.includes(e.id));
  if(lowImpact(pr)){const safe=list.filter(e=>!e.spine&&!e.impact);if(safe.length)list=safe}
+ // Los isométricos (sentadilla en pared) solo entran fuera del core si no hay otra opción.
+ if(slot!=='core'){const dyn=list.filter(e=>!e.time);if(dyn.length)list=dyn}
  if(!list.length)return null;
- const main=MAIN_SLOTS.has(slot),pref=pr.level==='adv'?LEVEL_PREF[main?'advMain':'advAcc']:LEVEL_PREF[pr.level]||LEVEL_PREF.beg;
- const scored=list.map((e,i)=>({e,sc:pref[e.eq]||0,i})).sort((a,b)=>b.sc-a.sc||a.i-b.i);
+ const main=MAIN_SLOTS.has(slot),pref=pr.level==='adv'?LEVEL_PREF[main?'advMain':'advAcc']:LEG_ACC.has(slot)?LEVEL_PREF.advAcc:LEVEL_PREF[pr.level]||LEVEL_PREF.beg;
+ // Intermedios y avanzados con material para cargar más: los básicos de carga limitada (sentadilla goblet) quedan al final.
+ const heavy=main&&pr.level!=='beg'&&list.some(e=>!e.light&&e.eq!=='body');
+ const scored=list.map((e,i)=>({e,sc:heavy&&e.light?0:pref[e.eq]||0,i})).sort((a,b)=>b.sc-a.sc||a.i-b.i);
  const shift=off+(main?0:cyc),top=scored[0].sc;
  let tier=scored.filter(x=>x.sc===top);
- if(tier.length<2&&shift>0)tier=scored.filter(x=>x.sc>=top-1);
+ // Variante de otro día o de otro bloque: entran las siguientes opciones con carga, nunca peso corporal ni carga limitada si hay material.
+ if(tier.length<2&&shift>0)tier=[...tier,...scored.filter(x=>x.sc<top&&x.e.eq!=='body'&&!(heavy&&x.e.light))];
  return tier[shift%tier.length].e}
 function genPlan(pr,{swaps={},cyc=0,split=null,nd=strengthDays(pr,daysOf(pr))}={}){
  const sp=split||splitFor(pr,nd),ppl=sp==='ppl',keys=SPLITS[sp]||SPLITS.fb;
  const count={beg:4,int:5,adv:5}[pr.level]||4;
- const days=[];
+ // Un hueco que se repite en la semana usa otra variante cada día (remo con barra en Torso A, con mancuerna en Torso B).
+ // En empuje/tirón/pierna lo hace la segunda vuelta; los principiantes repiten los básicos para aprender la técnica.
+ const days=[],vary=!ppl&&pr.level!=='beg',seen={};
  for(let i=0;i<Math.max(1,nd);i++){
   const k=keys[i%keys.length],tpl=TPL[k],round=Math.floor(i/keys.length),tag=k+(ppl&&round?'B':''),used={},items=[];
   const slots=[...tpl.slots.slice(0,count),...(pr.goal==='hyp'&&TPL_HYP[k]||[]),'core'];
-  slots.forEach((sl,pos)=>{const key=`${tag}:${sl}:${pos}`,off=(used[sl]||0)+(ppl?round:0)+((tpl.offs||{})[sl]||0);used[sl]=(used[sl]||0)+1;
+  slots.forEach((sl,pos)=>{const key=`${tag}:${sl}:${pos}`,off=(used[sl]||0)+(ppl?round:0)+(vary?seen[sl]||0:0);used[sl]=(used[sl]||0)+1;
    const exclude=items.map(x=>x.ex),sw=swaps[key]&&X(swaps[key]);
    const ex=sw&&!exclude.includes(sw.id)?sw:pickEx(sl,pr,{off,cyc,exclude});
    if(ex)items.push({slot:sl,ex:ex.id,key})});
+  Object.entries(used).forEach(([sl,n])=>{seen[sl]=(seen[sl]||0)+n});
   days.push({key:k,name:ppl?`${tpl.name} ${round?'B':'A'}`:(SPLIT_NAMES[sp]||{})[k]||tpl.name,focus:tpl.focus,items});
  }
  return {split:sp,days,weekdays:WEEK[Math.max(2,Math.min(6,nd))]};
@@ -280,8 +290,12 @@ function migrateUser(u){if(u.v>=2)return false;const pr=u.profile;
  u.updatedAt=Date.now();return true}
 // Plan v3: torso/pierna con 4–5 días, empuje con un press menos y bloques de 5–6 semanas.
 // Los ejercicios que el usuario había cambiado se conservan en los huecos equivalentes del plan nuevo.
-const PLAN_V=3;
+// Plan v4: otra variante en el segundo día de cada hueco y máquinas en los accesorios de pierna. Desde v3 no reinicia el bloque.
+const PLAN_V=4;
 function upgradePlan(u){if(!u||!u.profile||!u.plan||(u.planV||0)>=PLAN_V)return false;const pr=u.profile;
+ if(u.planV===3){regenPlan(u);u.planV=PLAN_V;
+  u.notice='Plan mejorado: los días A y B usan variantes distintas de remo, jalón, sentadilla y accesorios, y el curl femoral y los gemelos van en máquina. Tus cambios de ejercicio se mantienen.';
+  u.updatedAt=Date.now();return true}
  const bySlot={};Object.entries(u.swaps||{}).forEach(([k,id])=>{const sl=k.split(':')[1];if(sl&&X(id))bySlot[sl]=id});
  const before=u.plan.split;
  if(u.cycle){Object.assign(u.cycle,{len:cycleLen(pr),start:weekStart(),applied:0,seen:-1,boostMsg:''})}
