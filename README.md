@@ -24,6 +24,7 @@ App web sin compilación (`index.html` + `js/*.js`). Guarda los datos en el nave
 | `js/catalog.js` | ejercicios, máquinas de cardio, HIIT, movilidad y estiramientos |
 | `js/plan.js` | generador del plan, reparto semanal, acondicionamiento, límite de tiempo, migración de datos |
 | `js/injuries.js` | triaje y bloqueo/sustitución por lesiones |
+| `js/pip.js` | ventana flotante de la app de Android y avisos como notificación |
 | `js/activities.js` | deportes extra: calorías, fatiga de piernas, balance calórico |
 | `js/hr.js` | pulsómetro Bluetooth (Web Bluetooth, perfil Heart Rate) |
 | `js/bodymap.js` | figura anatómica SVG (formas generadas con `node tools/body.js` a partir de [react-native-body-highlighter](https://github.com/HichamELBSI/react-native-body-highlighter), licencia MIT en `tools/body-src/LICENSE`) |
@@ -75,5 +76,6 @@ Forja es una app web instalable (PWA): queda un icono en la pantalla de inicio y
 
 - **Android (Chrome o Samsung Internet):** abre la URL y pulsa *Instalar* en la tarjeta "Instala Forja". Si no aparece, usa el menú del navegador > *Añadir a pantalla de inicio* / *Instalar app*.
 - **iPhone (Safari):** botón *Compartir* > *Añadir a pantalla de inicio*.
+- **App de Android (APK, carpeta `android/`):** la misma web dentro de Capacitor, con Bluetooth nativo, grabación con el teléfono bloqueado, recordatorios locales y **ventana flotante**: con un temporizador guiado, un descanso o una grabación en vivo, al ir a inicio Forja queda en una ventana pequeña con el tiempo, el pulso y la zona, y los avisos llegan como notificación emergente (`js/pip.js` y `PipPlugin.java`). Se compila en Android Studio (*Build > Build APK(s)*); los cambios de la web llegan sin reinstalar, solo los nativos necesitan un APK nuevo.
 
 Archivos: `manifest.webmanifest` (nombre, colores, iconos), `sw.js` (caché para abrir sin conexión) e `icon-*.png`. Si cambias `sw.js`, sube el número de `CACHE` (`forja-v1` → `forja-v2`) para que los teléfonos descarguen la versión nueva.

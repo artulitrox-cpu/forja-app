@@ -175,6 +175,12 @@ details[open] .chev{transform:rotate(180deg)}
 .seq{position:fixed;inset:0;z-index:65;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px 20px calc(24px + env(safe-area-inset-bottom,0px));text-align:center;transition:background .3s}
 .seq-lbl{font-family:"Barlow Condensed","Arial Narrow",sans-serif;font-weight:800;font-size:clamp(2.6rem,12vw,4rem);line-height:.95;margin-top:10px}
 .seq-time{font-family:"Barlow Condensed","Arial Narrow",sans-serif;font-weight:800;font-size:clamp(5rem,28vw,9rem);line-height:1;margin-top:8px}
+/* Ventana flotante de la app de Android: solo el panel compacto (js/pip.js) */
+#pip{display:none}body.pip #pip{display:block;position:fixed;inset:0;z-index:200}body.pip>*:not(#pip){display:none!important}
+.pipbox{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:1vh;padding:3vh 4vw;overflow:hidden}
+.pip-t{font-size:min(13vh,9vw);line-height:1.05;font-weight:800;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pip-time{font-family:"Barlow Condensed","Arial Narrow",sans-serif;font-weight:800;font-size:min(38vh,28vw);line-height:1}
+.pip-hr{font-size:min(14vh,10vw);font-weight:700;line-height:1.1}.pip-sub{font-size:min(9vh,6.5vw);opacity:.85;line-height:1.15;max-width:100%}
 .seq-track{width:100%;max-width:24rem;height:8px;border-radius:4px;background:rgba(127,127,127,.3);margin-top:8px;overflow:hidden}
 .seq-bar{height:100%;width:0;background:currentColor}
 .seq-btn{min-height:50px;border-radius:14px;border:2px solid currentColor;background:transparent;color:inherit;font-weight:700;font-size:1rem;font-family:inherit}
@@ -187,6 +193,7 @@ details[open] .chev{transform:rotate(180deg)}
 <div id="timer"></div>
 <div id="seq"></div>
 <div id="toast"></div>
+<div id="pip" aria-live="polite"></div>
 
 <script src="js/i18n-en.js?v=202611020545"></script>
 <script src="js/i18n.js?v=202611020545"></script>
@@ -205,6 +212,7 @@ details[open] .chev{transform:rotate(180deg)}
 <script src="js/timer.js?v=202611020545"></script>
 <script src="js/push.js?v=202611020545"></script>
 <script src="js/hr.js?v=202611020545"></script>
+<script src="js/pip.js?v=202611020545"></script>
 <script src="js/i18n-en-catalog.js?v=202611020545"></script>
 <script>
 
@@ -226,7 +234,7 @@ let view='home',swapCtx=null,infoCtx=null;
 const $=s=>document.querySelector(s);
 function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function toast(msg){const t=$('#toast');t.innerHTML=`<div class="toast" role="status">${esc(msg)}</div>`;clearTimeout(toast.t);toast.t=setTimeout(()=>t.innerHTML='',2600)}
-const ICON={refresh:'<path d="M21 12a9 9 0 1 1-2.64-6.36L21 8"/><path d="M21 3v5h-5"/>',
+const ICON={refresh:'<path d="M21 12a9 9 0 1 1-2.64-6.36L21 8"/><path d="M21 3v5h-5"/>',pip:'<rect x="2" y="4" width="20" height="16" rx="2"/><rect x="12" y="12" width="7" height="5" rx="1"/>',
  today:'<path d="M6 7v10M18 7v10M3 10v4M21 10v4M6 12h12"/>',
  plan:'<rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>',
  hist:'<path d="M3 3v18h18"/><path d="M8 16v-4M13 16V8M18 16v-7"/>',
@@ -748,7 +756,8 @@ function vLive(){const u=U(),L=u.live;
   <p id="lv-st" class="text-center mt-3 text-sm font-semibold"></p>
   <button id="lv-tap" class="btn-ghost w-full mt-3" data-a="hrconnect" hidden>Conectar pulsómetro</button>
   <p id="lv-rc" class="mt-2 text-sm text-dim text-center"></p>
-  <button class="btn-primary w-full mt-6" data-a="livefinishopen">Finalizar ${L.sport==='football'||L.sport==='futsal'?'partido':'actividad'}</button>
+  ${pipBtn('btn-ghost w-full mt-6')}
+  <button class="btn-primary w-full mt-${pipCan?3:6}" data-a="livefinishopen">Finalizar ${L.sport==='football'||L.sport==='futsal'?'partido':'actividad'}</button>
   <button class="btn-text btn-danger w-full mt-2 justify-center" data-a="livecancel">Descartar grabación</button>
   <p class="hint text-center">${isNativeApp()?'Puedes bloquear el teléfono: la grabación y el pulso siguen (notificación «Forja · Grabando»). Si la banda se aleja, se reconecta sola al volver.':'Deja Forja abierta en pantalla: sin ella, el navegador no recibe el pulso. Si la banda se aleja, la grabación sigue y se reconecta al volver. Con la app de Android puedes bloquear el teléfono.'}</p></main>`}
 function updLive(){const u=U();if(!u||!u.live)return;liveNotify();const L=u.live,mini=$('#lv-mini');if(mini)mini.textContent=fmtDur(Date.now()-L.start);if(view!=='live')return;
@@ -957,7 +966,8 @@ const A={
  wkmatch:d=>{const u=U(),wd=+d.n;setMatch(u,weekStart(),wd,d.s);save();closeModal();render();scrollTo(0,0);toast(`Partido de ${SPORTS[d.s].n} el ${DAY_LONG[wd]}. Gimnasio reajustado.`)},
  wkunmatch:d=>{const u=U(),wd=+d.n;removeMatch(u,weekStart(),wd);save();closeModal();render();toast(`Sin partido el ${DAY_LONG[wd]}.`)},
  wkundo:d=>{undoChange(U(),weekStart(),d.id);save();render()},
- hrpeakreset:()=>{const u=U();delete u.profile.hrPeak;u.updatedAt=Date.now();save();render();toast('Zonas calculadas otra vez con 220 − edad.')},
+ hrpeakreset:()=>{const u=U();delete u.profile.hrPeak;save();render();toast('Zonas calculadas otra vez con 220 − edad.')},
+ pipenter:()=>pipEnter(),
  wknooffer:()=>{weekEdit(U(),weekStart()).noOffer=true;save();render()},
  pushon:async()=>{const msg=await pushEnable();const u=U();if(msg){toast(msg);return}u.settings={...(u.settings||{}),push:{...pushCfg(u),on:true}};save();await pushSyncReminders(true);render();toast('Notificaciones activadas')},
  pushoff:async()=>{const u=U();u.settings={...(u.settings||{}),push:{...pushCfg(u),on:false}};save();await pushDisable();render();toast('Notificaciones desactivadas')},
@@ -1036,7 +1046,7 @@ const A={
 };
 document.addEventListener('click',e=>{const el=e.target.closest('[data-a]');if(!el)return;const fn=A[el.dataset.a];if(fn)fn(el.dataset,el,e)});
 document.addEventListener('submit',e=>{const ck=e.target.closest('form[data-ck]');if(ck){e.preventDefault();saveCheckin(ck);return}
- const lf=e.target.closest('form[data-live]');if(lf){e.preventDefault();const u=U(),fd=new FormData(lf);const sport=String(fd.get('sport')),name=String(fd.get('name')||'').trim().slice(0,40);u.live={sport,type:String(fd.get('type')),name:sport==='other'&&name?name:undefined,start:Date.now(),reconnects:[],hadHr:HR.state==='on'};u.lastLive=sport;save();closeModal();view='live';render();keepAwake(true);liveServiceStart(liveTitle(u.live),liveBody(u.live));if(hrSaved()&&HR.state!=='on')hrResume();return}
+ const lf=e.target.closest('form[data-live]');if(lf){e.preventDefault();const u=U(),fd=new FormData(lf);const sport=String(fd.get('sport')),name=String(fd.get('name')||'').trim().slice(0,40);u.live={sport,type:String(fd.get('type')),name:sport==='other'&&name?name:undefined,start:Date.now(),reconnects:[],hadHr:HR.state==='on'};u.lastLive=sport;save();closeModal();view='live';render();keepAwake(true);liveServiceStart(liveTitle(u.live),liveBody(u.live));pipPrepare();if(hrSaved()&&HR.state!=='on')hrResume();return}
  const lfin=e.target.closest('form[data-livefin]');if(lfin){e.preventDefault();finishLive(lfin);return}
  const sf=e.target.closest('form[data-sport]');if(sf){e.preventDefault();const u=U(),fd=new FormData(sf),x={sport:String(fd.get('sport')),wd:+fd.get('wd')};u.profile.sports=(u.profile.sports||[]).filter(y=>y.wd!==x.wd);u.profile.sports.push(x);u.profile.sports.sort((a,b)=>a.wd-b.wd);save();render();toast(`${sportLbl(x.sport)} los ${DAY_LONG[x.wd]} añadido.`);return}
  const af=e.target.closest('form[data-act]');if(af){e.preventDefault();const u=U(),a=addActivity(u,readActivity(af));save();closeModal();render();showActivityResult(a);return}

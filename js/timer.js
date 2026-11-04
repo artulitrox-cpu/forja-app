@@ -17,10 +17,12 @@ function tickTimer(){if(!T)return;const rem=T.end-Date.now();if(rem<=0){endTimer
  const sm=smartRestOn(),rh=$('#trh');if(rh)rh.textContent=sm?`♥ ${HR.bpm||'--'} ppm · sigue al bajar de ${SMART_REST_BPM}`:'';
  if(sm&&restReady(HR.bpm,(Date.now()-T.start)/1000)){endTimer(true,'Pulso recuperado: siguiente serie.');return}
  const tt=$('#tt'),tp=$('#tprog');if(tt)tt.textContent=fmtDur(rem+999);if(tp)tp.setAttribute('stroke-dashoffset',C*(1-rem/T.dur))}
-function endTimer(done,msg){clearInterval(tInt);if(done&&T){beep();try{navigator.vibrate&&navigator.vibrate([200,100,200])}catch(e){}toast(msg||'Descanso terminado. A por la siguiente serie.')}T=null;$('#timer').innerHTML='';document.body.classList.remove('has-dock')}
+function endTimer(done,msg){clearInterval(tInt);if(done&&T){const m=msg||'Descanso terminado. A por la siguiente serie.';beep();try{navigator.vibrate&&navigator.vibrate([200,100,200])}catch(e){}toast(m);pipNotify(m)}T=null;$('#timer').innerHTML='';document.body.classList.remove('has-dock')}
 // Avisos de zona: como mucho uno por minuto. Subir = tres vibraciones cortas; bajar = dos largas.
 let lastZoneAlert=0;const ZW={k:'',since:0};
-function zoneCue(msg,up){if(Date.now()-lastZoneAlert<60000/FAST)return;lastZoneAlert=Date.now();beep();try{navigator.vibrate&&navigator.vibrate(up?[120,80,120,80,120]:[300,150,300])}catch(e){}toast(msg)}
+function zoneCue(msg,up){if(Date.now()-lastZoneAlert<60000/FAST)return;lastZoneAlert=Date.now();beep();try{navigator.vibrate&&navigator.vibrate(up?[120,80,120,80,120]:[300,150,300])}catch(e){}toast(msg);pipNotify(msg)}
+// En la ventana flotante o con Forja en segundo plano (app de Android), el aviso llega también como notificación (js/pip.js).
+const pipNotify=m=>{if(typeof pipAlert==='function')pipAlert(m)};
 // Avisa si llevas 1 min seguido por encima (baja) o por debajo (sube) de la zona objetivo lo–hi.
 // grace: segundos del tramo en los que no se pide subir, porque el pulso tarda en llegar.
 function zoneWatch(z,lo,hi,elapsed=Infinity,grace=0){const k=!z?'':z.z>hi?'hi':z.z<lo&&elapsed>=grace?'lo':'';
@@ -42,7 +44,7 @@ document.addEventListener('visibilitychange',()=>{if(document.visibilityState===
 const phaseMs=i=>SEQ.phases[i].sec*1000/FAST;
 // Cada tramo puede llevar zona objetivo: zt=[lo, hi] (con grace en segundos) se vigila durante el tramo;
 // peak=zona mínima a alcanzar en un intervalo fuerte, que se comprueba al terminarlo.
-function seqStart(phases,{title,onDone}){if(!phases.length)return;
+function seqStart(phases,{title,onDone}){if(!phases.length)return;if(typeof pipPrepare==='function')pipPrepare();
  Object.assign(SEQ,{phases,i:0,title,onDone,paused:null,from:Date.now()});SEQ.end=Date.now()+phaseMs(0);ZW.k='';
  ensureAudio();keepAwake(true);seqRender();clearInterval(seqInt);seqInt=setInterval(seqTick,200)}
 function seqTick(){if(!SEQ.phases)return;const rem=SEQ.paused??(SEQ.end-Date.now());if(rem<=0){seqNext();return}
@@ -57,8 +59,9 @@ function peakCheck(i){const ph=SEQ.phases[i];if(!ph.peak||typeof HR==='undefined
  if(z&&z.z<ph.peak)zoneCue(`Más fuerte en el siguiente intervalo: llegaste a Z${z.z} y el objetivo es Z${ph.peak}.`,true)}
 function seqNext(){if(!SEQ.phases)return;peakCheck(SEQ.i);SEQ.i++;if(SEQ.i>=SEQ.phases.length){seqStop(true);return}
  beep();try{navigator.vibrate&&navigator.vibrate(180)}catch(e){}
- SEQ.end=Date.now()+phaseMs(SEQ.i);SEQ.from=Date.now();SEQ.paused=null;ZW.k='';seqRender()}
-function seqStop(done){if(!SEQ.phases)return;clearInterval(seqInt);const cb=SEQ.onDone;SEQ.phases=null;SEQ.onDone=null;$('#seq').innerHTML='';
+ SEQ.end=Date.now()+phaseMs(SEQ.i);SEQ.from=Date.now();SEQ.paused=null;ZW.k='';seqRender();
+ const ph=SEQ.phases[SEQ.i];if(ph.zt)pipNotify(`${ph.label}: ${ph.sub}`)}
+function seqStop(done){if(!SEQ.phases)return;clearInterval(seqInt);const cb=SEQ.onDone;if(done)pipNotify(`Temporizador terminado: ${SEQ.title}`);SEQ.phases=null;SEQ.onDone=null;$('#seq').innerHTML='';
  if(!T)keepAwake(false);if(done){beep();cb&&cb()}}
 function seqPause(){if(!SEQ.phases)return;if(SEQ.paused==null)SEQ.paused=SEQ.end-Date.now();else{SEQ.end=Date.now()+SEQ.paused;SEQ.paused=null}seqRender()}
 function seqAdd(sec){if(!SEQ.phases)return;if(SEQ.paused!=null)SEQ.paused+=sec*1000;else SEQ.end+=sec*1000;seqTick()}
@@ -72,6 +75,6 @@ function seqRender(){const ph=SEQ.phases[SEQ.i],n=SEQ.phases.length,nx=SEQ.phase
   <div class="seq-track"><div id="sq-bar" class="seq-bar"></div></div>
   <p class="mt-3" style="opacity:.8">${nx?`Después: ${esc(nx.label)}`:'Último tramo'}</p>
   <div class="grid grid-cols-3 gap-2 mt-6 w-full" style="max-width:24rem"><button class="seq-btn" data-a="sqpause">${SEQ.paused!=null?'Seguir':'Pausa'}</button><button class="seq-btn" data-a="sqadd">+15 s</button><button class="seq-btn" data-a="sqskip">Saltar</button></div>
-  <button class="seq-btn mt-2 w-full" style="max-width:24rem" data-a="sqexit">Salir del temporizador</button>
-  <p class="text-xs mt-4" style="opacity:.75;max-width:20rem">La pantalla se mantiene encendida. Si bloqueas el teléfono, los pitidos pueden no sonar.</p></div>`;
+  <button class="seq-btn mt-2 w-full" style="max-width:24rem" data-a="sqexit">Salir del temporizador</button>${typeof pipBtn==='function'?pipBtn('seq-btn mt-2 w-full','max-width:24rem'):''}
+  <p class="text-xs mt-4" style="opacity:.75;max-width:20rem">${typeof pipCan!=='undefined'&&pipCan?'Al ir a inicio, Forja queda en una ventana flotante con el tiempo y el pulso. ':''}La pantalla se mantiene encendida. Si bloqueas el teléfono, los pitidos pueden no sonar.</p></div>`;
  seqTick()}
