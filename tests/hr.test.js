@@ -99,3 +99,41 @@ test('resumen del partido: kcal reales + MET en los huecos', () => {
   assert.equal(none.hr, null);
   assert.equal(none.kcalReal, null);
 });
+
+test('pico sostenido: ignora picos sueltos de la banda y cuenta 5 s seguidos', () => {
+  const hrPeakOf = c.get('hrPeakOf');
+  const run = (from, vals) => vals.map((v, i) => ({ t: from + i * 1000, v }));
+  // Un pico de 2 lecturas a 230 (camiseta seca) no cuenta; 6 s a 196–198 sí: el pico sostenido es 196.
+  const s = [...run(0, [150, 155, 230, 229, 160, 165]), ...run(20000, [196, 197, 198, 197, 196, 196, 170])];
+  assert.equal(hrPeakOf(s), 196);
+  // Con cortes de señal entre lecturas no hay 5 s seguidos.
+  assert.equal(hrPeakOf([{ t: 0, v: 200 }, { t: 3000, v: 200 }, { t: 6000, v: 200 }]), null);
+});
+
+test('FC máx. medida: sube las zonas, nunca las baja y descarta valores imposibles', () => {
+  const notePeak = c.get('notePeak');
+  const run = (v) => Array.from({ length: 8 }, (_, i) => ({ t: i * 1000, v }));
+  const u = { profile: sampleProfile({ age: 30 }) };
+  assert.equal(hrMax(u.profile), 190);
+  assert.equal(notePeak(u, run(180)), null, 'por debajo de la fórmula no cambia nada');
+  assert.deepEqual({ ...notePeak(u, run(198)) }, { before: 190, now: 198 });
+  assert.equal(hrMax(u.profile), 198);
+  assert.equal(hrZone(u.profile).hi, Math.round(198 * 0.7));
+  assert.equal(notePeak(u, run(194)), null, 'un pico menor no la baja');
+  assert.equal(notePeak(u, run(230)), null, 'más de 25 ppm sobre la fórmula es un error de lectura');
+  assert.equal(hrMax(u.profile), 198);
+});
+
+test('partido con poca señal: pulso parcial y sin esfuerzo propuesto', () => {
+  const start = 0, now = 70 * 60000;
+  const near = (from, min, v) => Array.from({ length: min * 60 }, (_, i) => ({ t: from + i * 1000, v }));
+  // Solo 15 de 70 min con señal (al volver al banquillo, con el pulso ya bajo).
+  const s = liveSummary({ start, sport: 'futsal', type: 'field' }, [...near(0, 5, 120), ...near(30 * 60000, 5, 115), ...near(60 * 60000, 5, 118)], man, now);
+  assert.equal(s.partial, true);
+  assert.equal(s.coveredMin, 15);
+  assert.ok(!s.rpe, 'sin esfuerzo propuesto');
+  // Con señal casi todo el rato sí se propone.
+  const full = liveSummary({ start, sport: 'futsal', type: 'field' }, near(0, 68, 165), man, now);
+  assert.equal(full.partial, false);
+  assert.ok(full.rpe >= 6);
+});

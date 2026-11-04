@@ -97,10 +97,23 @@ function hrStats(since,until=Infinity,samples=HR.samples){const v=samples.filter
  return {avg:Math.round(v.reduce((a,b)=>a+b,0)/v.length),max:Math.max(...v)}}
 
 /* ============ Cálculos (sin Bluetooth) ============ */
-const hrMax=pr=>+pr.age>0?220-pr.age:null;
+// hrMax (FC máxima, calibrada con tus picos) está en js/plan.js.
 const HR_ZONES=[{z:1,name:'Recuperación',lo:0},{z:2,name:'Aeróbica suave',lo:.6},{z:3,name:'Aeróbica',lo:.7},{z:4,name:'Umbral',lo:.8},{z:5,name:'Máximo',lo:.9}];
 const ZONE_COL=['','var(--dim)','var(--easy)','var(--normal)','var(--accent)','var(--hard)'];
 function hrZoneOf(bpm,pr){const m=hrMax(pr);if(!m||!bpm)return null;const pct=bpm/m;let z=HR_ZONES[0];HR_ZONES.forEach(x=>{if(pct>=x.lo)z=x});return {...z,pct}}
+// Pulso de una zona en ppm: [desde, hasta].
+function zoneBpm(z,pr){const m=hrMax(pr);if(!m)return null;const i=z-1,hi=HR_ZONES[i+1]?Math.round(HR_ZONES[i+1].lo*m)-1:m;return [Math.round(HR_ZONES[i].lo*m),hi]}
+// Pico sostenido: el valor más alto que se mantiene al menos 5 s sin cortes. Descarta los picos sueltos de la banda
+// (camiseta seca, mal contacto), que duran 1–2 lecturas.
+function hrPeakOf(samples,win=5000){const s=[...samples].sort((a,b)=>a.t-b.t);let best=0;
+ for(let i=0;i<s.length;i++){let lo=s[i].v,k=i+1;
+  for(;k<s.length&&s[k].t-s[i].t<=win;k++){if(s[k].t-s[k-1].t>2500)break;lo=Math.min(lo,s[k].v)}
+  if(s[k-1].t-s[i].t>=win-1000&&lo>best)best=lo}
+ return best||null}
+// Si la banda mide un pico sostenido por encima de tu FC máx. actual, pasa a ser tu FC máx. Devuelve {before, now} o null.
+function notePeak(u,samples){const pr=u.profile,a=+pr.age;if(!(a>0)||samples.length<5)return null;
+ const p=hrPeakOf(samples),before=hrMax(pr);if(!p||p<=before||p>220-a+HR_PEAK_CAP)return null;pr.hrPeak=p;return {before,now:p}}
+const peakTxt=r=>`Pulso máximo medido: ${r.now} ppm (antes ${r.before}). Tus zonas se ajustan a ti.`;
 // Keytel et al. (2005): kcal/min según pulso, peso, edad y sexo. Nunca por debajo del gasto en reposo.
 function keytelPerMin(bpm,pr){const w=pr.weight>0?pr.weight:70,a=+pr.age>0?+pr.age:30;
  const k=pr.sex==='f'?(-20.4022+.4472*bpm-.1263*w+.074*a)/4.184:(-55.0969+.6309*bpm+.1988*w+.2017*a)/4.184;
@@ -114,9 +127,14 @@ const SMART_REST_BPM=115;
 const restReady=(bpm,elapsed,thr=SMART_REST_BPM,min=30)=>!!bpm&&bpm<thr&&elapsed>=min;
 // RPE propuesto a partir del pulso medio (Z1–2 → 4, Z3 → 6, Z4 → 8, Z5 → 9).
 function suggestRpe(avg,pr){const z=hrZoneOf(avg,pr);return z?[4,4,4,6,8,9][z.z]:6}
+// Con señal menos del 70 % del tiempo, el pulso medio no refleja el esfuerzo: la banda suele reconectar al volver
+// junto al móvil, ya en reposo. Entonces no se propone el esfuerzo (RPE): lo elige el usuario.
+const HR_COVER_OK=.7;
+const hrPartial=(coveredMin,min)=>coveredMin!=null&&coveredMin<min*HR_COVER_OK;
 // Resumen de una grabación en vivo: minutos, pulso, kcal reales (lecturas) + MET para el tiempo sin pulso.
 function liveSummary(live,samples,pr,now,rpe){const min=Math.max(1,Math.round((now-live.start)/60000)),own=samples.filter(s=>s.t>=live.start&&s.t<=now);
  const hr=hrStats(live.start,now,own),r=own.length>1?kcalFromSamples(own,pr):{kcal:0,coveredMs:0};
- const gapMin=Math.max(0,(now-live.start-r.coveredMs)/60000),met=typeof activityCalc==='function'?activityCalc({sport:live.sport,type:live.type,min:gapMin,rpe:rpe||suggestRpe(hr&&hr.avg,pr)},pr).kcal:0;
+ const partial=!!hr&&r.coveredMs<(now-live.start)*HR_COVER_OK,sug=hr&&!partial?suggestRpe(hr.avg,pr):null;
+ const gapMin=Math.max(0,(now-live.start-r.coveredMs)/60000),met=typeof activityCalc==='function'?activityCalc({sport:live.sport,type:live.type,min:gapMin,rpe:rpe||sug||6},pr).kcal:0;
  const kcalReal=r.coveredMs?Math.round(r.kcal):null;
- return {min,hr,kcalReal,kcal:Math.round(r.kcal)+met,coveredMin:Math.round(r.coveredMs/60000),rpe:rpe||suggestRpe(hr&&hr.avg,pr)}}
+ return {min,hr,kcalReal,kcal:Math.round(r.kcal)+met,coveredMin:Math.round(r.coveredMs/60000),partial,rpe:rpe||sug}}

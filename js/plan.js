@@ -312,8 +312,12 @@ const FINISH_MIN={fat:[10,20],hyp:[10,15],maint:[15,20]};
 const CARDIO_DAY_MIN={fat:[30,45],hyp:[25,30],maint:[30,40]};
 const HIIT_CAP={fat:2,maint:1,hyp:0};
 const CARDIO_TARGET={fat:150,maint:150,hyp:60};
-// Pulso orientativo para LISS: 60–70 % de la FC máxima (220 − edad, igual que las zonas del pulsómetro).
-function hrZone(pr){const a=+pr.age;if(!(a>0))return null;const max=220-a;return {lo:Math.round(max*.6),hi:Math.round(max*.7),max}}
+// FC máxima: 220 − edad, o el pico sostenido que haya medido la banda si es mayor (notePeak en js/hr.js).
+// Más de 25 ppm por encima de la fórmula se considera un error de lectura.
+const HR_PEAK_CAP=25;
+function hrMax(pr){const a=+pr.age;if(!(a>0))return null;const f=220-a;return pr.hrPeak>f?Math.min(pr.hrPeak,f+HR_PEAK_CAP):f}
+// Pulso orientativo para LISS: 60–70 % de la FC máxima (la misma que usan las zonas del pulsómetro).
+function hrZone(pr){const max=hrMax(pr);if(!max)return null;return {lo:Math.round(max*.6),hi:Math.round(max*.7),max}}
 const LEG_MAIN=new Set(['squat','hinge']);
 const isLegTpl=tpl=>!!tpl&&tpl.items.some(it=>LEG_MAIN.has(it.slot));
 const lvlIdx=pr=>({beg:0,int:1,adv:2}[pr.level]??0);
@@ -326,8 +330,10 @@ function hiitProto(u){if(lowImpact(u.profile))return HIIT_MOD;const l=u.cprog&&u
 const protoMin=(rounds,work,rest)=>Math.round((HIIT_WARM+HIIT_COOL+rounds*(work+rest))/60);
 // Rellena e.cond = {kind:'liss'|'hiit'|'mod', min, machine, proto?, rounds?, work?, rest?} en las entradas de la semana.
 function assignConditioning(u,sched,ws){const pr=u.profile,g=FINISH_MIN[pr.goal]?pr.goal:'maint',wi=u.cycle?wk(u,ws):{deload:false};
- const weeksIn=Math.floor((ws-weekStartOf(u.created||ws))/WMS);
- const cap=wi.deload||(pr.level==='beg'&&weeksIn<2)?0:HIIT_CAP[g];
+ const weeksIn=Math.floor((ws-weekStartOf(u.created||ws))/WMS),noHiit=wi.deload||(pr.level==='beg'&&weeksIn<2);
+ const cap=noHiit?0:HIIT_CAP[g];
+ // Con un deporte habitual, la semana sin partido (ni otra actividad dura registrada) pierde su sesión intensa: un HIIT la sustituye.
+ const end=ws+7*DAY_MS,repl=!noHiit&&(pr.sports||[]).length>0&&!sched.some(e=>e.type==='match')&&!(u.activities||[]).some(a=>a.date>=ws&&a.date<end&&a.rpe>=7);
  const at=wd=>sched.find(x=>x.wd===wd);
  // Sin HIIT la víspera de una sesión con pierna principal ni la víspera de un partido.
  const legNext=e=>{const n=at(e.wd+1);return !!n&&((n.type==='strength'&&!n.done&&isLegTpl(n.tpl))||n.type==='match')};
@@ -336,7 +342,7 @@ function assignConditioning(u,sched,ws){const pr=u.profile,g=FINISH_MIN[pr.goal]
  const fin=g==='hyp'?[...str].sort((a,b)=>(isLegTpl(a.tpl)-isLegTpl(b.tpl))||((a.tpl?a.tpl.items.length:0)-(b.tpl?b.tpl.items.length:0))).slice(0,2):str;
  fin.forEach(e=>e.cond={slot:'finish'});
  sched.filter(e=>e.type==='cardio').forEach(e=>e.cond={slot:'day'});
- const all=sched.filter(e=>e.cond);
+ let all=sched.filter(e=>e.cond);
  // Perder grasa: alterna LISS y HIIT. Mantenimiento: el HIIT va primero a un día de cardio.
  const order=g==='maint'?[...all.filter(e=>e.cond.slot==='day'),...all.filter(e=>e.cond.slot!=='day')]:all;
  let hiits=0;
@@ -344,6 +350,11 @@ function assignConditioning(u,sched,ws){const pr=u.profile,g=FINISH_MIN[pr.goal]
   if(want&&hiits<cap&&!legNext(e)){e.cond.kind='hiit';hiits++}else e.cond.kind='liss'});
  // Perder grasa: si la alternancia no colocó ningún HIIT, se prueba en otro bloque que lo permita.
  if(g==='fat'&&hiits<cap){const alt=order.find(e=>e.cond.kind==='liss'&&!legNext(e));if(alt&&!order.some(e=>e.cond.kind==='hiit')){alt.cond.kind='hiit';hiits++}}
+ // Reemplazo: primero un día de cardio, luego un bloque suave tras pesas y, si no, se añade tras una sesión sin pierna al día siguiente.
+ if(repl){const now=Date.now(),td=now>=ws&&now<end?weekday(now):0,free=e=>!e.done&&e.wd>=td&&!legNext(e);
+  const alt=[...all.filter(e=>e.cond.slot==='day'),...all.filter(e=>e.cond.slot!=='day')].find(e=>e.cond.kind==='liss'&&free(e))
+   ||str.find(e=>!e.cond&&free(e));
+  if(alt){alt.cond={slot:(alt.cond&&alt.cond.slot)||'finish',kind:'hiit',repl:true};all=sched.filter(e=>e.cond)}}
  const weekN=Math.floor(ws/WMS);let mi=0;
  all.sort((a,b)=>a.wd-b.wd).forEach(e=>{const c=e.cond,isH=c.kind==='hiit',pool=cardioPool(pr,{hiit:isH});
   if(!pool.length){delete e.cond;return}
@@ -402,7 +413,10 @@ function buildSession(u,e,{ws=weekStart(),now=Date.now()}={}){const pr=u.profile
  if(inj){const fill=(list,pool,n)=>{for(const x of pool){if(list.length>=n)break;if(!list.includes(x))list.push(x)}return list};
   s.mob=fill(safeMobility(s.mob,map),safeMobility(MOB.filter(m=>m.zone==='general'),map),3);
   s.stretch=fill(safeStretch(s.stretch,map),safeStretch(STRETCH,map),3)}
- return fitSession(s,(pr.sessionMin||60)*60-(kind==='cardio'?600:0))}
+ fitSession(s,(pr.sessionMin||60)*60-(kind==='cardio'?600:0));
+ // Tras el recorte por tiempo, para que el resumen diga los minutos reales del cardio.
+ if(s.cond)s.focus=condLabel(s.cond);
+ return s}
 /* ---- Fatiga muscular reciente ----
    Series hechas como músculo principal en las últimas 40 h. Si un músculo acumula 3 o más (por ejemplo, porque cambiaste
    un ejercicio y ahora lo entrenas un día antes), la siguiente sesión busca una alternativa que no lo cargue o quita una serie. */
@@ -424,9 +438,10 @@ function condLabel(c){const m=CARDIO_M[c.machine];return `${c.kind==='liss'?'Car
 function estSession(s){const mob=s.mob.reduce((t,m)=>t+m.sec+10,0),str=s.items.reduce((t,it)=>t+it.p.sets*(WORK+it.p.rest),0),
  cond=s.cond?s.cond.min*60:0,stretch=s.stretch.reduce((t,x)=>t+x.sec,0);return {mob,str,cond,stretch,total:mob+str+cond+stretch}}
 function fitSession(s,limit){const over=()=>(s.est=estSession(s)).total>limit,note=t=>s.notes.push(t);
- // 1) Acorta el acondicionamiento hasta un mínimo de 8 min.
- if(over()&&s.cond){const c=s.cond,before=c.min;
-  while(over()&&c.min>8){if(c.rounds){if(c.rounds<=2)break;c.rounds--;c.min=Math.max(8,protoMin(c.rounds,c.work,c.rest))}else c.min--}
+ // 1) Acorta el acondicionamiento hasta un mínimo de 8 min. El HIIT de reemplazo es la sesión intensa de la semana:
+ // conserva al menos 6 rondas y, si aún no cabe, antes salen los accesorios (paso 6).
+ if(over()&&s.cond){const c=s.cond,before=c.min,floor=c.repl?Math.min(c.rounds||0,6):2;
+  while(over()&&c.min>8){if(c.rounds){if(c.rounds<=floor)break;c.rounds--;c.min=Math.max(8,protoMin(c.rounds,c.work,c.rest))}else c.min--}
   if(c.min<before)note(`Cardio acortado a ${c.min} min para caber en tu tiempo.`)}
  // La prevención de lesiones no se recorta: antes salen los accesorios.
  const iso=it=>!MAIN_SLOTS.has(it.slot)&&it.slot!=='prehab';
@@ -441,4 +456,6 @@ function fitSession(s,limit){const over=()=>(s.est=estSession(s)).total>limit,no
  if(over()){let ch=0;s.items.forEach(it=>{if(iso(it)&&it.p.sets>2){it.p={...it.p,sets:it.p.sets-1};ch=1}});if(ch)note('Una serie menos en los aislamientos.')}
  if(over()){let ch=0;s.items.forEach(it=>{if(iso(it)&&it.p.rest>45){it.p={...it.p,rest:45};ch=1}});if(ch)note('Descansos de 45 s en los aislamientos.')}
  while(over()&&removeOne());
+ // 6) Si aún no cabe, el HIIT de reemplazo también baja de 6 rondas.
+ if(over()&&s.cond&&s.cond.rounds>2){const c=s.cond;while(over()&&c.rounds>2){c.rounds--;c.min=Math.max(8,protoMin(c.rounds,c.work,c.rest))}}
  s.overTime=over();return s}

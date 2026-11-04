@@ -95,3 +95,21 @@ test('pulso orientativo: 60–70 % de la FC máxima de Tanaka', () => {
   assert.deepEqual({ ...hrZone(sampleProfile({ age: 40 })) }, { lo: 108, hi: 126, max: 180 });
   assert.equal(hrZone(sampleProfile({ age: '' })), null);
 });
+
+test('semana sin partido: un HIIT de reemplazo, nunca la víspera de pierna', () => {
+  const removeMatch = c.get('removeMatch');
+  for (const goal of ['hyp', 'fat', 'maint']) {
+    const u = mkUser({ goal, avail: [0, 2, 3, 4], sports: [{ sport: 'futsal', wd: 1 }] });
+    assert.ok(!conds(weekSchedule(u, WS)).some((x) => x.repl), `${goal}: con partido no hay reemplazo`);
+    removeMatch(u, WS, 1);
+    const s = weekSchedule(u, WS), r = s.filter((e) => e.cond && e.cond.repl);
+    assert.equal(r.length, 1, goal);
+    assert.ok(['hiit', 'mod'].includes(r[0].cond.kind) && r[0].cond.rounds > 0, goal);
+    assert.ok(!isLeg(s.find((x) => x.wd === r[0].wd + 1)), `${goal}: reemplazo la víspera de pierna`);
+    // Si registraste otra actividad dura esa semana (por ejemplo, fútbol), ya tuviste tu sesión intensa.
+    u.activities = [{ date: WS + DAY, sport: 'football', rpe: 8, min: 70 }];
+    assert.ok(!conds(weekSchedule(u, WS)).some((x) => x.repl), `${goal}: con fútbol registrado no hay reemplazo`);
+  }
+  // Sin deporte habitual, nada cambia.
+  assert.ok(!conds(weekSchedule(mkUser({ goal: 'hyp' }), WS)).some((x) => x.repl));
+});

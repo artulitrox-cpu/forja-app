@@ -350,7 +350,7 @@ function estCard(u,s){const e=s.est,pc=v=>(v/Math.max(1,e.total)*100).toFixed(1)
   <p class="text-sm text-dim mt-3">Si empiezas ahora, terminas hacia las ${hhmm(Date.now()+e.total*1000)}.</p>
   ${s.overTime?`<p class="mt-2 text-sm" style="color:var(--hard)">Esta sesión dura unos ${m(e.total)} min, más que tu límite de ${lim}. Sube el tiempo o añade un día.</p>`:''}
   ${s.notes.length?`<ul class="mt-2 text-sm text-dim flex flex-col gap-1">${s.notes.map(n=>`<li>· ${esc(n)}</li>`).join('')}</ul>`:''}</div>`}
-function condRow(c){const m=CARDIO_M[c.machine];return `<div class="row"><span class="row-main"><span class="mini grid place-items-center" style="color:var(--normal)">${ic('today',26)}</span><span class="min-w-0 flex-1"><span class="block font-semibold leading-tight">${esc(condKindLbl(c))}: ${esc(m?m.n:'')}${m?cardioEn(m.id):''}</span><span class="block text-sm text-dim mt-0.5">${c.kind==='liss'?`${c.min} min continuos`:`${c.rounds} × ${c.work} s fuerte / ${c.rest} s suave · ${c.min} min`}</span></span></span></div>`}
+function condRow(c){const m=CARDIO_M[c.machine];return `<div class="row"><span class="row-main"><span class="mini grid place-items-center" style="color:var(--normal)">${ic('today',26)}</span><span class="min-w-0 flex-1"><span class="block font-semibold leading-tight">${esc(condKindLbl(c))}: ${esc(m?m.n:'')}${m?cardioEn(m.id):''}</span><span class="block text-sm text-dim mt-0.5">${c.kind==='liss'?`${c.min} min continuos`:`${c.rounds} × ${c.work} s fuerte / ${c.rest} s suave · ${c.min} min`}${c.repl?' · sustituye al partido':''}</span></span></span></div>`}
 function blockRow(title,sub,icon){return `<div class="row"><span class="row-main"><span class="mini grid place-items-center text-dim">${ic(icon,26)}</span><span class="min-w-0 flex-1"><span class="block font-semibold leading-tight">${esc(title)}</span><span class="block text-sm text-dim mt-0.5">${esc(sub)}</span></span></span></div>`}
 // Qué ofrecer hoy: la sesión de hoy si está pendiente; si no, el estado del día y la siguiente sesión.
 function todayPick(u){const s=weekSchedule(u),td=weekday(Date.now()),e=s.find(x=>x.wd===td);
@@ -583,7 +583,8 @@ function vStageStr(u,a){const it=a.items[a.cur],ex=X(it.ex),p=it.p,cur=it.sets.f
   <div class="flex gap-2 mt-4"><button data-a="prev" class="btn-ghost flex-1" ${a.cur===0?'disabled':''}>Anterior</button>${last?`<button data-a="stagenext" class="btn-primary flex-[2]">${nxt?`Pasar a ${(nxt==='cond'&&a.cond.kind!=='liss'?'HIIT':STAGE_LBL[nxt]).toLowerCase()}`:'Terminar sesión'}</button>`:`<button data-a="next" class="btn-ghost flex-[2]">Siguiente ejercicio</button>`}</div>`}
 function vStageCond(u,a){const c=a.cond,m=CARDIO_M[c.machine]||{n:'Cardio',d:'',set:''},hr=hrZone(u.profile);
  const what=c.kind==='liss'?`${c.min} min continuos`:`${c.rounds} rondas de ${c.work} s ${c.kind==='mod'?'a ritmo moderado-alto':'a tope'} y ${c.rest} s suave (con 3 min de calentamiento y 2 de vuelta a la calma)`;
- const inten=c.kind==='liss'?`Ritmo al que puedes hablar pero no cantar.${hr?` Pulso orientativo: ${hr.lo}–${hr.hi} ppm.`:''}`:c.kind==='mod'?'En los intervalos, esfuerzo de 7 sobre 10: respiras fuerte pero controlado.':'En los intervalos fuertes, esfuerzo de 9 sobre 10. En los suaves, sigue moviéndote despacio.';
+ const fin=c.kind==='liss'?lissFinish(c,a.deload)/60:0;
+ const inten=(c.kind==='liss'?`Ritmo al que puedes hablar pero no cantar.${hr?` Pulso orientativo: ${hr.lo}–${hr.hi} ppm.`:''}${fin?` Los últimos ${fin} min, final progresivo: sube hasta Z3.`:''}`:c.kind==='mod'?'En los intervalos, esfuerzo de 7 sobre 10: respiras fuerte pero controlado.':'En los intervalos fuertes, esfuerzo de 9 sobre 10. En los suaves, sigue moviéndote despacio.')+(c.repl?' Esta semana sustituye al partido.':'');
  return `<section class="card p-4 mt-4">${guidePhoto(c.machine,'gph mb-4',m.n)}<p class="text-sm text-dim">${condKindLbl(c)}</p><h1 class="font-display text-3xl font-extrabold leading-none mt-1">${esc(m.n)}</h1>${cardioEn(c.machine)?`<p class="text-sm mt-1">${cardioEn(c.machine)}</p>`:''}
   <p class="mt-3">${esc(m.d)}</p><div class="tip mt-3 text-sm"><b>${esc(what)}.</b> ${esc(inten)}</div>${m.set?`<p class="hint">${esc(m.set)}</p>`:''}
   ${c.done?`<p class="mt-4 font-semibold" style="color:var(--easy)">Bloque hecho${c.rt?`: ${RT[c.rt].toLowerCase()}`:''}.</p>`:''}
@@ -593,10 +594,14 @@ function vStageCond(u,a){const c=a.cond,m=CARDIO_M[c.machine]||{n:'Cardio',d:'',
 // Tramos del temporizador para movilidad/estiramientos (los de "por lado" se parten en dos).
 function listPhases(k,a){const isM=k==='mob',map=isM?MOBM:STRM;
  return a[k].list.map(id=>map[id]).filter(Boolean).flatMap(x=>isM?[{label:x.n,sub:x.dose,sec:x.sec,kind:'neutral',img:x.id}]:x.sec>30?[{label:x.n,sub:'Lado 1',sec:30,kind:'neutral',img:x.id},{label:x.n,sub:'Lado 2',sec:30,kind:'neutral',img:x.id}]:[{label:x.n,sub:'',sec:x.sec,kind:'neutral',img:x.id}])}
-function condPhases(c){const m=(CARDIO_M[c.machine]||{n:'Cardio'}).n;
- if(c.kind==='liss')return [{label:m,sub:'Ritmo cómodo: puedes hablar',sec:c.min*60,kind:'neutral',img:c.machine}];
+// Final progresivo del cardio suave: el último tercio, entre 2 y 5 min, en Z3 (no en descarga ni en bloques de menos de 7 min).
+const lissFinish=(c,deload)=>{const t=c.min*60,f=Math.round(Math.min(300,t/3)/60)*60;return !deload&&f>=120&&t-f>=300?f:0};
+// Tramos del temporizador de cardio. LISS: Z2 (aviso para subir tras 3 min) y final en Z3. HIIT: llegar a Z4 en cada intervalo (Z3 en el moderado).
+function condPhases(c,deload){const m=(CARDIO_M[c.machine]||{n:'Cardio'}).n;
+ if(c.kind==='liss'){const f=lissFinish(c,deload),main={label:m,sub:'Ritmo cómodo: puedes hablar',sec:c.min*60-f,kind:'neutral',img:c.machine,zt:[2,2],grace:180};
+  return f?[main,{label:'Final progresivo',sub:'Sube el ritmo hasta Z3',sec:f,kind:'neutral',img:c.machine,zt:[3,3],grace:45}]:[main]}
  const ph=[{label:'Calentamiento',sub:m,sec:HIIT_WARM,kind:'neutral',img:c.machine}];
- for(let i=1;i<=c.rounds;i++){ph.push({label:c.kind==='mod'?'¡Ritmo alto!':'¡Fuerte!',sub:`Ronda ${i} de ${c.rounds}`,sec:c.work,kind:'work'});ph.push({label:'Suave',sub:`Ronda ${i} de ${c.rounds}`,sec:c.rest,kind:'rest'})}
+ for(let i=1;i<=c.rounds;i++){ph.push({label:c.kind==='mod'?'¡Ritmo alto!':'¡Fuerte!',sub:`Ronda ${i} de ${c.rounds}`,sec:c.work,kind:'work',peak:i>=2?(c.kind==='mod'?3:4):0});ph.push({label:'Suave',sub:`Ronda ${i} de ${c.rounds}`,sec:c.rest,kind:'rest'})}
  ph.push({label:'Vuelta a la calma',sub:m,sec:HIIT_COOL,kind:'neutral'});return ph}
 function openCondRate(){modal(`<h2 class="font-display text-3xl font-extrabold leading-none">¿Cómo fue el ${condKindLbl(U().active.cond).toLowerCase()}?</h2><p class="text-dim mt-2">Con tu respuesta ajustamos la próxima vez.</p>
  <div class="flex flex-col gap-2 mt-5">${[['easy','Fácil: me sobraba energía'],['ok','Normal: justo lo previsto'],['hard','Difícil: me costó terminarlo']].map(([r,l])=>`<button class="rb rb-${r}" style="min-height:52px" data-a="condrate" data-r="${r}">${l}</button>`).join('')}</div>`,'Valorar cardio')}
@@ -688,7 +693,7 @@ function readActivity(f){const fd=new FormData(f),when=new Date(String(fd.get('w
  return {sport:fd.get('sport')||'other',type:fd.get('type')||'',name:String(fd.get('name')||'').trim(),min:Math.max(5,Math.min(600,Math.round(+fd.get('min')||0))),rpe:+fd.get('rpe')||5,km:parseFloat(String(fd.get('km')||'').replace(',','.'))||undefined,date:isNaN(when)?Date.now():Math.min(Date.now(),when)}}
 function showActivityResult(a){const u=U(),adj=legAdjust(u),d=dayKcal(u);
  modal(`<p class="text-dim">${actLine(a)}</p><h2 class="font-display text-3xl font-extrabold leading-none mt-1">Actividad guardada</h2>
- <div class="grid grid-cols-2 gap-2 mt-5"><div class="stat"><b>${nf(a.kcal)}</b><span>${a.kcalReal?`kcal (${nf(a.kcalReal)} medidas con pulso)`:'kcal estimadas'}</span></div>${a.hr?`<div class="stat"><b>${a.hr.avg}</b><span>ppm medio (máx. ${a.hr.max})</span></div>`:''}<div class="stat"><b style="color:${FAT_COL[a.level]}">${FATIGUE_LBL[a.level]}</b><span>fatiga de piernas (${a.fatigue}/100)</span></div></div>
+ <div class="grid grid-cols-2 gap-2 mt-5"><div class="stat"><b>${nf(a.kcal)}</b><span>${a.kcalReal?`kcal (${nf(a.kcalReal)} medidas con pulso)`:'kcal estimadas'}</span></div>${a.hr?`<div class="stat"><b>${a.hr.avg}</b><span>ppm medio (máx. ${a.hr.max})${hrPartial(a.hrMin,a.min)?` · medido ${a.hrMin} de ${a.min} min`:''}</span></div>`:''}<div class="stat"><b style="color:${FAT_COL[a.level]}">${FATIGUE_LBL[a.level]}</b><span>fatiga de piernas (${a.fatigue}/100)</span></div></div>
  ${d.total&&dayKey(a.date)===dayKey(Date.now())?`<p class="mt-4">Tu objetivo de hoy sube a <b>${nf(d.total)} kcal</b> (+${nf(d.sport)} por deporte).</p>`:''}
  <h3 class="h2 text-xl mt-5">En el gimnasio</h3><p class="mt-2">${adj.pct?esc(adj.text):'No hace falta ajustar la carga de piernas.'}</p>
  ${u.profile.weight>0?'':'<p class="hint">Sin peso en tu perfil: calculado con 70 kg.</p>'}
@@ -722,7 +727,7 @@ function hrCard(){const u=U(),sv=hrSaved(),on=HR.state==='on',z=on?hrZoneOf(HR.b
   ${btns}
   ${sv&&hrSupported()?`<p class="hint">${auto?'Reconexión automática: al abrir Forja con la banda puesta, se conecta sola.':'Este navegador no permite reconectar sin un toque: pulsa "Reconectar" o el indicador de la cabecera. En Chrome puedes activar la reconexión automática en chrome://flags/#enable-web-bluetooth-new-permissions-backend.'}</p>`:''}
   <label class="check mt-4"><input type="checkbox" data-a="smartrest" ${smart?'checked':''}><span>Descanso inteligente en pesas: pasa a la siguiente serie cuando el pulso baje de ${SMART_REST_BPM} ppm (mínimo 30 s).</span></label>
-  ${m?`<details class="mt-3"><summary class="text-sm font-semibold">Tus zonas (FC máx. ${m} ppm)</summary><div class="grid gap-1 mt-2 text-sm">${HR_ZONES.map((x,i)=>{const hi=HR_ZONES[i+1]?Math.round(HR_ZONES[i+1].lo*m)-1:m;return `<div class="flex justify-between"><span><span class="dot" style="background:${ZONE_COL[x.z]}"></span> Z${x.z} ${x.name}</span><span class="text-dim">${Math.round(x.lo*m)||'<'+Math.round(.6*m)}${x.z===1?'':'–'+hi} ppm</span></div>`}).join('')}</div></details>`:''}</section>`}
+  ${m?`<details class="mt-3"><summary class="text-sm font-semibold">Tus zonas (FC máx. ${m} ppm)</summary><p class="text-sm text-dim mt-2">${m>220-u.profile.age?`FC máx. medida por tu banda (la fórmula 220 − edad daba ${220-u.profile.age}).`:'FC máx. estimada con 220 − edad. Si la banda mide un pico mayor y sostenido, se ajusta sola.'}</p><div class="grid gap-1 mt-2 text-sm">${HR_ZONES.map((x,i)=>{const hi=HR_ZONES[i+1]?Math.round(HR_ZONES[i+1].lo*m)-1:m;return `<div class="flex justify-between"><span><span class="dot" style="background:${ZONE_COL[x.z]}"></span> Z${x.z} ${x.name}</span><span class="text-dim">${Math.round(x.lo*m)||'<'+Math.round(.6*m)}${x.z===1?'':'–'+hi} ppm</span></div>`}).join('')}</div>${u.profile.hrPeak?'<button class="btn-text mt-2" data-a="hrpeakreset">Volver a la fórmula (220 − edad)</button>':''}</details>`:''}</section>`}
 /* ---- Actividad en vivo ---- */
 const LIVE_KEY='forja.live.samples';
 function liveSamples(){try{return JSON.parse(localStorage.getItem(LIVE_KEY)||'[]')}catch(e){return []}}
@@ -753,7 +758,7 @@ function updLive(){const u=U();if(!u||!u.live)return;liveNotify();const L=u.live
  set('#lv-st',on?'Pulsómetro conectado':!hrSaved()?'Sin pulsómetro':HR.state==='searching'||HR.state==='connecting'?'Buscando pulsómetro… la grabación sigue':'Pulsómetro desconectado · la grabación sigue');
  const tap=$('#lv-tap');if(tap){tap.hidden=on||!hrSupported()||(hrSaved()&&!HR.needsTap);tap.textContent=hrSaved()?'Toca para reconectar el pulsómetro':'Conectar pulsómetro'}
  set('#lv-rc',(L.reconnects||[]).map(t=>`Reconectado a las ${hhmm(t)}`).join(' · '));
- if(on&&z&&z.z>=3&&restDayToday(u))zoneAlert(z.z)}
+ if(restDayToday(u))zoneWatch(z,1,2)}
 // Notificación fija de la app nativa mientras se graba (se actualiza cada 10 s).
 const liveTitle=L=>tr(`Forja · Grabando ${sportName(L).toLowerCase()}`);
 const liveBody=L=>`${fmtDur(Date.now()-L.start)} · ${tr(HR.state==='on'?`♥ ${HR.bpm||'--'} ppm`:hrSaved()?'buscando pulsómetro…':'sin pulsómetro')}`;
@@ -761,14 +766,16 @@ let liveFgsAt=0;
 function liveNotify(){const u=U();if(!u||!u.live||Date.now()-liveFgsAt<10000)return;liveFgsAt=Date.now();liveServiceUpdate(liveTitle(u.live),liveBody(u.live))}
 function openLiveFinish(){const u=U(),L=u.live,s=liveSummary(L,HR.samples,u.profile,Date.now());
  modal(`<h2 class="font-display text-3xl font-extrabold leading-none">Finalizar ${esc(sportName(L).toLowerCase())}</h2>
- <div class="grid grid-cols-3 gap-2 mt-4"><div class="stat"><b>${s.min}</b><span>min</span></div><div class="stat"><b>${s.hr?s.hr.avg:'--'}</b><span>ppm medio</span></div><div class="stat"><b>${s.hr?s.hr.max:'--'}</b><span>ppm máx.</span></div></div>
+ <div class="grid grid-cols-3 gap-2 mt-4"><div class="stat"><b>${s.min}</b><span>min</span></div><div class="stat"><b>${s.hr?s.hr.avg:'--'}</b><span>${s.partial?'ppm medio (parcial)':'ppm medio'}</span></div><div class="stat"><b>${s.hr?s.hr.max:'--'}</b><span>ppm máx.</span></div></div>
+ ${s.hr?`<p class="text-sm mt-2 ${s.partial?'':'text-dim'}" ${s.partial?'style="color:var(--normal)"':''}>Pulso medido ${s.coveredMin} de ${s.min} min${s.partial?': la banda perdió la señal al alejarte del móvil, así que el pulso medio sale más bajo que el real.':'.'}</p>`:''}
  <form data-livefin class="flex flex-col gap-5 mt-5"><div><span class="lbl">${L.sport==='football'||L.sport==='futsal'?'Posición / tipo de juego':'Tipo de sesión'}</span>${seg('type',Object.fromEntries(SPORTS[L.sport].types.map(t=>[t.id,t.n])),L.type)}</div>
-  <div><span class="lbl">Esfuerzo percibido (RPE)</span><div class="pain rpe" role="radiogroup">${Array.from({length:10},(_,i)=>`<label><input type="radio" name="rpe" value="${i+1}" ${s.rpe===i+1?'checked':''}><span>${i+1}</span></label>`).join('')}</div><p class="hint">${s.hr?'Propuesto según tu pulso medio. Ajústalo si no encaja.':'1 = muy suave · 5 = moderado · 8 = muy duro · 10 = máximo.'}</p></div>
+  <div><span class="lbl">Esfuerzo percibido (RPE)</span><div class="pain rpe" role="radiogroup">${Array.from({length:10},(_,i)=>`<label><input type="radio" name="rpe" value="${i+1}" required ${s.rpe===i+1?'checked':''}><span>${i+1}</span></label>`).join('')}</div><p class="hint">${s.rpe?'Propuesto según tu pulso medio. Ajústalo si no encaja.':s.partial?'Elige tú el esfuerzo: con tan pocos minutos medidos, el pulso no sirve para proponerlo. 5 = moderado · 8 = muy duro · 10 = máximo.':'1 = muy suave · 5 = moderado · 8 = muy duro · 10 = máximo.'} De él salen la fatiga de piernas y el ajuste del gimnasio.</p></div>
   <button class="btn-primary w-full" type="submit">Guardar y aplicar a mi rutina</button></form>`,'Finalizar actividad')}
 function finishLive(f){const u=U(),L=u.live,fd=new FormData(f),rpe=+fd.get('rpe')||6,type=String(fd.get('type')||L.type),now=Date.now();
  const s=liveSummary({...L,type},HR.samples,u.profile,now,rpe),a=addActivity(u,{sport:L.sport,type,name:L.name,min:s.min,rpe,date:L.start});
- Object.assign(a,{kcal:s.kcal,kcalReal:s.kcalReal,hr:s.hr,reconnects:[...(L.reconnects||[])],live:true});
- delete u.live;try{localStorage.removeItem(LIVE_KEY)}catch(e){}keepAwake(false);liveServiceStop();save();closeModal();view='home';render();scrollTo(0,0);showActivityResult(a)}
+ Object.assign(a,{kcal:s.kcal,kcalReal:s.kcalReal,hr:s.hr,hrMin:s.hr?s.coveredMin:undefined,reconnects:[...(L.reconnects||[])],live:true});
+ const pk=notePeak(u,HR.samples.filter(x=>x.t>=L.start&&x.t<=now));
+ delete u.live;try{localStorage.removeItem(LIVE_KEY)}catch(e){}keepAwake(false);liveServiceStop();save();closeModal();view='home';render();scrollTo(0,0);showActivityResult(a);if(pk)toast(peakTxt(pk))}
 let hrPrevState=HR.state,liveBuf=0;
 onHr(()=>{const u=U(),changed=hrPrevState!==HR.state;
  // Reconexión durante una grabación: se anota la hora sin interrumpirla.
@@ -924,7 +931,7 @@ function finish(){const u=U(),a=u.active;normActive(a);seqStop(false);
   changes.push({ex,...(a.deload||it.leg?{note:a.deload?'Sin cambios (descarga)':`Sin cambios (pierna al ${100-it.leg} % por fatiga)`,avg:0,next:loadTxt(ex,prog(u,ex,it.p),u.profile)}:progress(u,ex,it,done))})});
  const c=a.cond&&a.cond.done?a.cond:null,cNote=c?(a.deload?'Sin cambios (descarga)':condProgress(u,c,c.rt||'ok')):'';
  h.blocks={mob:!!a.mob.done,stretch:!!a.stretch.done,cond:c?{kind:c.kind,machine:c.machine,min:c.min,rt:c.rt||'ok'}:null};h.cardioMin=c?c.min:0;
- h.vol=vol;h.sets=sets;h.est=a.est||itemsEst(a);const prs=newRecords(u.history,h);if(prs.length)h.prs=prs.map(x=>x.ex);const hr=typeof hrStats==='function'?hrStats(a.start):null;if(hr)h.hr=hr;{const ks=HR.samples.filter(x=>x.t>=a.start);if(ks.length>1){const r=kcalFromSamples(ks,u.profile);if(r.coveredMs>=60000)h.kcalReal=Math.round(r.kcal)}}u.history.unshift(h);
+ h.vol=vol;h.sets=sets;h.est=a.est||itemsEst(a);const prs=newRecords(u.history,h);if(prs.length)h.prs=prs.map(x=>x.ex);const hr=typeof hrStats==='function'?hrStats(a.start):null;if(hr)h.hr=hr;let pk=null;{const ks=HR.samples.filter(x=>x.t>=a.start);if(ks.length>1){const r=kcalFromSamples(ks,u.profile);if(r.coveredMs>=60000)h.kcalReal=Math.round(r.kcal);pk=notePeak(u,ks)}}u.history.unshift(h);
  if(h.kind==='strength'&&a.dayIdx!=null&&setsDone)u.next=(a.dayIdx+1)%u.plan.days.length;
  u.active=null;save();endTimer(false);view='home';render();scrollTo(0,0);
  const cm=c?CARDIO_M[c.machine]:null;
@@ -934,7 +941,7 @@ function finish(){const u=U(),a=u.active;normActive(a);seqStop(false);
   ${changes.length||c?`<h3 class="h2 text-xl mt-6">Ajustes para la próxima vez</h3>`:''}
   <div class="flex flex-col gap-2 mt-3">${changes.map(x=>`<div class="flex items-center gap-3 p-3 rounded-2xl" style="background:var(--surface2)"><span class="dot ${x.avg<=-.5?'d-easy':x.avg<.5?'d-ok':'d-hard'}"></span><span class="flex-1 min-w-0"><span class="block font-semibold">${esc(x.ex.n)}</span><span class="block text-sm text-dim">${x.next}</span></span><span class="font-semibold whitespace-nowrap">${x.note}</span></div>`).join('')}
   ${c?`<div class="flex items-center gap-3 p-3 rounded-2xl" style="background:var(--surface2)"><span class="dot d-${c.rt||'ok'}"></span><span class="flex-1 min-w-0"><span class="block font-semibold">${esc(condKindLbl(c))}: ${esc(cm?cm.n:'')}</span><span class="block text-sm text-dim">${c.min} min</span></span><span class="font-semibold text-right">${esc(cNote)}</span></div>`:''}</div>
-  <button class="btn-primary w-full mt-6" data-a="close">Listo</button>`,'Resumen de la sesión')}
+  <button class="btn-primary w-full mt-6" data-a="close">Listo</button>`,'Resumen de la sesión');if(pk)toast(peakTxt(pk))}
 
 /* ============ Eventos ============ */
 const A={
@@ -950,6 +957,7 @@ const A={
  wkmatch:d=>{const u=U(),wd=+d.n;setMatch(u,weekStart(),wd,d.s);save();closeModal();render();scrollTo(0,0);toast(`Partido de ${SPORTS[d.s].n} el ${DAY_LONG[wd]}. Gimnasio reajustado.`)},
  wkunmatch:d=>{const u=U(),wd=+d.n;removeMatch(u,weekStart(),wd);save();closeModal();render();toast(`Sin partido el ${DAY_LONG[wd]}.`)},
  wkundo:d=>{undoChange(U(),weekStart(),d.id);save();render()},
+ hrpeakreset:()=>{const u=U();delete u.profile.hrPeak;u.updatedAt=Date.now();save();render();toast('Zonas calculadas otra vez con 220 − edad.')},
  wknooffer:()=>{weekEdit(U(),weekStart()).noOffer=true;save();render()},
  pushon:async()=>{const msg=await pushEnable();const u=U();if(msg){toast(msg);return}u.settings={...(u.settings||{}),push:{...pushCfg(u),on:true}};save();await pushSyncReminders(true);render();toast('Notificaciones activadas')},
  pushoff:async()=>{const u=U();u.settings={...(u.settings||{}),push:{...pushCfg(u),on:false}};save();await pushDisable();render();toast('Notificaciones desactivadas')},
@@ -982,7 +990,7 @@ const A={
  blockgo:d=>{const a=U().active;seqStart(listPhases(d.v,a),{title:STAGE_LBL[d.v],onDone:()=>{const x=U().active;if(!x)return;x[d.v].done=true;save();goNextStage()}})},
  blockdone:d=>{const a=U().active;a[d.v].done=true;save();goNextStage()},
  blockskip:d=>{const a=U().active;if(d.v==='cond')a.cond.skipped=true;save();goNextStage()},
- condgo:()=>{const a=U().active;seqStart(condPhases(a.cond),{title:condKindLbl(a.cond),alertZ2:a.cond.kind==='liss',onDone:()=>{if(U().active)openCondRate()}})},
+ condgo:()=>{const a=U().active;seqStart(condPhases(a.cond,a.deload),{title:condKindLbl(a.cond),onDone:()=>{if(U().active)openCondRate()}})},
  condrateopen:()=>openCondRate(),
  condrate:d=>{const a=U().active;a.cond.done=true;a.cond.rt=d.r;save();closeModal();goNextStage()},
  condswap:()=>{const u=U(),c=u.active.cond,pool=cardioPool(u.profile,{hiit:c.kind!=='liss'});if(pool.length<2)return;const i=pool.findIndex(m=>m.id===c.machine);c.machine=pool[(i+1)%pool.length].id;save();render();toast(`Cambiado a ${CARDIO_M[c.machine].n}`)},

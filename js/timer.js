@@ -18,9 +18,16 @@ function tickTimer(){if(!T)return;const rem=T.end-Date.now();if(rem<=0){endTimer
  if(sm&&restReady(HR.bpm,(Date.now()-T.start)/1000)){endTimer(true,'Pulso recuperado: siguiente serie.');return}
  const tt=$('#tt'),tp=$('#tprog');if(tt)tt.textContent=fmtDur(rem+999);if(tp)tp.setAttribute('stroke-dashoffset',C*(1-rem/T.dur))}
 function endTimer(done,msg){clearInterval(tInt);if(done&&T){beep();try{navigator.vibrate&&navigator.vibrate([200,100,200])}catch(e){}toast(msg||'Descanso terminado. A por la siguiente serie.')}T=null;$('#timer').innerHTML='';document.body.classList.remove('has-dock')}
-// Aviso de zona (cardio suave o día de descanso): como mucho una vez por minuto.
-let lastZoneAlert=0;
-function zoneAlert(z){if(Date.now()-lastZoneAlert<60000)return;lastZoneAlert=Date.now();beep();try{navigator.vibrate&&navigator.vibrate([300,150,300])}catch(e){}toast(`Vas en Z${z}: baja el ritmo para quedarte en Z2.`)}
+// Avisos de zona: como mucho uno por minuto. Subir = tres vibraciones cortas; bajar = dos largas.
+let lastZoneAlert=0;const ZW={k:'',since:0};
+function zoneCue(msg,up){if(Date.now()-lastZoneAlert<60000/FAST)return;lastZoneAlert=Date.now();beep();try{navigator.vibrate&&navigator.vibrate(up?[120,80,120,80,120]:[300,150,300])}catch(e){}toast(msg)}
+// Avisa si llevas 1 min seguido por encima (baja) o por debajo (sube) de la zona objetivo lo–hi.
+// grace: segundos del tramo en los que no se pide subir, porque el pulso tarda en llegar.
+function zoneWatch(z,lo,hi,elapsed=Infinity,grace=0){const k=!z?'':z.z>hi?'hi':z.z<lo&&elapsed>=grace?'lo':'';
+ if(k!==ZW.k){ZW.k=k;ZW.since=Date.now();return}
+ if(!k||Date.now()-ZW.since<60000/FAST)return;ZW.since=Date.now();
+ zoneCue(k==='hi'?`Llevas 1 min en Z${z.z}: baja el ritmo hasta Z${hi}.`:`Vas en Z${z.z}: sube el ritmo hasta Z${lo}.`,k==='lo')}
+const zoneTxt=(lo,hi,pr)=>{const a=zoneBpm(lo,pr),b=zoneBpm(hi,pr);return `Z${lo}${hi>lo?'–Z'+hi:''}${a&&b?` (${a[0]}–${b[1]} ppm)`:''}`};
 
 /* ============ Temporizador de secuencia (movilidad, estiramientos, LISS y HIIT) ============ */
 // ?fast=1 en la URL divide los tiempos entre 20 para probar la app.
@@ -33,15 +40,24 @@ async function keepAwake(on){try{
  else if(wakeLock){const w=wakeLock;wakeLock=null;await w.release()}}catch(e){wakeLock=null}}
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&(SEQ.phases||T))keepAwake(true)});
 const phaseMs=i=>SEQ.phases[i].sec*1000/FAST;
-function seqStart(phases,{title,onDone,alertZ2=false}){if(!phases.length)return;SEQ.alertZ2=alertZ2;
- Object.assign(SEQ,{phases,i:0,title,onDone,paused:null});SEQ.end=Date.now()+phaseMs(0);
+// Cada tramo puede llevar zona objetivo: zt=[lo, hi] (con grace en segundos) se vigila durante el tramo;
+// peak=zona mínima a alcanzar en un intervalo fuerte, que se comprueba al terminarlo.
+function seqStart(phases,{title,onDone}){if(!phases.length)return;
+ Object.assign(SEQ,{phases,i:0,title,onDone,paused:null,from:Date.now()});SEQ.end=Date.now()+phaseMs(0);ZW.k='';
  ensureAudio();keepAwake(true);seqRender();clearInterval(seqInt);seqInt=setInterval(seqTick,200)}
 function seqTick(){if(!SEQ.phases)return;const rem=SEQ.paused??(SEQ.end-Date.now());if(rem<=0){seqNext();return}
  const t=$('#sq-t');if(t)t.textContent=fmtDur(rem+999);
- const hr=$('#sq-hr');if(hr&&typeof HR!=='undefined'){const u=U(),z=HR.state==='on'&&u?hrZoneOf(HR.bpm,u.profile):null;hr.textContent=HR.state==='on'?`♥ ${HR.bpm||'--'} ppm${z?` · Z${z.z} ${z.name}`:''}`:'';if(SEQ.alertZ2&&z&&z.z>=3)zoneAlert(z.z)}const b=$('#sq-bar');if(b)b.style.width=Math.min(100,100-rem/phaseMs(SEQ.i)*100)+'%'}
-function seqNext(){if(!SEQ.phases)return;SEQ.i++;if(SEQ.i>=SEQ.phases.length){seqStop(true);return}
+ const hr=$('#sq-hr'),ph=SEQ.phases[SEQ.i];if(hr&&typeof HR!=='undefined'){const u=U(),on=HR.state==='on'&&!!u,z=on?hrZoneOf(HR.bpm,u.profile):null;
+  hr.textContent=on?`♥ ${HR.bpm||'--'} ppm${z?` · Z${z.z} ${z.name}`:''}${ph.zt?` · objetivo ${zoneTxt(ph.zt[0],ph.zt[1],u.profile)}`:''}`:'';
+  if(ph.zt&&SEQ.paused==null)zoneWatch(z,ph.zt[0],ph.zt[1],(phaseMs(SEQ.i)-rem)*FAST/1000,ph.grace||0)}
+ const b=$('#sq-bar');if(b)b.style.width=Math.min(100,100-rem/phaseMs(SEQ.i)*100)+'%'}
+// Al terminar un intervalo fuerte (desde la 2.ª ronda, cuando el pulso ya ha subido): si no llegaste a la zona, pide más.
+function peakCheck(i){const ph=SEQ.phases[i];if(!ph.peak||typeof HR==='undefined'||!U()||Date.now()-SEQ.from<phaseMs(i)*.8)return;
+ const st=hrStats(SEQ.from),z=st&&hrZoneOf(st.max,U().profile);
+ if(z&&z.z<ph.peak)zoneCue(`Más fuerte en el siguiente intervalo: llegaste a Z${z.z} y el objetivo es Z${ph.peak}.`,true)}
+function seqNext(){if(!SEQ.phases)return;peakCheck(SEQ.i);SEQ.i++;if(SEQ.i>=SEQ.phases.length){seqStop(true);return}
  beep();try{navigator.vibrate&&navigator.vibrate(180)}catch(e){}
- SEQ.end=Date.now()+phaseMs(SEQ.i);SEQ.paused=null;seqRender()}
+ SEQ.end=Date.now()+phaseMs(SEQ.i);SEQ.from=Date.now();SEQ.paused=null;ZW.k='';seqRender()}
 function seqStop(done){if(!SEQ.phases)return;clearInterval(seqInt);const cb=SEQ.onDone;SEQ.phases=null;SEQ.onDone=null;$('#seq').innerHTML='';
  if(!T)keepAwake(false);if(done){beep();cb&&cb()}}
 function seqPause(){if(!SEQ.phases)return;if(SEQ.paused==null)SEQ.paused=SEQ.end-Date.now();else{SEQ.end=Date.now()+SEQ.paused;SEQ.paused=null}seqRender()}
