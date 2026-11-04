@@ -97,3 +97,24 @@ test('los días de fuerza quedan repartidos, no juntos al principio', () => {
   assert.equal(types.filter((t) => t === 'strength').length, 3);
   assert.notDeepEqual(types, ['strength', 'strength', 'strength', 'cardio', 'cardio']);
 });
+
+test('entrenar fuera del día previsto no marca como hecho un día futuro', () => {
+  // Gimnasio lunes, jueves y viernes; entrena el lunes y el miércoles (con "Entrenar igualmente").
+  const h = (wd, day) => ({ date: WS + wd * 864e5 + 18 * 3600e3, day, kind: 'strength', items: [] });
+  const u = mkUser({ avail: [0, 3, 4] }, { next: 2, history: [h(2, 'Cuerpo completo B'), h(0, 'Cuerpo completo A')] });
+  const s = weekSchedule(u, WS), at = (wd) => s.find((e) => e.wd === wd);
+  assert.equal(at(0).done, true);
+  assert.equal(at(2).done, true);
+  assert.equal(at(2).name, 'Cuerpo completo B');
+  assert.equal(at(3).type, 'rest', 'el jueves queda libre');
+  assert.equal(at(4).type, 'strength');
+  assert.equal(at(4).done, false);
+  assert.equal(at(4).tpl.key, 'fbC');
+  // Si te saltaste el lunes y entrenas el miércoles, el miércoles sustituye al lunes y el jueves sigue en pie.
+  const v = mkUser({ avail: [0, 3, 4] }, { next: 1, history: [h(2, 'Cuerpo completo A')] });
+  const t = weekSchedule(v, WS), at2 = (wd) => t.find((e) => e.wd === wd);
+  assert.equal(at2(0).type, 'rest');
+  assert.equal(at2(2).done, true);
+  assert.equal(at2(3).type, 'strength');
+  assert.equal(at2(3).done, false);
+});

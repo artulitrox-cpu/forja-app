@@ -203,23 +203,35 @@ function weekSchedule(u,ws=weekStart()){
  const doneS=hist.filter(h=>h.kind!=='cardio'),doneC=hist.filter(h=>h.kind==='cardio');
  // Cada partido cuenta como un día de cardio.
  const nMatch=Object.keys(matches).length,cardioMax=Math.max(0,(pr.goal==='hyp'?1:n-F)-nMatch);
- let si=0,ci=0;const out=[];
+ let ci=0;const out=[];
  act.forEach((wd,i)=>{const x=extras.has(wd)?{extra:true}:{};
-  if(pos.has(i)){const j=si++;
-   if(j<doneS.length){out.push({wd,type:'strength',done:true,name:doneS[j].day,...x});return}
-   const k=j-doneS.length,idx=fallback?k%tpls.length:(u.next+k)%tpls.length,tpl=tpls[idx];
-   out.push({wd,type:'strength',done:false,name:tpl.name,tpl,dayIdx:fallback?null:idx,...x})}
-  else if(ci<cardioMax){const j=ci++;out.push({wd,type:'cardio',done:j<doneC.length,name:'Cardio',...x})}
+  if(pos.has(i))out.push({wd,type:'strength',done:false,...x});
+  else if(ci++<cardioMax)out.push({wd,type:'cardio',done:false,name:'Cardio',...x});
   else out.push({wd,type:'rest',done:false,name:'Descanso',...x})});
  Object.entries(matches).forEach(([wd,sp])=>{wd=+wd;const d0=ws+wd*DAY_MS;
   out.push({wd,type:'match',sport:sp,name:sportLbl(sp),done:(u.activities||[]).some(a=>a.date>=d0&&a.date<d0+DAY_MS)})});
  all.filter(d=>skips.has(d)&&matches[d]==null).forEach(wd=>out.push({wd,type:'skip',done:false,name:'No voy'}));
  if(rest7)out.push({wd:6,type:'rest',done:false,name:'Descanso'});
+ markDone(out,doneS,'strength');markDone(out,doneC,'cardio');
  out.sort((a,b)=>a.wd-b.wd);
+ // Rotación en las sesiones de fuerza que quedan pendientes.
+ let k=0;out.forEach(e=>{if(e.type!=='strength'||e.done)return;const idx=fallback?k%tpls.length:(u.next+k)%tpls.length,tpl=tpls[idx];k++;
+  Object.assign(e,{name:tpl.name,tpl,dayIdx:fallback?null:idx})});
  preMatch(u,out,matches);
  assignPrehab(u,out,matches);
  assignConditioning(u,out,ws);
  return out}
+// Sesiones hechas (fuerza o cardio): cuentan el día en que se hicieron. Una hecha fuera de su día previsto ocupa la sesión
+// que te saltaste antes o, si no, la siguiente pendiente, que pasa a ser descanso (o al tipo del día en que entrenaste).
+// Así entrenar el miércoles en vez del jueves deja el jueves libre, en lugar de marcarlo como hecho.
+function markDone(out,hist,type){const left=[],at=wd=>out.find(e=>e.wd===wd);
+ hist.forEach(h=>{const wd=weekday(h.date),e=out.find(x=>x.wd===wd&&x.type===type&&!x.done);if(!e){left.push(h);return}
+  e.done=true;if(type==='strength')e.name=h.day});
+ left.forEach(h=>{const wd=weekday(h.date),open=out.filter(x=>x.type===type&&!x.done),take=open.find(x=>x.wd<wd)||open.find(x=>x.wd>wd),cur=at(wd);
+  const swap=cur&&!cur.done&&(cur.type==='strength'||cur.type==='cardio');
+  if(take)Object.assign(take,swap?{type:cur.type,name:cur.type==='cardio'?'Cardio':take.name}:{type:'rest',name:'Descanso'});
+  const done={type,done:true,name:type==='strength'?h.day:'Cardio'};
+  if(!cur)out.push({wd,...done});else if(cur.type!=='match'&&!cur.done)Object.assign(cur,done)})}
 // Orden de las sesiones pendientes de la semana. Nunca pierna la víspera de un partido; además se evita pierna el día después
 // del partido y dos días seguidos del mismo tipo, respetando en lo posible la rotación. Se prueban todas las ordenaciones (≤ 5 sesiones).
 function weekCost(seq,matches){let c=0;seq.forEach((x,i)=>{const leg=isLegTpl(x.tpl),p=seq[i-1];
